@@ -1,4 +1,4 @@
-# Nhập công việc lên Lark Base / Jira / Trello (232 công việc)
+# Nhập công việc lên Lark Base / Jira / Trello (236 công việc)
 
 Nguồn dữ liệu: `QuickStay-Tasks-Import.csv` (UTF-8), cùng nội dung với sheet Master Plan: cùng mã T…, cùng người, cùng ngày. Cột: Mã, Công việc, Mô-đun, Giai đoạn, Chức năng (UC), Người phụ trách, Ngày thực hiện (Due date), Tuần, Trạng thái, Ưu tiên, Loại, Giờ ước lượng, Sản phẩm đầu ra.
 
@@ -28,9 +28,9 @@ Trello không nhập CSV mặc định, nên dán nhiều thẻ một lần:
 1. Tạo danh sách: **Backlog, To Do, In Progress, Review & Testing, Done, Bug**.
 2. Tạo nhãn: Hưng, Vượng, Đức, Minh, Cả nhóm; thêm nhãn Tuần 1 đến Tuần 4.
 3. Dán khối Tuần 1 vào **To Do**, các tuần sau vào **Backlog** (Trello hỏi có tạo nhiều thẻ thì đồng ý).
-4. Với mỗi thẻ: gán nhãn người phụ trách và đặt Due date theo "(hạn dd/mm)". Việc này phải làm thủ công cho 232 thẻ, nên Lark Base nhanh hơn nhiều.
+4. Với mỗi thẻ: gán nhãn người phụ trách và đặt Due date theo "(hạn dd/mm)". Việc này phải làm thủ công cho 236 thẻ, nên Lark Base nhanh hơn nhiều.
 
-### Tuần 1 (26/10 – 30/10): 72 thẻ
+### Tuần 1 (26/10 – 30/10): 74 thẻ
 
 ```
 T001 Họp khởi động: chốt phạm vi, API contract, quy ước Git, Definition of Done [Hưng] (hạn 26/10)
@@ -46,8 +46,9 @@ T010 Phác thảo wireframe Đăng nhập, Đăng ký, Hồ sơ [Đức] (hạn 
 T011 Phác thảo wireframe Đặt phòng và Lịch sử đặt phòng [Đức] (hạn 26/10)
 T012 Quy ước giao diện: màu sắc, font, component dùng chung [Đức] (hạn 26/10)
 T013 Thiết kế sơ đồ kiến trúc và sơ đồ triển khai (Nginx, backend, MySQL) [Minh] (hạn 26/10)
-T014 Viết Dockerfile backend (Gradle + JDK) [Minh] (hạn 26/10)
-T015 Viết Dockerfile frontend (Node build + Nginx) và nginx.conf [Minh] (hạn 26/10)
+T027 docker-compose: dịch vụ mysql có healthcheck và volume [Minh] (hạn 26/10)
+T030 Tạo PR template và quy ước commit [Minh] (hạn 26/10)
+T233 Soạn .gitignore và cấu trúc thư mục repo (backend, frontend, docs) [Minh] (hạn 26/10)
 T016 Viết SRS 2.1–2.2: sơ đồ quan hệ đối tượng và sơ đồ Use Case [Hưng] (hạn 27/10)
 T017 Viết SRS 2.3–2.4: sơ đồ luồng và sơ đồ chuyển trạng thái đơn [Hưng] (hạn 27/10)
 T018 Viết SRS 2.5–2.6: phân quyền chức năng, dữ liệu và site map [Hưng] (hạn 27/10)
@@ -59,22 +60,23 @@ T023 Wireframe dashboard admin: 3 tab Đặt phòng, Khách sạn, Phòng [Đứ
 T024 Wireframe chatbot và bản mobile [Đức] (hạn 27/10)
 T025 Khởi tạo React + Vite + Tailwind + Zustand + React Router [Đức] (hạn 27/10)
 T026 Dựng layout chung và khung Navbar [Đức] (hạn 27/10)
-T027 docker-compose: dịch vụ mysql có healthcheck và volume [Minh] (hạn 27/10)
-T028 docker-compose: backend, frontend, biến môi trường, .env.example [Minh] (hạn 27/10)
-T029 Viết README hướng dẫn chạy dự án [Minh] (hạn 27/10)
-T030 Tạo PR template và quy ước commit [Minh] (hạn 27/10)
+T014 Viết Dockerfile backend (Gradle + JDK) [Minh] (hạn 27/10)
+T041 GitHub Actions: build và test backend khi push/PR [Minh] (hạn 27/10)
+T234 Viết nginx.conf: proxy /api sang backend và SPA fallback [Minh] (hạn 27/10)
+T235 README khung: giới thiệu, công nghệ, cấu trúc thư mục [Minh] (hạn 27/10)
 T031 Đặc tả use case UC06 (đặt phòng) trong SRS [Hưng] (hạn 28/10)
 T032 Đặc tả use case UC12 (sinh mô tả AI) trong SRS [Hưng] (hạn 28/10)
 T033 Đặc tả use case UC13 (chatbot) trong SRS [Hưng] (hạn 28/10)
 T034 Viết test case UC01–UC03 (mã, bước, kết quả mong đợi) [Hưng] (hạn 28/10)
 T035 Unit test API đăng ký (thành công, trùng email, dữ liệu sai) [Vượng] (hạn 28/10)
-T036 Viết entity Hotel, Room và repository [Vượng] (hạn 28/10)
+T036 Viết entity Hotel, Room, Booking và repository [Vượng] (hạn 28/10)
 T037 Viết seed dữ liệu mẫu 4 khách sạn và các loại phòng [Vượng] (hạn 28/10)
 T038 Giao diện trang Đăng nhập [Đức] (hạn 28/10)
 T039 Giao diện trang Đăng ký [Đức] (hạn 28/10)
 T040 Viết authStore (Zustand) và hàm gọi API tự gắn JWT [Đức] (hạn 28/10)
-T041 GitHub Actions: build và test backend khi push/PR [Minh] (hạn 28/10)
-T042 GitHub Actions: build và test frontend [Minh] (hạn 28/10)
+T015 Viết Dockerfile frontend (Node build + Nginx) [Minh] (hạn 28/10)
+T028 docker-compose: backend, frontend, biến môi trường, .env.example [Minh] (hạn 28/10)
+T029 Viết README hướng dẫn chạy dự án [Minh] (hạn 28/10)
 T043 Spring Security: JwtAuthFilter và cấu hình phân quyền CUSTOMER/ADMIN [Minh] (hạn 28/10)
 T044 Viết test case UC04–UC05 (tìm kiếm, phòng trống) [Hưng] (hạn 29/10)
 T045 Viết test case UC06–UC08 (đặt phòng, lịch sử, hủy) [Hưng] (hạn 29/10)
@@ -101,13 +103,13 @@ T065 Trang chủ: ô tìm kiếm theo tên/thành phố và nối API [Đức] (
 T066 Trang chủ: bộ lọc loại phòng và khoảng giá [Đức] (hạn 30/10)
 T067 Trang chủ: trạng thái đang tải, rỗng, lỗi [Đức] (hạn 30/10)
 T068 Sprint Review và Retro tuần 1 [Đức] (hạn 30/10)
-T069 Rà soát bảo mật cấu hình: secret, biến môi trường, .gitignore [Minh] (hạn 30/10)
+T042 GitHub Actions: build và test frontend [Minh] (hạn 30/10)
 T070 Chạy thử toàn hệ thống bằng docker compose và ghi lỗi [Minh] (hạn 30/10)
-T071 Logging SLF4J/Logback cho exception quan trọng [Minh] (hạn 30/10)
 T072 Sprint Review và Retro tuần 1 [Minh] (hạn 30/10)
+T119 Bộ xử lý lỗi chung: trả {"message"} thống nhất cho mọi lỗi [Minh] (hạn 30/10)
 ```
 
-### Tuần 2 (02/11 – 06/11): 63 thẻ
+### Tuần 2 (02/11 – 06/11): 64 thẻ
 
 ```
 T073 API sinh mô tả AI: dựng prompt và gọi Messages API [Hưng] (hạn 02/11)
@@ -156,7 +158,8 @@ T115 Trang lịch sử: nút Hủy đặt phòng, hộp thoại xác nhận, t�
 T116 Trang hồ sơ: hiển thị và sửa họ tên, email, SĐT [Đức] (hạn 05/11)
 T117 Trang hồ sơ: đổi mật khẩu và thông báo kết quả [Đức] (hạn 05/11)
 T118 Dashboard admin: khung 3 tab và điều hướng [Đức] (hạn 05/11)
-T119 Bộ xử lý lỗi chung: trả {"message"} thống nhất cho mọi lỗi [Minh] (hạn 05/11)
+T069 Rà soát bảo mật cấu hình: secret, biến môi trường, .gitignore [Minh] (hạn 05/11)
+T071 Logging SLF4J/Logback cho exception quan trọng [Minh] (hạn 05/11)
 T120 Test các mã lỗi 400, 404, 409 [Minh] (hạn 05/11)
 T121 Workflow đẩy Docker image lên GHCR khi push main [Minh] (hạn 05/11)
 T122 Review và merge các PR tuần 2 [Hưng] (hạn 06/11)
@@ -175,22 +178,22 @@ T134 Chuẩn bị môi trường triển khai (VPS hoặc máy demo) [Minh] (h�
 T135 Sprint Review và Retro tuần 2 [Minh] (hạn 06/11)
 ```
 
-### Tuần 3 (09/11 – 13/11): 61 thẻ
+### Tuần 3 (09/11 – 13/11): 62 thẻ
 
 ```
 T136 Nút "Tạo mô tả bằng AI" ở form khách sạn [Hưng] (hạn 09/11)
-T137 Nút "Tạo mô tả bằng AI" ở form phòng [Hưng] (hạn 09/11)
-T138 Kiểm thử thủ công sinh mô tả AI [Hưng] (hạn 09/11)
 T139 Thử AI thật với khóa API (nếu có) và ghi kết quả [Hưng] (hạn 09/11)
+T148 Widget chatbot: nút tròn và khung chat [Hưng] (hạn 09/11)
 T140 Bổ sung test: đăng ký, đăng nhập, hồ sơ (nhánh lỗi) [Vượng] (hạn 09/11)
-T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) [Vượng] (hạn 09/11)
 T142 Đo độ phủ test và liệt kê phần chưa phủ [Vượng] (hạn 09/11)
+T165 API phân trang danh sách khách sạn và đơn đặt phòng [Vượng] (hạn 09/11)
 T143 Admin tab Khách sạn: bảng danh sách và form thêm/sửa [Đức] (hạn 09/11)
 T144 Admin tab Khách sạn: xóa, hộp thoại xác nhận, lỗi 409 [Đức] (hạn 09/11)
 T145 Triển khai: cài Docker và docker compose trên máy chủ [Minh] (hạn 09/11)
 T146 Triển khai: Nginx reverse proxy và biến môi trường thật [Minh] (hạn 09/11)
 T147 Kiểm tra backup và khôi phục volume MySQL [Minh] (hạn 09/11)
-T148 Widget chatbot: nút tròn và khung chat [Hưng] (hạn 10/11)
+T137 Nút "Tạo mô tả bằng AI" ở form phòng [Hưng] (hạn 10/11)
+T138 Kiểm thử thủ công sinh mô tả AI [Hưng] (hạn 10/11)
 T149 Widget chatbot: nối API, hiển thị tin nhắn, xử lý lỗi [Hưng] (hạn 10/11)
 T150 Review PR [Hưng] (hạn 10/11)
 T151 Bổ sung test: đặt phòng, lịch sử, hủy (nhánh lỗi) [Vượng] (hạn 10/11)
@@ -198,6 +201,7 @@ T152 Bổ sung test: API admin và phân quyền [Vượng] (hạn 10/11)
 T153 Tối ưu truy vấn phòng trống và thêm chỉ mục CSDL [Vượng] (hạn 10/11)
 T154 Admin tab Phòng: bảng danh sách và form thêm/sửa [Đức] (hạn 10/11)
 T155 Admin tab Phòng: kiểm tra giá, sức chứa, số lượng và xóa [Đức] (hạn 10/11)
+T236 Giao diện phân trang danh sách khách sạn và đơn đặt phòng [Đức] (hạn 10/11)
 T156 Smoke test toàn bộ luồng trên môi trường triển khai [Minh] (hạn 10/11)
 T157 Rà soát bảo mật: CORS, secret, log không lộ dữ liệu [Minh] (hạn 10/11)
 T158 Chuẩn bị merge dev vào main, giải quyết xung đột [Minh] (hạn 10/11)
@@ -206,8 +210,8 @@ T160 Kiểm thử tải 50 request đồng thời [Hưng] (hạn 11/11)
 T161 Đo Lighthouse (First Contentful Paint) [Hưng] (hạn 11/11)
 T162 Khóa tính năng mới lúc 12h; từ đó chỉ sửa lỗi [Hưng] (hạn 11/11)
 T163 Review PR [Hưng] (hạn 11/11)
+T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) [Vượng] (hạn 11/11)
 T164 Test đồng thời chống đặt trùng: nhiều yêu cầu cho phòng cuối [Vượng] (hạn 11/11)
-T165 API phân trang danh sách khách sạn và đơn đặt phòng [Vượng] (hạn 11/11)
 T166 Sửa lỗi QA phía backend [Vượng] (hạn 11/11)
 T167 Responsive Trang chủ và Chi tiết khách sạn (mobile/tablet/desktop) [Đức] (hạn 11/11)
 T168 Responsive Đặt phòng, Lịch sử, Hồ sơ, Đăng nhập, Đăng ký [Đức] (hạn 11/11)
@@ -217,7 +221,7 @@ T171 Đẩy Docker image lên GHCR từ main [Minh] (hạn 11/11)
 T172 Báo cáo kiểm thử: tổng hợp số liệu test và E2E [Hưng] (hạn 12/11)
 T173 Đóng các lỗi còn lại trong cột Bug cùng người phụ trách [Hưng] (hạn 12/11)
 T174 Rà soát lịch sử commit của 4 thành viên [Hưng] (hạn 12/11)
-T175 Hỗ trợ Đức nối API phân trang ở giao diện [Vượng] (hạn 12/11)
+T175 Kiểm thử phân trang qua API và giao diện, sửa lỗi nếu có [Vượng] (hạn 12/11)
 T176 Sửa lỗi backend theo kết quả tải và Lighthouse [Vượng] (hạn 12/11)
 T177 Chốt tài liệu API và ERD theo thực tế [Vượng] (hạn 12/11)
 T178 Responsive dashboard admin (3 tab) [Đức] (hạn 12/11)

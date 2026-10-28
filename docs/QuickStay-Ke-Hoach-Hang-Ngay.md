@@ -8,11 +8,11 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 | | Hưng | Vượng | Đức | Minh | Tổng |
 |---|---|---|---|---|---|
-| Tuần 1 | 21 việc, 30 giờ | 15 việc, 30 giờ | 18 việc, 30.5 giờ | 18 việc, 30 giờ | 72 việc |
-| Tuần 2 | 17 việc, 30 giờ | 16 việc, 30 giờ | 16 việc, 30 giờ | 14 việc, 30 giờ | 63 việc |
-| Tuần 3 | 18 việc, 30 giờ | 15 việc, 30 giờ | 12 việc, 30 giờ | 16 việc, 30 giờ | 61 việc |
+| Tuần 1 | 21 việc, 30 giờ | 15 việc, 31 giờ | 18 việc, 30.5 giờ | 20 việc, 31.5 giờ | 74 việc |
+| Tuần 2 | 17 việc, 30 giờ | 16 việc, 30 giờ | 16 việc, 30 giờ | 15 việc, 31 giờ | 64 việc |
+| Tuần 3 | 18 việc, 30 giờ | 15 việc, 30 giờ | 13 việc, 31.5 giờ | 16 việc, 30 giờ | 62 việc |
 | Tuần 4 (dự phòng) | 10 việc, 28 giờ | 8 việc, 26 giờ | 9 việc, 26 giờ | 9 việc, 26 giờ | 36 việc |
-| **Cộng** | 66 việc | 54 việc | 55 việc | 57 việc | 232 việc |
+| **Cộng** | 66 việc | 54 việc | 56 việc | 60 việc | 236 việc |
 
 # Tuần 1
 
@@ -42,8 +42,9 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 **Lê Duy Minh** (6 giờ)
 
 - [ ] T013 Thiết kế sơ đồ kiến trúc và sơ đồ triển khai (Nginx, backend, MySQL) (2 giờ) → Sơ đồ kiến trúc
-- [ ] T014 Viết Dockerfile backend (Gradle + JDK) (2 giờ) → Image backend build được
-- [ ] T015 Viết Dockerfile frontend (Node build + Nginx) và nginx.conf (2 giờ) → Image frontend build được
+- [ ] T027 docker-compose: dịch vụ mysql có healthcheck và volume (2 giờ) → MySQL lên bằng compose
+- [ ] T030 Tạo PR template và quy ước commit (1 giờ) → PR template
+- [ ] T233 Soạn .gitignore và cấu trúc thư mục repo (backend, frontend, docs) (1 giờ) → Cấu trúc repo thống nhất
 
 ## Thứ Ba 27/10/2026
 
@@ -69,10 +70,10 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 **Lê Duy Minh** (6 giờ)
 
-- [ ] T027 docker-compose: dịch vụ mysql có healthcheck và volume (2 giờ) → MySQL lên bằng compose
-- [ ] T028 docker-compose: backend, frontend, biến môi trường, .env.example (2 giờ) → docker compose up chạy cả hệ thống
-- [ ] T029 Viết README hướng dẫn chạy dự án (1 giờ) → README
-- [ ] T030 Tạo PR template và quy ước commit (1 giờ) → PR template
+- [ ] T014 Viết Dockerfile backend (Gradle + JDK) (2 giờ) → Image backend build được
+- [ ] T041 GitHub Actions: build và test backend khi push/PR (2 giờ) → Job backend xanh
+- [ ] T234 Viết nginx.conf: proxy /api sang backend và SPA fallback (1.5 giờ) → nginx.conf
+- [ ] T235 README khung: giới thiệu, công nghệ, cấu trúc thư mục (0.5 giờ) → README khung
 
 ## Thứ Tư 28/10/2026
 
@@ -83,11 +84,11 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T033 Đặc tả use case UC13 (chatbot) trong SRS (1 giờ) → SRS 3.13
 - [ ] T034 Viết test case UC01–UC03 (mã, bước, kết quả mong đợi) (2 giờ) → Test case UC01–03
 
-**Phùng Văn Vượng** (6 giờ)
+**Phùng Văn Vượng** (7 giờ)
 
 - [ ] T035 Unit test API đăng ký (thành công, trùng email, dữ liệu sai) (2 giờ) → Test xanh
-- [ ] T036 Viết entity Hotel, Room và repository (2 giờ) → Entity, repository
 - [ ] T037 Viết seed dữ liệu mẫu 4 khách sạn và các loại phòng (2 giờ) → Dữ liệu mẫu tự tạo
+- [ ] T036 Viết entity Hotel, Room, Booking và repository (3 giờ) → Entity, repository
 
 **Lê Tiến Đức** (6 giờ)
 
@@ -95,11 +96,12 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T039 Giao diện trang Đăng ký (2 giờ) → Màn hình Đăng ký
 - [ ] T040 Viết authStore (Zustand) và hàm gọi API tự gắn JWT (2 giờ) → authStore, api client
 
-**Lê Duy Minh** (6 giờ)
+**Lê Duy Minh** (7 giờ)
 
-- [ ] T041 GitHub Actions: build và test backend khi push/PR (2 giờ) → Job backend xanh
-- [ ] T042 GitHub Actions: build và test frontend (1.5 giờ) → Job frontend xanh
 - [ ] T043 Spring Security: JwtAuthFilter và cấu hình phân quyền CUSTOMER/ADMIN (2.5 giờ) → Phân quyền theo vai trò
+- [ ] T015 Viết Dockerfile frontend (Node build + Nginx) (1.5 giờ) → Image frontend build được
+- [ ] T028 docker-compose: backend, frontend, biến môi trường, .env.example (2 giờ) → docker compose up chạy cả hệ thống
+- [ ] T029 Viết README hướng dẫn chạy dự án (1 giờ) → README
 
 ## Thứ Năm 29/10/2026
 
@@ -151,12 +153,12 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T067 Trang chủ: trạng thái đang tải, rỗng, lỗi (1.5 giờ) → Hiển thị đúng 3 trạng thái
 - [ ] T068 Sprint Review và Retro tuần 1 (1.5 giờ) → Biên bản review
 
-**Lê Duy Minh** (6 giờ)
+**Lê Duy Minh** (6.5 giờ)
 
-- [ ] T069 Rà soát bảo mật cấu hình: secret, biến môi trường, .gitignore (1.5 giờ) → Không có bí mật trong Git
 - [ ] T070 Chạy thử toàn hệ thống bằng docker compose và ghi lỗi (2 giờ) → Hệ thống chạy từ đầu
-- [ ] T071 Logging SLF4J/Logback cho exception quan trọng (2 giờ) → Log có ngữ cảnh
 - [ ] T072 Sprint Review và Retro tuần 1 (0.5 giờ) → Biên bản review
+- [ ] T042 GitHub Actions: build và test frontend (1.5 giờ) → Job frontend xanh
+- [ ] T119 Bộ xử lý lỗi chung: trả {"message"} thống nhất cho mọi lỗi (2.5 giờ) → ApiExceptionHandler
 
 # Tuần 2
 
@@ -259,11 +261,12 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T117 Trang hồ sơ: đổi mật khẩu và thông báo kết quả (1 giờ) → Đổi mật khẩu
 - [ ] T118 Dashboard admin: khung 3 tab và điều hướng (1 giờ) → Khung admin
 
-**Lê Duy Minh** (6 giờ)
+**Lê Duy Minh** (7 giờ)
 
-- [ ] T119 Bộ xử lý lỗi chung: trả {"message"} thống nhất cho mọi lỗi (2.5 giờ) → ApiExceptionHandler
 - [ ] T120 Test các mã lỗi 400, 404, 409 (1.5 giờ) → Test xanh
 - [ ] T121 Workflow đẩy Docker image lên GHCR khi push main (2 giờ) → Workflow GHCR
+- [ ] T069 Rà soát bảo mật cấu hình: secret, biến môi trường, .gitignore (1.5 giờ) → Không có bí mật trong Git
+- [ ] T071 Logging SLF4J/Logback cho exception quan trọng (2 giờ) → Log có ngữ cảnh
 
 ## Thứ Sáu 06/11/2026
 
@@ -297,18 +300,17 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 ## Thứ Hai 09/11/2026
 
-**Nguyễn Thạc Hưng** (6 giờ)
+**Nguyễn Thạc Hưng** (6.5 giờ)
 
 - [ ] T136 Nút "Tạo mô tả bằng AI" ở form khách sạn (2.5 giờ) → Bấm nút điền mô tả
-- [ ] T137 Nút "Tạo mô tả bằng AI" ở form phòng (1.5 giờ) → Bấm nút điền mô tả
-- [ ] T138 Kiểm thử thủ công sinh mô tả AI (1 giờ) → Danh sách lỗi
 - [ ] T139 Thử AI thật với khóa API (nếu có) và ghi kết quả (1 giờ) → Kết quả thử
+- [ ] T148 Widget chatbot: nút tròn và khung chat (3 giờ) → Khung chat
 
-**Phùng Văn Vượng** (6 giờ)
+**Phùng Văn Vượng** (5.5 giờ)
 
 - [ ] T140 Bổ sung test: đăng ký, đăng nhập, hồ sơ (nhánh lỗi) (2.5 giờ) → Test xanh
-- [ ] T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) (2.5 giờ) → Test xanh
 - [ ] T142 Đo độ phủ test và liệt kê phần chưa phủ (1 giờ) → Báo cáo độ phủ
+- [ ] T165 API phân trang danh sách khách sạn và đơn đặt phòng (2 giờ) → Trang, kích thước trang
 
 **Lê Tiến Đức** (6 giờ)
 
@@ -323,11 +325,12 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 ## Thứ Ba 10/11/2026
 
-**Nguyễn Thạc Hưng** (6 giờ)
+**Nguyễn Thạc Hưng** (5.5 giờ)
 
-- [ ] T148 Widget chatbot: nút tròn và khung chat (3 giờ) → Khung chat
 - [ ] T149 Widget chatbot: nối API, hiển thị tin nhắn, xử lý lỗi (2 giờ) → Chat được trên mọi trang
 - [ ] T150 Review PR (1 giờ) → PR đã review
+- [ ] T137 Nút "Tạo mô tả bằng AI" ở form phòng (1.5 giờ) → Bấm nút điền mô tả
+- [ ] T138 Kiểm thử thủ công sinh mô tả AI (1 giờ) → Danh sách lỗi
 
 **Phùng Văn Vượng** (6 giờ)
 
@@ -335,10 +338,11 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T152 Bổ sung test: API admin và phân quyền (2 giờ) → Test xanh
 - [ ] T153 Tối ưu truy vấn phòng trống và thêm chỉ mục CSDL (1 giờ) → Truy vấn dưới 500 ms
 
-**Lê Tiến Đức** (6 giờ)
+**Lê Tiến Đức** (7.5 giờ)
 
 - [ ] T154 Admin tab Phòng: bảng danh sách và form thêm/sửa (4 giờ) → CRUD loại phòng
 - [ ] T155 Admin tab Phòng: kiểm tra giá, sức chứa, số lượng và xóa (2 giờ) → Validate đúng
+- [ ] T236 Giao diện phân trang danh sách khách sạn và đơn đặt phòng (1.5 giờ) → Phân trang chạy được
 
 **Lê Duy Minh** (6 giờ)
 
@@ -356,11 +360,11 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 - [ ] T162 Khóa tính năng mới lúc 12h; từ đó chỉ sửa lỗi (0 giờ) → Không còn PR tính năng mới
 - [ ] T163 Review PR (1 giờ) → PR đã review
 
-**Phùng Văn Vượng** (6 giờ)
+**Phùng Văn Vượng** (6.5 giờ)
 
 - [ ] T164 Test đồng thời chống đặt trùng: nhiều yêu cầu cho phòng cuối (3 giờ) → Chỉ 1 yêu cầu thành công
-- [ ] T165 API phân trang danh sách khách sạn và đơn đặt phòng (2 giờ) → Trang, kích thước trang
 - [ ] T166 Sửa lỗi QA phía backend (1 giờ) → Bug backend đã đóng
+- [ ] T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) (2.5 giờ) → Test xanh
 
 **Lê Tiến Đức** (6 giờ)
 
@@ -383,9 +387,9 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 **Phùng Văn Vượng** (6 giờ)
 
-- [ ] T175 Hỗ trợ Đức nối API phân trang ở giao diện (2 giờ) → Phân trang chạy đầu cuối
 - [ ] T176 Sửa lỗi backend theo kết quả tải và Lighthouse (3 giờ) → NFR-01 đạt
 - [ ] T177 Chốt tài liệu API và ERD theo thực tế (1 giờ) → API.md, ERD.md cập nhật
+- [ ] T175 Kiểm thử phân trang qua API và giao diện, sửa lỗi nếu có (2 giờ) → Phân trang chạy đầu cuối
 
 **Lê Tiến Đức** (6 giờ)
 
