@@ -6,12 +6,12 @@ Ngày chạy: 22/10/2026 · Môi trường: Windows 11, JDK 17, Node 24, backend
 
 | Nhóm | Công cụ | Số test | Đạt | Lệnh chạy |
 |---|---|---|---|---|
-| Backend API (unit + integration) | JUnit 5, MockMvc | 43 | 43 | `cd backend && ./gradlew test` |
+| Backend API (unit + integration) | JUnit 5, MockMvc, TestRestTemplate | 46 | 46 | `cd backend && ./gradlew test` |
 | Frontend (hàm tiện ích, trang, phân quyền) | Vitest, React Testing Library | 8 | 8 | `cd frontend && npm test` |
 | E2E toàn luồng qua API | `qa/e2e.mjs` | 13 | 13 | `node qa/e2e.mjs` (backend đang chạy) |
-| **Tổng tự động** | | **64** | **64 (100%)** | |
+| **Tổng tự động** | | **67** | **67 (100%)** | |
 
-Tiêu chí 80% trở lên: **đạt**. Các mục kiểm thử thủ công cần người chạy được liệt kê ở mục 4.
+Tiêu chí 80% trở lên: **đạt**. Khi viết tài liệu API (26/10/2026) phát hiện lỗi: gọi API admin bằng tài khoản khách trả 401 thay vì 403 khi chạy thật (test MockMvc không bắt được). Đã sửa trong `SecurityConfig` và thêm 3 test `TC_SEC_*` chạy qua cổng HTTP thật. Các mục kiểm thử thủ công cần người chạy được liệt kê ở mục 4.
 
 ## 2. Test case backend (mã = tên phương thức test)
 
@@ -60,6 +60,9 @@ Tiêu chí 80% trở lên: **đạt**. Các mục kiểm thử thủ công cần
 | TC_AI_03 | Sinh mô tả thiếu tên | 400 |
 | TC_AI_04 | Chatbot hỏi về khách sạn ở Đà Nẵng | 200, trả lời từ dữ liệu trong DB |
 | TC_AI_05 | Chatbot nhận tin nhắn rỗng | 400 |
+| TC_SEC_01 | Khách gọi API admin qua HTTP thật | 403 kèm `{"message": ...}` (không bị đổi thành 401) |
+| TC_SEC_02 | Ẩn danh gọi API cần đăng nhập | 401 |
+| TC_SEC_03 | Admin đặt phòng qua HTTP thật | 403 |
 
 ## 3. Kiểm thử phi chức năng (đo ngày 22/10/2026)
 

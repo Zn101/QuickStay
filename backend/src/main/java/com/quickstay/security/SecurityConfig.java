@@ -40,7 +40,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
                         .requestMatchers("/api/admin/**", "/api/ai/describe").hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        // Ghi 403 truc tiep: sendError() se chuyen sang /error (khong co JWT) va bi doi thanh 401.
+                        .accessDeniedHandler((req, res, ex) -> {
+                            res.setStatus(HttpStatus.FORBIDDEN.value());
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write("{\"message\":\"Ban khong co quyen truy cap\"}");
+                        }))
                 .addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

@@ -24,7 +24,7 @@ cd frontend && npm install && npm run dev   # http://localhost:5173, proxy /api 
 ## Kiểm thử
 
 ```bash
-cd backend  && ./gradlew test        # 43 test backend
+cd backend  && ./gradlew test        # 46 test backend
 cd frontend && npm test              # 8 test frontend
 node qa/e2e.mjs                      # E2E qua API (backend đang chạy)
 node qa/load-test.mjs                # 50 request đồng thời
