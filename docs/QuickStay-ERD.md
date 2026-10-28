@@ -153,6 +153,8 @@ còn_lại = R.quantity − đã_đặt
 
 ## 6. Ghi chú và đề xuất
 
-- Hiện chỉ có chỉ mục tự sinh cho khóa chính, khóa ngoại và `users.email`. Khi dữ liệu lớn, nên thêm chỉ mục `bookings (room_id, check_in, check_out)` cho truy vấn đếm đơn chồng lấn và `hotels (city)` cho tìm kiếm.
-- Lược đồ do Hibernate tạo (`ddl-auto=update`). Khi triển khai thật nên chuyển sang công cụ migration (Flyway hoặc Liquibase).
+- Lược đồ do **Flyway** quản lý: `backend/src/main/resources/db/migration/V1__init_schema.sql`. Hibernate chỉ kiểm tra entity khớp lược đồ (`ddl-auto=validate`). Muốn đổi lược đồ thì thêm file `V2__mo_ta.sql`, không sửa file đã merge.
+- Chỉ mục: `hotels (city)` cho tìm kiếm, `bookings (room_id, check_in, check_out)` cho truy vấn đếm đơn chồng lấn, `bookings (user_id, created_at)` cho lịch sử đặt phòng; cùng khóa chính, khóa ngoại và `uk_users_email`.
+- Ràng buộc CHECK ở CSDL: `price_per_night ≥ 0`, `capacity ≥ 1`, `quantity ≥ 1`, `guests ≥ 1`, `total_price ≥ 0`, `check_out > check_in`. Các cột `role`, `status`, `created_at`, `check_in`, `check_out`, `total_price` là NOT NULL.
+- `role` và `status` lưu dạng VARCHAR(20) (không dùng kiểu ENUM của MySQL) để thêm giá trị mới không cần đổi kiểu cột.
 - `rooms.quantity` có thể bị admin sửa nhỏ hơn số đơn đang có. Hệ thống không chặn trường hợp này, các đơn cũ vẫn giữ nguyên.
