@@ -6,7 +6,7 @@ Phiên bản 1.0 · 26/10/2026 · Nhóm 05. Các ví dụ phản hồi lấy t�
 
 - **Địa chỉ gốc:** `http://localhost:8081/api` khi chạy bằng Docker Compose (Nginx chuyển tiếp `/api` sang backend). Khi chạy riêng backend: `http://localhost:8080/api`.
 - **Định dạng:** JSON, mã hóa UTF-8, `Content-Type: application/json` với request có body.
-- **Xác thực:** gửi `Authorization: Bearer <token>`. Token lấy từ `/auth/register` hoặc `/auth/login`, ký HS384, chứa email (`sub`) và vai trò (`role`), hết hạn sau 1440 phút (đặt bằng `JWT_EXPIRATION_MINUTES`).
+- **Xác thực:** gửi `Authorization: Bearer <token>`. Token lấy từ `/auth/register` hoặc `/auth/login`, ký HS384, chứa email (`sub`) và vai trò (`role`), hết hạn sau 24 giờ (đặt bằng `JWT_EXPIRATION`, dạng `24h`, `90m`).
 - **Ngày:** `yyyy-MM-dd`. **Thời điểm:** ISO-8601 UTC. **Tiền:** số thập phân, đơn vị VND.
 - **Phân quyền:**
 
