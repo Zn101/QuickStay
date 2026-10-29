@@ -27,10 +27,6 @@ export default function Layout() {
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-600 text-white text-sm">Q</span>
               Quick<span className="text-sky-600">Stay</span>
             </Link>
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 border border-emerald-200/80">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Chế độ Mock Data
-            </span>
           </div>
 
           {/* Desktop nav */}

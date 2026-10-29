@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, FieldError } from '../components/ui'
 
 const Icon = ({ name, className = 'h-5 w-5' }) => {
   const paths = {
@@ -22,25 +22,44 @@ export default function Register() {
   const register = useAuth((s) => s.register)
   const navigate = useNavigate()
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' })
+  const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }))
+
+  const set = (key) => (event) => {
+    setForm((current) => ({ ...current, [key]: event.target.value }))
+    setErrors((current) => ({ ...current, [key]: undefined }))
+  }
+
   const submit = async (event) => {
     event.preventDefault()
     setError('')
-    if (form.password.length < 6) return setError('Mật khẩu tối thiểu 6 ký tự')
+    setErrors({})
     setBusy(true)
     try {
       await register(form)
       navigate('/')
     } catch (err) {
-      setError(err?.message || 'Đã có lỗi xảy ra')
+      if (err?.errors) {
+        setErrors(err.errors)
+      } else if (err?.status === 409) {
+        setErrors({ email: err.message || 'Email đã tồn tại' })
+      } else {
+        setError(err?.message || 'Đã có lỗi xảy ra')
+      }
     } finally {
       setBusy(false)
     }
   }
-  const fieldClass = 'w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10'
+
+  const fieldClass = (hasError) =>
+    `w-full rounded-xl border bg-slate-50/70 py-3.5 pl-12 pr-4 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:bg-white focus:ring-4 ${
+      hasError
+        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+        : 'border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/10'
+    }`
+
   return (
       <main className="relative isolate min-h-[calc(100vh-80px)] overflow-hidden bg-[#f5f7fb] px-4 py-8 sm:px-6 lg:py-12">
         <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-100/70 blur-3xl" />
@@ -68,13 +87,49 @@ export default function Register() {
                 <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Tạo tài khoản mới</h1>
                 <p className="mt-3 text-sm leading-6 text-slate-500">Tham gia QuickStay để bắt đầu hành trình của bạn.</p>
               </div>
-              <form onSubmit={submit} className="space-y-4">
+              <form onSubmit={submit} noValidate className="space-y-4">
                 <ErrorBox message={error} />
-                <div><label htmlFor="fullName" className="mb-2 block text-sm font-semibold text-slate-700">Họ và tên <span className="text-rose-500">*</span></label><div className="relative"><Icon name="user" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/><input id="fullName" autoComplete="name" type="text" required placeholder="Nhập họ và tên của bạn" className={fieldClass} value={form.fullName} onChange={set('fullName')}/></div></div>
-                <div><label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">Địa chỉ email <span className="text-rose-500">*</span></label><div className="relative"><Icon name="mail" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/><input id="email" autoComplete="email" type="email" required placeholder="name@example.com" className={fieldClass} value={form.email} onChange={set('email')}/></div></div>
-                <div><label htmlFor="phone" className="mb-2 block text-sm font-semibold text-slate-700">Số điện thoại <span className="font-normal text-slate-400">(không bắt buộc)</span></label><div className="relative"><Icon name="phone" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/><input id="phone" autoComplete="tel" type="tel" placeholder="0912 345 678" className={fieldClass} value={form.phone} onChange={set('phone')}/></div></div>
-                <div><label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">Mật khẩu <span className="text-rose-500">*</span></label><div className="relative"><Icon name="lock" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/><input id="password" autoComplete="new-password" type={showPassword ? 'text' : 'password'} minLength={6} required placeholder="Tối thiểu 6 ký tự" className={`${fieldClass} pr-12`} value={form.password} onChange={set('password')}/><button type="button" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} onClick={() => setShowPassword((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md text-slate-400 transition-colors hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"><Icon name={showPassword ? 'eyeOff' : 'eye'}/></button></div><p className="mt-2 text-xs text-slate-400">Sử dụng ít nhất 6 ký tự để bảo vệ tài khoản.</p></div>
-                <button type="submit" disabled={busy} className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 focus:outline-none focus:ring-4 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">{busy ? <><svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/></svg> Đang xử lý...</> : <>Tạo tài khoản <Icon name="arrow" className="h-4 w-4 transition-transform group-hover:translate-x-1"/></>}</button>
+                <div>
+                  <label htmlFor="fullName" className="mb-2 block text-sm font-semibold text-slate-700">Họ và tên <span className="text-rose-500">*</span></label>
+                  <div className="relative">
+                    <Icon name="user" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/>
+                    <input id="fullName" autoComplete="name" type="text" placeholder="Nhập họ và tên của bạn" aria-invalid={!!errors.fullName} aria-describedby="fullName-error" className={fieldClass(errors.fullName)} value={form.fullName} onChange={set('fullName')}/>
+                  </div>
+                  <FieldError id="fullName-error" message={errors.fullName} />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">Địa chỉ email <span className="text-rose-500">*</span></label>
+                  <div className="relative">
+                    <Icon name="mail" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/>
+                    <input id="email" autoComplete="email" type="email" placeholder="name@example.com" aria-invalid={!!errors.email} aria-describedby="email-error" className={fieldClass(errors.email)} value={form.email} onChange={set('email')}/>
+                  </div>
+                  <FieldError id="email-error" message={errors.email} />
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="mb-2 block text-sm font-semibold text-slate-700">Số điện thoại <span className="font-normal text-slate-400">(không bắt buộc)</span></label>
+                  <div className="relative">
+                    <Icon name="phone" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/>
+                    <input id="phone" autoComplete="tel" type="tel" placeholder="0912 345 678" aria-invalid={!!errors.phone} aria-describedby="phone-error" className={fieldClass(errors.phone)} value={form.phone} onChange={set('phone')}/>
+                  </div>
+                  <FieldError id="phone-error" message={errors.phone} />
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">Mật khẩu <span className="text-rose-500">*</span></label>
+                  <div className="relative">
+                    <Icon name="lock" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/>
+                    <input id="password" autoComplete="new-password" type={showPassword ? 'text' : 'password'} placeholder="Tối thiểu 6 ký tự" aria-invalid={!!errors.password} aria-describedby="password-error" className={`${fieldClass(errors.password)} pr-12`} value={form.password} onChange={set('password')}/>
+                    <button type="button" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} onClick={() => setShowPassword((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md text-slate-400 transition-colors hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"><Icon name={showPassword ? 'eyeOff' : 'eye'}/></button>
+                  </div>
+                  <FieldError id="password-error" message={errors.password} />
+                  {!errors.password && <p className="mt-2 text-xs text-slate-400">Sử dụng ít nhất 6 ký tự để bảo vệ tài khoản.</p>}
+                </div>
+
+                <button type="submit" disabled={busy} className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 focus:outline-none focus:ring-4 focus:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
+                  {busy ? <><svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/></svg> Đang xử lý...</> : <>Tạo tài khoản <Icon name="arrow" className="h-4 w-4 transition-transform group-hover:translate-x-1"/></>}
+                </button>
               </form>
               <div className="mt-7 border-t border-slate-100 pt-6 text-center text-sm text-slate-500">Đã có tài khoản? <Link to="/login" className="font-bold text-blue-600 hover:text-blue-700 hover:underline">Đăng nhập ngay</Link></div>
               <p className="mt-7 text-center text-xs leading-5 text-slate-400">Chào mừng bạn đến với cộng đồng QuickStay.</p>

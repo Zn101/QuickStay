@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-/** Moi loi tra ve dang {"message": "..."} de Frontend hien thi thong nhat. */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
@@ -35,11 +34,17 @@ public class ApiExceptionHandler {
         return body(HttpStatus.valueOf(e.getStatusCode().value()), e.getReason() == null ? "Loi" : e.getReason());
     }
 
+    /** Tra ve {"message": "...", "errors": {"email": "...", ...}} de Frontend hien loi duoi tung o. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<Map<String, String>> invalid(MethodArgumentNotValidException e) {
-        String msg = e.getBindingResult().getFieldErrors().stream()
-                .map(f -> f.getField() + ": " + f.getDefaultMessage()).collect(Collectors.joining("; "));
-        return body(HttpStatus.BAD_REQUEST, msg.isEmpty() ? "Du lieu khong hop le" : msg);
+    ResponseEntity<Map<String, Object>> invalid(MethodArgumentNotValidException e) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(f -> {
+            if ("NotBlank".equals(f.getCode()) || !errors.containsKey(f.getField())) {
+                errors.put(f.getField(), f.getDefaultMessage());
+            }
+        });
+        String msg = errors.isEmpty() ? "Dữ liệu không hợp lệ" : errors.values().iterator().next();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", msg, "errors", errors));
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
