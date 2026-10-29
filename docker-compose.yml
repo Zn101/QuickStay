@@ -1,43 +1,79 @@
+# =============================================================================
+# QuickStay — Docker Compose
+# Khởi chạy: cp .env.example .env  →  docker compose up --build
+# =============================================================================
+
 services:
+
+  # ─── T027: MySQL Database ──────────────────────────────────────────────────
   mysql:
     image: mysql:8.4
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # Đảm bảo charset UTF-8 đầy đủ (emoji, tiếng Việt)
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     environment:
-      MYSQL_DATABASE: quickstay
-      MYSQL_USER: quickstay
-      MYSQL_PASSWORD: ${DB_PASSWORD:-quickstay_pw}
+      MYSQL_DATABASE:      quickstay
+      MYSQL_USER:          quickstay
+      # Mật khẩu đọc từ .env, KHÔNG ghi giá trị thật vào đây
+      MYSQL_PASSWORD:      ${DB_PASSWORD:-quickstay_pw}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_pw}
     volumes:
+      # Dữ liệu được lưu trong named volume, không mất khi restart
       - mysql-data:/var/lib/mysql
+    # Chỉ expose ra host khi cần debug (bình thường comment lại)
+    # ports:
+    #   - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root_pw}"]
+      # Backend chờ healthcheck này trước khi khởi động
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-uroot", "-p${DB_ROOT_PASSWORD:-root_pw}"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
+    restart: unless-stopped
 
+  # ─── T028 / T014: Spring Boot Backend ─────────────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     depends_on:
       mysql:
+        # Backend chỉ start sau khi MySQL đã sẵn sàng nhận kết nối
         condition: service_healthy
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
-      DB_USER: quickstay
-      DB_PASSWORD: ${DB_PASSWORD:-quickstay_pw}
-      JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # JDBC URL trỏ đến service mysql trong cùng Docker network
+      DB_URL:              jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      DB_USER:             quickstay
+      DB_PASSWORD:         ${DB_PASSWORD:-quickstay_pw}
+      # JWT_SECRET phải được đổi trong .env trước khi triển khai thật
+      JWT_SECRET:          ${JWT_SECRET:-change-me-change-me-change-me-change-me}
+      CORS_ORIGINS:        ${CORS_ORIGINS:-http://localhost:8081}
+      ADMIN_EMAIL:         ${ADMIN_EMAIL:-admin@quickstay.local}
+      ADMIN_PASSWORD:      ${ADMIN_PASSWORD:-Admin@123}
+      # Để trống → AiService dùng nội dung dự phòng (không cần key để chạy)
+      ANTHROPIC_API_KEY:   ${ANTHROPIC_API_KEY:-}
+      AI_MODEL:            ${AI_MODEL:-claude-3-haiku-20240307}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    restart: unless-stopped
 
+  # ─── T028 / T015: React Frontend + Nginx ──────────────────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     depends_on:
       - backend
     ports:
+      # Port 8081 → Nginx:80 → phục vụ React và proxy /api → backend
       - "${FRONTEND_PORT:-8081}:80"
+    restart: unless-stopped
 
+# ─── Volumes ───────────────────────────────────────────────────────────────
 volumes:
+  # Named volume giữ dữ liệu MySQL giữa các lần docker compose down / up
   mysql-data:
+    name: quickstay_mysql-data-recovery
