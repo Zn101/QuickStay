@@ -133,6 +133,26 @@ class HotelApiTest extends ApiTestBase {
     }
 
     @Test
+    void TC_HOTEL_06_hotel_detail_is_public_with_min_price() throws Exception {
+        long id = byName(list(get("/api/hotels")), SUNRISE).get("id").asLong();
+        mvc.perform(get("/api/hotels/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.name").value(SUNRISE))
+                .andExpect(jsonPath("$.amenities").isNotEmpty())
+                .andExpect(jsonPath("$.minPrice").value(650000));
+    }
+
+    @Test
+    void TC_HOTEL_07_unknown_hotel_is_404_and_bad_id_is_400() throws Exception {
+        mvc.perform(get("/api/hotels/{id}", 999999))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Khong tim thay khach san"));
+        mvc.perform(get("/api/hotels/abc"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
     void TC_HOTEL_05e_blank_params_are_ignored() throws Exception {
         assertTrue(list(get("/api/hotels").param("q", "  ").param("city", "").param("roomType", " ")).size() >= 4);
     }

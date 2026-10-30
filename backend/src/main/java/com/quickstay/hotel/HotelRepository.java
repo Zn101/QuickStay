@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface HotelRepository extends JpaRepository<Hotel, Long> {
 
@@ -36,4 +37,15 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
                               @Param("minPrice") BigDecimal minPrice,
                               @Param("maxPrice") BigDecimal maxPrice,
                               @Param("roomsFiltered") boolean roomsFiltered);
+
+    /** Mot khach san kem gia thap nhat tren moi loai phong; rong neu khong ton tai. */
+    @Query("""
+            select new com.quickstay.hotel.HotelSummary(
+                h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities, min(r.pricePerNight))
+            from Hotel h
+            left join Room r on r.hotel = h
+            where h.id = :id
+            group by h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities
+            """)
+    Optional<HotelSummary> findSummary(@Param("id") Long id);
 }
