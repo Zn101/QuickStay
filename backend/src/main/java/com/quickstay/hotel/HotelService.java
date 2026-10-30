@@ -26,6 +26,12 @@ public class HotelService {
                 s.minPrice(), s.maxPrice(), s.filtersRooms());
     }
 
+    /** GET /api/hotels/{id} (T062). */
+    @Transactional(readOnly = true)
+    public HotelSummary get(Long id) {
+        return hotels.findSummary(id).orElseThrow(() -> ApiException.notFound("Khong tim thay khach san"));
+    }
+
     private static String lower(String s) {
         return s == null ? null : s.toLowerCase(Locale.ROOT);
     }
