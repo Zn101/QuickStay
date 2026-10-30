@@ -38,7 +38,7 @@ class AiApiTest extends ApiTestBase {
     void TC_AI_04_chat_is_public_and_answers_from_database() throws Exception {
         mvc.perform(withBody(post("/api/ai/chat"), null, Map.of("message", "Khach san o Da Nang gia bao nhieu?")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reply").value(containsString("Sunrise Da Nang Hotel")));
+                .andExpect(jsonPath("$.reply").value(containsString("Sunrise Đà Nẵng Hotel")));
     }
 
     @Test

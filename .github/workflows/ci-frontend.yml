@@ -59,7 +59,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-dist-${{ github.ref_name }}-${{ github.run_number }}
+          name: frontend-dist-${{ github.event.pull_request.number || github.ref_name }}-${{ github.run_number }}
           path: frontend/dist/
           retention-days: 3
 
