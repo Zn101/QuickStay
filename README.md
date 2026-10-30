@@ -1,46 +1,225 @@
-# QuickStay – Hệ thống đặt phòng khách sạn (MVP)
+# QuickStay
 
-Web đặt phòng khách sạn: tìm kiếm, xem phòng trống theo ngày, đặt phòng (thanh toán tại khách sạn), lịch sử, quản trị, mô tả bằng AI và chatbot.
-Chi tiết yêu cầu: `docs/QuickStay-Project-Proposal-3days.docx`. Báo cáo kiểm thử: `docs/QuickStay-Test-Report.md`.
+Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng bằng **React + Vite** (Frontend) và **Spring Boot** (Backend).
 
-## Chạy bằng Docker (toàn hệ thống)
+---
+
+## 🐳 Chạy bằng Docker Compose (Khuyến nghị)
+
+Đây là cách nhanh nhất để chạy toàn bộ hệ thống (MySQL + Backend + Frontend) chỉ với vài lệnh.
+
+### Yêu cầu
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 4.x (bao gồm Docker Compose v2)
+
+### Các bước khởi động
 
 ```bash
-cp .env.example .env        # sửa JWT_SECRET, mật khẩu; điền ANTHROPIC_API_KEY nếu muốn dùng AI thật
+# 1. Clone repository
+git clone https://github.com/Zn101/QuickStay.git
+cd QuickStay
+
+# 2. Tạo file .env từ template
+cp .env.example .env
+
+# 3. (Bắt buộc cho production) Đổi JWT_SECRET thành chuỗi ngẫu nhiên ≥ 32 ký tự
+# Ví dụ: openssl rand -hex 32
+
+# 4. Build và khởi động toàn bộ hệ thống
 docker compose up --build
 ```
 
-- Website: http://localhost:8081 (Nginx phục vụ React, chuyển tiếp `/api` sang backend)
-- Admin mặc định: `admin@quickstay.local` / `Admin@123` (đổi bằng `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
-- Lần đầu chạy sẽ tạo 4 khách sạn mẫu.
+Sau khi khởi động thành công:
 
-## Chạy khi phát triển
+| Dịch vụ | URL |
+|---------|-----|
+| **Frontend** (React + Nginx) | http://localhost:8081 |
+| **Backend** (Spring Boot API) | http://localhost:8080 |
+| **Health Check** | http://localhost:8080/actuator/health |
+| **API Hotels** | http://localhost:8081/api/hotels |
+
+### Tài khoản mặc định
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@quickstay.local | Admin@123 |
+
+### Biến môi trường quan trọng (`.env`)
+
+| Biến | Mô tả | Bắt buộc đổi? |
+|------|-------|---------------|
+| `JWT_SECRET` | Khóa ký JWT (≥ 32 ký tự) | ✅ Production |
+| `DB_PASSWORD` | Mật khẩu MySQL user | Khuyến nghị |
+| `DB_ROOT_PASSWORD` | Mật khẩu MySQL root | Khuyến nghị |
+| `ADMIN_EMAIL` | Email tài khoản admin | Tùy chọn |
+| `ADMIN_PASSWORD` | Mật khẩu tài khoản admin | Tùy chọn |
+| `ANTHROPIC_API_KEY` | API key Anthropic (AI) | Không bắt buộc |
+
+### Lệnh quản lý container thường dùng
 
 ```bash
-cd backend  && ./gradlew bootRun     # http://localhost:8080, dùng H2 trong bộ nhớ nếu không đặt DB_URL
-cd frontend && npm install && npm run dev   # http://localhost:5173, proxy /api sang :8080
+# Xem trạng thái container
+docker compose ps
+
+# Xem log real-time
+docker compose logs -f
+
+# Xem log từng service
+docker compose logs backend --tail=50
+docker compose logs frontend --tail=20
+docker compose logs mysql --tail=20
+
+# Dừng hệ thống (giữ nguyên dữ liệu)
+docker compose down
+
+# Rebuild sau khi thay đổi code
+docker compose up --build
+
+# Chỉ rebuild một service
+docker compose up --build backend
 ```
 
-## Kiểm thử
+> **Lưu ý:** Dữ liệu MySQL được lưu trong Docker volume `quickstay_mysql-data-recovery`.
+> Lệnh `docker compose down` **không xóa** dữ liệu. Chỉ `docker compose down -v` mới xóa (dùng cẩn thận!).
+
+---
+
+## Cấu trúc dự án
+
+```
+QuickStay/
+├── frontend/          # React + Vite + Tailwind CSS
+├── backend/           # Spring Boot + Java 17
+├── docs/              # Tài liệu dự án
+├── qa/                # Kiểm thử chất lượng
+├── .github/workflows/ # GitHub Actions CI/CD
+└── docker-compose.yml # Docker compose cho môi trường dev
+```
+
+---
+
+## Frontend
+
+### Yêu cầu
+
+- **Node.js** ≥ 18 (khuyến nghị 20 LTS)
+- **npm** ≥ 9 (được bao gồm với Node 18+)
+
+### Cài đặt dependencies
 
 ```bash
-cd backend  && ./gradlew test        # 46 test backend
-cd frontend && npm test              # 8 test frontend
-node qa/e2e.mjs                      # E2E qua API (backend đang chạy)
-node qa/load-test.mjs                # 50 request đồng thời
+cd frontend
+npm ci
 ```
 
-## Cấu trúc
+### Chạy môi trường Development
 
-| Thư mục | Nội dung |
-|---|---|
-| `backend/` | Spring Boot 3 (Web, JPA, Security, Validation), JWT, BCrypt, MySQL |
-| `frontend/` | React + Vite, Tailwind, Zustand, React Router |
-| `qa/` | Script E2E, kiểm thử tải, kết quả Lighthouse |
-| `.github/workflows/ci.yml` | Build + test, khi push `main` thì đẩy image lên GHCR |
+```bash
+cd frontend
+npm run dev
+# Ứng dụng chạy tại: http://localhost:5173
+```
 
-## Ghi chú thiết kế
+### Build Production
 
-- **Không đặt trùng phòng:** khi đặt, hệ thống khóa bản ghi phòng (`PESSIMISTIC_WRITE`), đếm số đặt phòng chưa hủy chồng lấn khoảng ngày rồi mới ghi, tất cả trong một transaction (test `TC_BOOK_12`). Ngày trả phòng không tính vào đêm ở, nên hai kỳ nghỉ liền nhau không xung đột.
-- **AI:** gọi Anthropic Messages API bằng `RestClient` (biến `ANTHROPIC_API_KEY`, `AI_MODEL`). Khi không có khóa hoặc dịch vụ lỗi, hệ thống trả nội dung dự phòng dựng từ dữ liệu trong DB nên tính năng vẫn dùng được.
-- **Lỗi API** luôn có dạng `{"message": "..."}`. Thông báo lỗi từ backend hiện không có dấu tiếng Việt.
+```bash
+cd frontend
+npm run build
+# Output tại: frontend/dist/
+```
+
+### Chạy Test
+
+```bash
+cd frontend
+npm test
+```
+
+Test framework: **Vitest** + **@testing-library/react**, chạy trong môi trường **jsdom**.
+
+Các test hiện có:
+- `src/lib/format.test.js` — Unit test cho các hàm format tiền tệ và ngày tháng
+- `src/App.test.jsx` — Integration test cho routing và UI components
+
+### Preview Build
+
+```bash
+cd frontend
+npm run build
+npm run preview
+# Preview tại: http://localhost:4173
+```
+
+---
+
+## Backend
+
+### Yêu cầu
+
+- **Java** 17 (Temurin/OpenJDK)
+- **MySQL** 8+ (hoặc H2 cho test)
+
+### Chạy Backend (Development)
+
+```bash
+cd backend
+./gradlew bootRun
+# API chạy tại: http://localhost:8080
+```
+
+### Chạy Test Backend
+
+```bash
+cd backend
+./gradlew test
+```
+
+---
+
+## GitHub Actions CI/CD
+
+### CI Frontend (`ci-frontend.yml`)
+
+Tự động chạy khi:
+- Push lên nhánh: `main`, `develop`, `dev`, `dev-minh`
+- Tạo hoặc cập nhật Pull Request vào: `main`, `develop`, `dev`
+- Chỉ khi có thay đổi trong `frontend/` hoặc file workflow
+
+Các bước thực hiện:
+1. Checkout source code
+2. Cài đặt Node.js 20 LTS (với npm cache)
+3. Cài dependencies (`npm ci` — dùng lock file để đảm bảo reproducible)
+4. Chạy tests (`npm test`)
+5. Build production bundle (`npm run build`)
+6. Upload `dist/` artifact (lưu 3 ngày)
+
+### CI Backend (`ci-backend.yml`)
+
+Tự động chạy khi push/PR vào `main`, `develop` với thay đổi trong `backend/`.
+
+### CD Docker (`cd-docker.yml`)
+
+Build và push Docker images lên GitHub Container Registry khi merge vào `main`.
+
+---
+
+## Môi trường
+
+| Biến | Mô tả |
+|------|-------|
+| `VITE_API_URL` | URL của Backend API (mặc định: `/api`) |
+
+Frontend hỗ trợ **Mock Data mode** — tự động bật khi backend không khả dụng, phù hợp cho phát triển Frontend độc lập.
+
+---
+
+## Công nghệ sử dụng
+
+| Phần | Công nghệ |
+|------|-----------|
+| Frontend | React 18, Vite 5, Tailwind CSS 3, Zustand |
+| Testing | Vitest, @testing-library/react, jsdom |
+| Backend | Spring Boot 3, Java 17, Gradle |
+| Database | MySQL 8 |
+| CI/CD | GitHub Actions |
+| Container | Docker, GitHub Container Registry |
