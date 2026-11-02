@@ -44,6 +44,10 @@ Sau khi khởi động thành công:
 |------|-------|----------|
 | Admin | admin@quickstay.local | Admin@123 |
 
+> **Lưu ý:** Đây là tài khoản mặc định dành cho môi trường phát triển.
+> Không sử dụng thông tin đăng nhập này trong môi trường production.
+> Hãy thay đổi email và mật khẩu bằng biến môi trường tương ứng.
+
 ### Biến môi trường quan trọng (`.env`)
 
 | Biến | Mô tả | Bắt buộc đổi? |
@@ -163,7 +167,7 @@ npm run preview
 
 ```bash
 cd backend
-./gradlew bootRun
+.\gradlew.bat bootRun
 # API chạy tại: http://localhost:8080
 ```
 
@@ -171,7 +175,7 @@ cd backend
 
 ```bash
 cd backend
-./gradlew test
+.\gradlew.bat test
 ```
 
 ---
