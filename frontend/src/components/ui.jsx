@@ -17,6 +17,16 @@ export function ErrorBox({ message }) {
   )
 }
 
+/** Chữ đỏ hiển thị dưới từng ô nhập. */
+export function FieldError({ id, message }) {
+  if (!message) return null
+  return (
+    <p id={id} role="alert" className="mt-1.5 text-sm font-medium text-red-600">
+      {message}
+    </p>
+  )
+}
+
 export function Spinner({ text = 'Đang tải...' }) {
   return <p className="py-10 text-center text-sm text-slate-500">{text}</p>
 }

@@ -4,17 +4,25 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/** Request/response cua /api/auth. Email duoc trim + chu thuong ngay khi doc JSON, truoc khi validate. */
 public final class AuthDtos {
 
     private AuthDtos() {}
 
     public record RegisterRequest(
-            @NotBlank @Email String email,
-            // BCrypt chi xu ly 72 byte dau; dai hon se bi tu choi thay vi loi 500
-            @NotBlank @Size(min = 6, max = 72, message = "mat khau tu 6 den 72 ky tu") String password,
-            @NotBlank @Size(max = 255) String fullName,
-            @Size(max = 30) String phone) {
+            @NotBlank(message = "Không được để trống email")
+            @Email(message = "Email không đúng định dạng")
+            String email,
+
+            @NotBlank(message = "Không được để trống mật khẩu")
+            @Size(min = 6, max = 72, message = "Mật khẩu phải từ 6 đến 72 kí tự")
+            String password,
+
+            @NotBlank(message = "Không được để trống họ và tên")
+            @Size(max = 255, message = "Họ và tên tối đa 255 kí tự")
+            String fullName,
+
+            @Size(max = 30, message = "Số điện thoại tối đa 30 kí tự")
+            String phone) {
 
         public RegisterRequest {
             email = normalizeEmail(email);
@@ -23,7 +31,12 @@ public final class AuthDtos {
         }
     }
 
-    public record LoginRequest(@NotBlank String email, @NotBlank String password) {
+    public record LoginRequest(
+            @NotBlank(message = "Không được để trống email")
+            String email,
+
+            @NotBlank(message = "Không được để trống mật khẩu")
+            String password) {
 
         public LoginRequest {
             email = normalizeEmail(email);
