@@ -12,11 +12,4 @@ export default defineConfig({
       },
     },
   },
-  test: {
-    // jsdom cần thiết để render React components trong môi trường Node.js
-    environment: 'jsdom',
-    // Load @testing-library/jest-dom matchers (toBeInTheDocument, v.v.)
-    setupFiles: ['./src/test-setup.js'],
-    globals: true,
-  },
 })
