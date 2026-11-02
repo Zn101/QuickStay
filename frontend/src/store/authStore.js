@@ -1,22 +1,11 @@
 import { create } from 'zustand'
 import { api, AUTH_KEY } from '../lib/api'
 
-const EMPTY = { token: null, user: null }
-
-;['quickstay_mock_mode', 'quickstay_mock_hotels', 'quickstay_mock_rooms', 'quickstay_mock_bookings', 'quickstay_mock_users'].forEach(
-  (k) => localStorage.removeItem(k),
-)
-
 const load = () => {
   try {
-    const saved = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null')
-    if (!saved?.token || saved.token.startsWith('mock-jwt-token')) {
-      localStorage.removeItem(AUTH_KEY)
-      return EMPTY
-    }
-    return saved
+    return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null') || { token: null, user: null }
   } catch {
-    return EMPTY
+    return { token: null, user: null }
   }
 }
 
