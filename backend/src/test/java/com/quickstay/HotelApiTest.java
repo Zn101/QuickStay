@@ -22,7 +22,7 @@ class HotelApiTest extends ApiTestBase {
     void TC_HOTEL_02_search_by_city() throws Exception {
         mvc.perform(get("/api/hotels").param("city", "Da Nang"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].city", everyItem(containsString("Da Nang"))))
+                .andExpect(jsonPath("$[*].city", everyItem(containsString("Đà Nẵng"))))
                 .andExpect(jsonPath("$.length()", greaterThanOrEqualTo(1)));
     }
 
@@ -43,7 +43,7 @@ class HotelApiTest extends ApiTestBase {
     void TC_HOTEL_05_filter_by_room_type_and_price_range() throws Exception {
         mvc.perform(get("/api/hotels").param("roomType", "Family Suite").param("maxPrice", "1200000"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].name", hasItem("Hoi An Riverside Homestay")))
+                .andExpect(jsonPath("$[*].name", hasItem("Hội An Riverside Homestay")))
                 .andExpect(jsonPath("$[*].name", not(hasItem("Sunrise Da Nang Hotel"))));
     }
 
@@ -51,7 +51,7 @@ class HotelApiTest extends ApiTestBase {
     void TC_HOTEL_06_detail_and_rooms() throws Exception {
         long id = read(mvc.perform(get("/api/hotels").param("q", "Saigon")).andReturn()).get(0).get("id").asLong();
         mvc.perform(get("/api/hotels/" + id)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.city").value("Ho Chi Minh"));
+                .andExpect(jsonPath("$.city").value("Hồ Chí Minh"));
         mvc.perform(get("/api/hotels/" + id + "/rooms")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].available").doesNotExist());

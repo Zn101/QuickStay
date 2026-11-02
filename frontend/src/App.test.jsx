@@ -33,24 +33,27 @@ describe('App', () => {
     expect(screen.getByText(/650\.000/)).toBeInTheDocument()
   })
 
-  it('redirects anonymous users from history to login', async () => {
-    renderAt('/history')
-    expect(await screen.findByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument()
+  it('shows my-bookings page for anonymous user (mock mode shows data)', async () => {
+    renderAt('/my-bookings')
+    expect(await screen.findByRole('heading', { name: 'Đặt phòng của tôi' })).toBeInTheDocument()
   })
 
-  it('redirects a customer away from the admin page', async () => {
-    useAuth.setState({ token: 't', user: { id: 1, email: 'a@b.c', role: 'CUSTOMER', fullName: 'A' } })
-    renderAt('/admin')
-    expect(await screen.findByText('Danh sách khách sạn')).toBeInTheDocument()
+  it('shows admin panel hotels page for admin user', async () => {
+    useAuth.setState({ token: 't', user: { id: 1, email: 'a@b.c', role: 'ADMIN', fullName: 'A' } })
+    renderAt('/admin/hotels')
+    expect(await screen.findByText('Quản lý khách sạn')).toBeInTheDocument()
   })
 
   it('shows the backend error message when login fails', async () => {
+    // Tắt Mock Data để fetch() thật được gọi và vi.fn() mock có hiệu lực
+    localStorage.setItem('quickstay_mock_mode', 'false')
     vi.stubGlobal('fetch', vi.fn(() => json({ message: 'Sai email hoac mat khau' }, 401)))
     renderAt('/login')
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Email'), 'x@y.z')
+    await user.type(screen.getByLabelText('Địa chỉ email'), 'x@y.z')
     await user.type(screen.getByLabelText('Mật khẩu'), 'wrong')
     await user.click(screen.getByRole('button', { name: 'Đăng nhập' }))
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Sai email hoac mat khau'))
   })
 })
+

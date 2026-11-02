@@ -4,11 +4,13 @@ import com.quickstay.booking.BookingRepository;
 import com.quickstay.hotel.HotelDtos.HotelRequest;
 import com.quickstay.hotel.HotelDtos.HotelView;
 import com.quickstay.hotel.HotelDtos.RoomRequest;
+import com.quickstay.common.TextNormalizer;
 import com.quickstay.hotel.HotelDtos.RoomView;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,16 +39,29 @@ public class HotelService {
     public List<HotelView> search(String city, String q, String roomType, BigDecimal minPrice, BigDecimal maxPrice) {
         boolean roomFilter = blankToNull(roomType) != null || minPrice != null || maxPrice != null;
         String type = blankToNull(roomType);
-        return hotels.search(blankToNull(city), blankToNull(q)).stream()
+
+        String normalizedCity = TextNormalizer.normalize(city);
+        String normalizedQuery = TextNormalizer.normalize(q);
+
+        return hotels.findAll().stream()
+                .filter(h -> normalizedCity.isEmpty()
+                        || TextNormalizer.normalize(h.getCity()).contains(normalizedCity))
+                .filter(h -> normalizedQuery.isEmpty()
+                        || TextNormalizer.normalize(h.getName()).contains(normalizedQuery))
                 .map(h -> {
                     List<Room> matching = rooms.findByHotelId(h.getId()).stream()
                             .filter(r -> type == null || r.getRoomType().equalsIgnoreCase(type))
                             .filter(r -> minPrice == null || r.getPricePerNight().compareTo(minPrice) >= 0)
                             .filter(r -> maxPrice == null || r.getPricePerNight().compareTo(maxPrice) <= 0)
                             .toList();
+
                     if (roomFilter && matching.isEmpty()) return null;
-                    BigDecimal min = matching.stream().map(Room::getPricePerNight).min(Comparator.naturalOrder())
+
+                    BigDecimal min = matching.stream()
+                            .map(Room::getPricePerNight)
+                            .min(Comparator.naturalOrder())
                             .orElse(null);
+
                     return HotelView.of(h, min);
                 })
                 .filter(v -> v != null)
