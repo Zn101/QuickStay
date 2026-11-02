@@ -1,16 +1,4 @@
-import { handleMockApi } from './mockData'
-
 const KEY = 'quickstay-auth'
-
-// Bật chế độ Mock Data mặc định cho Frontend (có thể đổi qua localStorage nếu cần)
-export const isMockEnabled = () => {
-  const stored = localStorage.getItem('quickstay_mock_mode')
-  return stored !== 'false' // Mặc định là true
-}
-
-export const setMockMode = (enabled) => {
-  localStorage.setItem('quickstay_mock_mode', enabled ? 'true' : 'false')
-}
 
 export const getToken = () => {
   try {
@@ -20,21 +8,8 @@ export const getToken = () => {
   }
 }
 
-/** Gọi API; tự động dùng Mock Data nếu bật chế độ Mock hoặc khi backend không phản hồi. */
+/** Gọi backend qua proxy /api. Lỗi ném ra luôn mang `message` lấy từ backend ({"message": "..."}). */
 export async function api(path, { method = 'GET', body, params } = {}) {
-  // 1. Nếu đang ở chế độ Mock Data
-  if (isMockEnabled()) {
-    try {
-      const mockResult = await handleMockApi(path, { method, body, params })
-      if (mockResult !== undefined) {
-        return mockResult
-      }
-    } catch (mockErr) {
-      throw mockErr
-    }
-  }
-
-  // 2. Nếu tắt Mock Data, gọi backend thật
   const url = new URL('/api' + path, window.location.origin)
   Object.entries(params || {}).forEach(([k, v]) => {
     if (v !== '' && v != null) url.searchParams.set(k, v)
@@ -48,24 +23,28 @@ export async function api(path, { method = 'GET', body, params } = {}) {
   try {
     res = await fetch(url, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined })
   } catch {
-    // Nếu kết nối backend thất bại và chưa dùng mock, tự động cứu bằng mock data
-    console.warn('[QuickStay] Không kết nối được backend, chuyển sang Mock Data...')
-    return handleMockApi(path, { method, body, params })
+    const err = new Error('Không kết nối được máy chủ. Vui lòng kiểm tra backend và thử lại.')
+    err.status = 0
+    throw err
   }
 
   if (res.status === 204) return null
   const data = await res.json().catch(() => null)
   if (!res.ok) {
-    // Nếu backend trả về 500 hoặc 502/504 do proxy từ chối kết nối, cứu bằng mock data
-    if (res.status >= 500) {
-      console.warn('[QuickStay] Backend lỗi hoặc proxy ngắt kết nối, chuyển sang Mock Data...')
-      return handleMockApi(path, { method, body, params })
-    }
-    const err = new Error(data?.message || (res.status === 401 ? 'Vui lòng đăng nhập' : 'Có lỗi xảy ra'))
+    const err = new Error(data?.message || defaultMessage(res.status))
     err.status = res.status
+    err.errors = data?.errors || null
     throw err
   }
   return data
+}
+
+function defaultMessage(status) {
+  if (status === 401) return 'Vui lòng đăng nhập'
+  if (status === 403) return 'Bạn không có quyền thực hiện thao tác này'
+  if (status === 404) return 'Không tìm thấy dữ liệu'
+  if (status >= 500) return 'Lỗi máy chủ, vui lòng thử lại sau'
+  return 'Có lỗi xảy ra'
 }
 
 export const AUTH_KEY = KEY

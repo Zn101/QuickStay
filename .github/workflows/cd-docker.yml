@@ -1,0 +1,79 @@
+name: CD — Build & Push Docker Images
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Trigger: chỉ khi merge vào main (không chạy trên PR)
+# ──────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  # Tên image theo format: ghcr.io/<owner>/<repo>-backend (tự động viết thường)
+  BACKEND_IMAGE:  ghcr.io/${{ github.repository_owner }}/quickstay-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/quickstay-frontend
+
+jobs:
+  push-images:
+    name: Build & Push to GHCR
+    runs-on: ubuntu-latest
+    # Cần quyền ghi vào GitHub Container Registry và đọc nội dung repo
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # ── 2. Đăng nhập vào GitHub Container Registry ────────────────────────────
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # GITHUB_TOKEN được GitHub tự cấp, không cần tạo secret thủ công
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 3. Thiết lập Docker Buildx (hỗ trợ multi-platform và layer cache) ────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 4. Build và push backend image ───────────────────────────────────────
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          # Cache layer giữa các lần build (tiết kiệm thời gian)
+          cache-from: type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache
+          cache-to:   type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache,mode=max
+
+      # ── 5. Build và push frontend image ──────────────────────────────────────
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
+          cache-to:   type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max
+
+      # ── 6. Tóm tắt ───────────────────────────────────────────────────────────
+      - name: Summarize pushed images
+        run: |
+          echo "## Docker Images Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend  | \`${{ env.BACKEND_IMAGE }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.FRONTEND_IMAGE }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY

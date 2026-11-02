@@ -1,26 +1,46 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, FieldError } from '../components/ui'
+
+const inputClass = (hasError) =>
+  `w-full rounded-xl border bg-white px-4 py-3.5 text-sm outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+    hasError
+      ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+      : 'border-slate-200 hover:border-slate-300 focus:border-sky-500 focus:ring-sky-100'
+  }`
 
 export default function Login() {
   const login = useAuth((s) => s.login)
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  const set = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }))
+    setErrors((er) => ({ ...er, [key]: undefined }))
+  }
 
   const submit = async (e) => {
     e.preventDefault()
     if (busy) return
     setBusy(true)
     setError('')
+    setErrors({})
     try {
       const user = await login(form.email, form.password)
       navigate(user.role === 'ADMIN' ? '/admin' : '/')
     } catch (err) {
-      setError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.')
+      if (err?.errors) {
+        setErrors(err.errors)
+      } else if (err?.status === 401) {
+        setErrors({ password: err.message || 'Sai email hoặc mật khẩu' })
+      } else {
+        setError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.')
+      }
     } finally {
       setBusy(false)
     }
@@ -60,44 +80,25 @@ export default function Login() {
               <p className="mt-3 text-sm leading-6 text-slate-500">Nhập thông tin của bạn để tiếp tục cùng QuickStay.</p>
             </div>
 
-            <form onSubmit={submit} className="space-y-5">
+            <form onSubmit={submit} noValidate className="space-y-5">
               <ErrorBox message={error} />
               <div>
                 <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">Địa chỉ email</label>
-                <input id="email" name="email" type="email" autoComplete="email" required placeholder="name@example.com" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-100" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <input id="email" name="email" type="email" autoComplete="email" placeholder="name@example.com" aria-invalid={!!errors.email} aria-describedby="email-error" className={inputClass(errors.email)} value={form.email} onChange={set('email')} />
+                <FieldError id="email-error" message={errors.email} />
               </div>
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">Mật khẩu</label>
                 <div className="relative">
-                  <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required placeholder="Nhập mật khẩu" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 pr-16 text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-100" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Nhập mật khẩu" aria-invalid={!!errors.password} aria-describedby="password-error" className={`${inputClass(errors.password)} pr-16`} value={form.password} onChange={set('password')} />
                   <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} className="absolute inset-y-0 right-3 my-auto h-9 rounded-lg px-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">{showPassword ? 'Ẩn' : 'Hiện'}</button>
                 </div>
+                <FieldError id="password-error" message={errors.password} />
               </div>
               <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-700/20 transition hover:-translate-y-0.5 hover:bg-sky-800 focus-visible:outline focus-visible:outline-4 focus-visible:outline-sky-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
                 {busy ? 'Đang đăng nhập...' : 'Đăng nhập'}
                 {!busy && <span aria-hidden="true">→</span>}
               </button>
-
-              {/* Tài khoản mẫu test nhanh */}
-              <div className="rounded-xl border border-dashed border-sky-200 bg-sky-50/60 p-3.5 text-xs">
-                <p className="font-bold text-sky-900 mb-2">⚡ Tài khoản dùng thử nhanh (Mock Data):</p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setForm({ email: 'admin@quickstay.local', password: 'Admin@123' })}
-                    className="flex-1 rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition"
-                  >
-                    👑 Admin mẫu
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ email: 'user@quickstay.local', password: 'User@123' })}
-                    className="flex-1 rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 font-medium text-sky-700 hover:bg-sky-100 hover:border-sky-300 transition"
-                  >
-                    👤 Khách hàng mẫu
-                  </button>
-                </div>
-              </div>
             </form>
             <div className="mt-8 border-t border-slate-200 pt-7 text-center text-sm text-slate-500">Chưa có tài khoản? <Link to="/register" className="font-bold text-sky-700 hover:text-sky-900 hover:underline">Đăng ký ngay</Link></div>
             <p className="mt-10 text-center text-xs text-slate-400">Đăng nhập an toàn · Trải nghiệm tiện lợi</p>

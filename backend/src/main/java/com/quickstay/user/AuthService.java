@@ -30,7 +30,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (users.existsByEmail(req.email())) {
-            throw ApiException.conflict("Email da duoc su dung");
+            throw ApiException.conflict("Email đã tồn tại");
         }
         User u = new User();
         u.setEmail(req.email());
@@ -45,12 +45,11 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest req) {
-        // Cung mot thong bao cho sai email va sai mat khau de khong lo email nao da dang ky
         User u = users.findByEmail(req.email())
                 .filter(x -> encoder.matches(req.password(), x.getPasswordHash()))
                 .orElseThrow(() -> {
                     log.warn("Dang nhap that bai cho {}", req.email());
-                    return ApiException.unauthorized("Sai email hoac mat khau");
+                    return ApiException.unauthorized("Sai email hoặc mật khẩu");
                 });
         return new AuthResponse(jwt.generate(u), UserDto.of(u));
     }
