@@ -34,6 +34,14 @@ public class Room {
     @Column(length = 2000)
     private String description;
 
+    /**
+     * So phong con trong khi da co {@code booked} don chong lan; khong am
+     * (admin co the giam quantity xuong duoi so don dang co).
+     */
+    public int remaining(long booked) {
+        return (int) Math.max(0, quantity - booked);
+    }
+
     public Long getId() { return id; }
     public Hotel getHotel() { return hotel; }
     public void setHotel(Hotel hotel) { this.hotel = hotel; }

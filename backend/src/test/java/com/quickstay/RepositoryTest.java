@@ -89,7 +89,7 @@ class RepositoryTest {
         newRoom(h, "Standard", 500_000);
         newRoom(h, "Deluxe", 900_000);
         assertEquals(List.of("Standard", "Deluxe", "Suite"),
-                rooms.findByHotelIdOrderByPricePerNight(h.getId()).stream().map(Room::getRoomType).toList());
+                rooms.findByHotelIdOrderByPricePerNightAscIdAsc(h.getId()).stream().map(Room::getRoomType).toList());
     }
 
     @Test
