@@ -39,7 +39,7 @@ class SeedDataTest extends ApiTestBase {
         expectedRoomTypes.forEach((name, count) -> {
             Hotel h = byName.get(name);
             assertNotNull(h, "thieu khach san mau " + name);
-            assertEquals(count, rooms.findByHotelIdOrderByPricePerNight(h.getId()).size(), name);
+            assertEquals(count, rooms.findByHotelIdOrderByPricePerNightAscIdAsc(h.getId()).size(), name);
         });
         assertEquals("Đà Nẵng", byName.get("Sunrise Đà Nẵng Hotel").getCity(), "luu dung tieng Viet co dau");
         assertTrue(List.of(byName.get("Saigon Central Inn").getAmenities().split(",\\s*")).contains("Bãi đỗ xe"));
