@@ -26,6 +26,7 @@ class HotelApiTest extends ApiTestBase {
     private static final String OLD_QUARTER = "Old Quarter Boutique Hà Nội";
     private static final String SAIGON = "Saigon Central Inn";
     private static final String HOI_AN = "Hội An Riverside Homestay";
+    private static final List<String> SEED = List.of(SUNRISE, OLD_QUARTER, SAIGON, HOI_AN);
 
     @Autowired HotelRepository hotelRepo;
 
@@ -33,9 +34,12 @@ class HotelApiTest extends ApiTestBase {
         return read(mvc.perform(req).andExpect(status().isOk()).andReturn());
     }
 
+    /** Ten cac khach san mau trong ket qua (giu thu tu); test khac co the tao them khach san rieng. */
     private static List<String> names(JsonNode arr) {
         List<String> out = new ArrayList<>();
-        arr.forEach(h -> out.add(h.get("name").asText()));
+        arr.forEach(h -> {
+            if (SEED.contains(h.get("name").asText())) out.add(h.get("name").asText());
+        });
         return out;
     }
 
@@ -89,7 +93,7 @@ class HotelApiTest extends ApiTestBase {
         assertEquals(1600000, byName(arr, SUNRISE).get("minPrice").asInt(), "gia cua Family Suite, khong phai Standard");
         assertEquals(1100000, byName(arr, HOI_AN).get("minPrice").asInt());
         // Khop chinh xac: "Suite" khong khop "Family Suite"
-        mvc.perform(get("/api/hotels").param("roomType", "Suite")).andExpect(jsonPath("$").isEmpty());
+        assertTrue(names(list(get("/api/hotels").param("roomType", "Suite"))).isEmpty());
     }
 
     @Test
