@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+                        // Admin khong duoc dat phong (403); T043 bo sung cac quy tac CUSTOMER/ADMIN con lai
+                        .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
         return http.build();

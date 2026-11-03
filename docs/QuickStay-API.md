@@ -173,7 +173,7 @@ Không có ngày thì `available` là `null`. Lỗi: 400 nếu chỉ gửi một
 | Trường | Kiểu | Bắt buộc | Ràng buộc |
 |---|---|---|---|
 | roomId | number | có | Phải tồn tại (404 nếu không) |
-| checkIn | date | có | Không ở quá khứ |
+| checkIn | date | có | Không ở quá khứ (so với ngày hiện tại theo giờ Việt Nam, đặt bằng `APP_TIMEZONE`) |
 | checkOut | date | có | Sau `checkIn` |
 | guests | number | có | ≥ 1 và ≤ `capacity` của phòng |
 | guestName | string | có | Không rỗng |
