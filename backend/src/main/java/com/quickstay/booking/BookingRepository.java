@@ -1,5 +1,6 @@
 package com.quickstay.booking;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,6 +10,7 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     /**
@@ -37,5 +39,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByRoomId(Long roomId);
 
+    /**
+     * Kiem tra xem khach san co bat ky don dat phong nao khong (moi trang thai).
+     * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).
+     * Goi tu HotelAdminService.delete() (T083).
+     */
     boolean existsByRoomHotelIdAndStatusIn(Long hotelId, List<BookingStatus> statuses);
 }
