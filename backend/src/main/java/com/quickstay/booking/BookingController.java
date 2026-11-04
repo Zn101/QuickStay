@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /** /api/bookings: can dang nhap; dat phong chi danh cho CUSTOMER (SecurityConfig). */
 @RestController
 @RequestMapping("/api/bookings")
@@ -22,5 +24,11 @@ public class BookingController {
     @ResponseStatus(HttpStatus.CREATED)
     public BookingView create(Authentication auth, @Valid @RequestBody BookingRequest req) {
         return bookings.create(auth.getName(), req);
+    }
+
+    /** GET /api/bookings/me: lich su dat phong cua toi, moi nhat truoc. */
+    @GetMapping("/me")
+    public List<BookingView> mine(Authentication auth) {
+        return bookings.mine(auth.getName());
     }
 }

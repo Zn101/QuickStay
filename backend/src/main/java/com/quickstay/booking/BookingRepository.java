@@ -10,7 +10,31 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
+    /**
+     * Lich su dat phong cua mot nguoi dung (T101): moi nhat truoc, trung created_at thi theo id.
+     * Lay kem phong va khach san trong cung truy van de dung BookingView khong phat sinh N+1.
+     */
+    @Query("""
+            select b from Booking b
+            join fetch b.room r
+            join fetch r.hotel
+            join fetch b.user u
+            where u.id = :userId
+            order by b.createdAt desc, b.id desc
+            """)
+    List<Booking> findMine(@Param("userId") Long userId);
+
+    /** So don chua huy chong lan [checkIn, checkOut) cua mot loai phong; cung dieu kien voi countOverlappingByHotel. */
+    @Query("""
+            select count(b) from Booking b
+            where b.room.id = :roomId
+              and b.checkIn < :checkOut
+              and b.checkOut > :checkIn
+              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
+            """)
+    long countOverlapping(@Param("roomId") Long roomId,
+                          @Param("checkIn") LocalDate checkIn,
+                          @Param("checkOut") LocalDate checkOut);
 
     /**
      * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong trong khach san, trong MOT truy van (T077).

@@ -10,12 +10,14 @@ import com.quickstay.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class BookingService {
@@ -36,16 +38,26 @@ public class BookingService {
 
     /**
      * POST /api/bookings: tao don PENDING cho khach dang dang nhap.
-     * T087 kiem tra ngay, T088 tinh tong tien theo so dem, T089 kiem tra suc chua.
-     * Kiem tra con phong (409) va khoa chong dat trung la T100.
+     * T087 kiem tra ngay, T088 tinh tong tien theo so dem, T089 kiem tra suc chua,
+     * T100 chong dat trung: khoa dong phong roi moi dem don chong lan, het phong tra 409.
+     *
+     * Thu tu quan trong: khoa phong la lan doc CSDL DAU TIEN cua transaction, va dung READ_COMMITTED.
+     * Voi REPEATABLE READ (mac dinh cua MySQL) ban chup du lieu lay tu lan doc dau tien; neu doc user truoc
+     * roi moi khoa phong thi cau dem van thay ban chup cu, khong thay don yeu cau truoc vua ghi -> dat trung.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingView create(String email, BookingRequest req) {
         validateDates(req.checkIn(), req.checkOut());
+        Room room = rooms.findByIdForUpdate(req.roomId())
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay phong"));
         User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
-        Room room = rooms.findById(req.roomId()).orElseThrow(() -> ApiException.notFound("Khong tim thay phong"));
         if (req.guests() > room.getCapacity()) {
             throw ApiException.badRequest("Phong chi chua toi da " + room.getCapacity() + " khach");
+        }
+        long booked = bookings.countOverlapping(room.getId(), req.checkIn(), req.checkOut());
+        if (room.remaining(booked) < 1) {
+            log.info("Het phong: roomId={} {} -> {}", room.getId(), req.checkIn(), req.checkOut());
+            throw ApiException.conflict("Phong da het trong khoang ngay da chon");
         }
 
         Booking b = new Booking();
@@ -62,6 +74,13 @@ public class BookingService {
         bookings.save(b);
         log.info("Dat phong moi #{} roomId={} {} -> {}", b.getId(), room.getId(), req.checkIn(), req.checkOut());
         return BookingView.of(b);
+    }
+
+    /** GET /api/bookings/me (T101): don cua nguoi dang dang nhap, moi nhat truoc. */
+    @Transactional(readOnly = true)
+    public List<BookingView> mine(String email) {
+        User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        return bookings.findMine(user.getId()).stream().map(BookingView::of).toList();
     }
 
     /** T087: ngay tra sau ngay nhan; ngay nhan khong truoc hom nay (theo app.timezone). */
