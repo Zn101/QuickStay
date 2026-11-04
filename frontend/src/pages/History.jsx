@@ -1,25 +1,32 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { formatDate, formatVnd } from '../lib/format'
-import { ErrorBox, Spinner, StatusBadge } from '../components/ui'
+import { ErrorBox, Spinner, StatusBadge, ConfirmModal } from '../components/ui'
 
 export default function History() {
   const [items, setItems] = useState(null)
   const [error, setError] = useState('')
+  const [cancelTarget, setCancelTarget] = useState(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
 
   const load = () => api('/bookings/me').then(setItems).catch((e) => setError(e.message))
   useEffect(() => {
     load()
   }, [])
 
-  const cancel = async (b) => {
-    if (!window.confirm(`Hủy đặt phòng #${b.id}?`)) return
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget) return
+    setCancelling(true)
+    setCancelError('')
     try {
-      await api(`/bookings/${b.id}/cancel`, { method: 'PATCH' })
-      setError('')
+      await api(`/bookings/${cancelTarget.id}/cancel`, { method: 'PATCH' })
+      setCancelTarget(null)
       load()
     } catch (e) {
-      setError(e.message)
+      setCancelError(e.message || 'Không thể hủy đơn đặt phòng')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -43,12 +50,40 @@ export default function History() {
               <b className="text-brand-600">{formatVnd(b.totalPrice)}</b>
               <StatusBadge status={b.status} />
               {b.status === 'PENDING' && (
-                <button className="btn-outline text-red-600" onClick={() => cancel(b)}>Hủy đặt phòng</button>
+                <button
+                  type="button"
+                  className="btn-outline text-red-600"
+                  onClick={() => {
+                    setCancelTarget(b)
+                    setCancelError('')
+                  }}
+                >
+                  Hủy đặt phòng
+                </button>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        title="Xác nhận hủy đặt phòng"
+        message={
+          cancelTarget
+            ? `Bạn có chắc muốn hủy đơn đặt phòng #${cancelTarget.id} tại ${cancelTarget.hotelName}?`
+            : ''
+        }
+        confirmText="Hủy đặt phòng"
+        cancelText="Giữ lại đơn"
+        danger={true}
+        loading={cancelling}
+        error={cancelError}
+        onCancel={() => {
+          if (!cancelling) setCancelTarget(null)
+        }}
+        onConfirm={handleConfirmCancel}
+      />
     </div>
   )
 }

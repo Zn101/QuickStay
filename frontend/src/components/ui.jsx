@@ -84,3 +84,105 @@ export function HotelImage({ src, alt, className }) {
     />
   )
 }
+
+export function ConfirmModal({
+  isOpen,
+  title = 'Xác nhận',
+  message,
+  confirmText = 'Xác nhận',
+  cancelText = 'Hủy bỏ',
+  danger = true,
+  loading = false,
+  error = '',
+  onConfirm,
+  onCancel,
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+      <div
+        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 transition-all sm:my-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-headline"
+      >
+        <div className="flex items-start gap-4">
+          <div
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+              danger ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+            }`}
+          >
+            {danger ? (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            ) : (
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )}
+          </div>
+          <div className="flex-1">
+            <h3 id="modal-headline" className="text-lg font-bold text-slate-900 leading-6">
+              {title}
+            </h3>
+            <p className="mt-2 text-sm leading-5 text-slate-500">
+              {message}
+            </p>
+            {error && (
+              <div className="mt-3">
+                <ErrorBox message={error} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="w-full sm:w-auto rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50 ${
+              danger
+                ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20'
+                : 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20'
+            }`}
+          >
+            {loading ? (
+              <>
+                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                <span>Đang xử lý...</span>
+              </>
+            ) : (
+              confirmText
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

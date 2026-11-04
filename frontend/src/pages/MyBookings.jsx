@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatVnd, formatDate } from '../lib/format'
-import { StatusBadge, Spinner, ErrorBox } from '../components/ui'
+import { StatusBadge, Spinner, ErrorBox, ConfirmModal } from '../components/ui'
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [cancelling, setCancelling] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
   const { state } = useLocation()
 
   useEffect(() => {
@@ -18,16 +20,30 @@ export default function MyBookings() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function cancelBooking(id) {
-    if (!confirm('Bạn có chắc muốn hủy đơn đặt phòng này?')) return
-    setCancelling(id)
+  function handleOpenCancelModal(booking) {
+    setCancelTarget(booking)
+    setCancelError('')
+  }
+
+  function handleCloseModal() {
+    if (!cancelling) {
+      setCancelTarget(null)
+      setCancelError('')
+    }
+  }
+
+  async function handleConfirmCancel() {
+    if (!cancelTarget) return
+    setCancelling(true)
+    setCancelError('')
     try {
-      const updated = await api(`/bookings/${id}/cancel`, { method: 'PATCH' })
-      setBookings((bs) => bs.map((b) => (b.id === id ? updated : b)))
+      const updated = await api(`/bookings/${cancelTarget.id}/cancel`, { method: 'PATCH' })
+      setBookings((bs) => bs.map((b) => (b.id === cancelTarget.id ? updated : b)))
+      setCancelTarget(null)
     } catch (err) {
-      alert(err.message)
+      setCancelError(err.message || 'Không thể hủy đơn đặt phòng này. Vui lòng thử lại.')
     } finally {
-      setCancelling(null)
+      setCancelling(false)
     }
   }
 
@@ -99,17 +115,34 @@ export default function MyBookings() {
               </p>
               {b.status === 'PENDING' && (
                 <button
-                  onClick={() => cancelBooking(b.id)}
-                  disabled={cancelling === b.id}
-                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                  type="button"
+                  onClick={() => handleOpenCancelModal(b)}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
                 >
-                  {cancelling === b.id ? 'Đang hủy...' : 'Hủy đơn'}
+                  Hủy đơn
                 </button>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      <ConfirmModal
+        isOpen={!!cancelTarget}
+        title="Xác nhận hủy đơn đặt phòng"
+        message={
+          cancelTarget
+            ? `Bạn có chắc chắn muốn hủy đơn đặt phòng #${cancelTarget.id} tại ${cancelTarget.hotelName} (${cancelTarget.roomType}) không? Thao tác này không thể hoàn tác.`
+            : ''
+        }
+        confirmText="Hủy đặt phòng"
+        cancelText="Giữ lại đơn"
+        danger={true}
+        loading={cancelling}
+        error={cancelError}
+        onCancel={handleCloseModal}
+        onConfirm={handleConfirmCancel}
+      />
     </div>
   )
 }
