@@ -29,4 +29,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<RoomBookedCount> countOverlappingByHotel(@Param("hotelId") Long hotelId,
                                                   @Param("checkIn") LocalDate checkIn,
                                                   @Param("checkOut") LocalDate checkOut);
+
+    /**
+     * Kiem tra xem loai phong co bat ky don dat phong nao khong (moi trang thai).
+     * bookings.room_id NOT NULL nen khong the xoa Room khi con Booking, ke ca CANCELLED.
+     * Goi tu RoomAdminService.delete() (T095).
+     */
+    boolean existsByRoomId(Long roomId);
 }

@@ -1,9 +1,19 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../../store/authStore'
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+
+  // Chưa đăng nhập: chuyển đến trang đăng nhập
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Đã đăng nhập nhưng không phải ADMIN: chuyển về trang chủ
+  if (user.role !== 'ADMIN') {
+    return <Navigate to="/" replace />
+  }
 
   function handleLogout() {
     logout()

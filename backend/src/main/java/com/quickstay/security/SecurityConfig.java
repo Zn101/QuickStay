@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,11 +19,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Cau hinh toi thieu de chay API dang ky/dang nhap (T008, T021, T022).
- * T043 (Minh) bo sung JwtAuthFilter va phan quyen CUSTOMER/ADMIN tai day.
+ * Cau hinh bao mat: JWT stateless, phan quyen theo role.
+ * T043/T094 (Minh): them JwtAuthFilter, bao ve /api/admin/** chi danh cho ADMIN.
  */
 @Configuration
 public class SecurityConfig {
+
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -34,13 +41,18 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
-                        // Admin khong duoc dat phong (403); T043 bo sung cac quy tac CUSTOMER/ADMIN con lai
+                        // Chi ADMIN moi truy cap duoc /api/admin/**
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Chi CUSTOMER moi dat phong
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
                         .anyRequest().authenticated())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((req, res, ex) -> res.sendError(HttpStatus.FORBIDDEN.value())));
         return http.build();
     }
 
