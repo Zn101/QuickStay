@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -36,4 +37,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * Goi tu RoomAdminService.delete() (T095).
      */
     boolean existsByRoomId(Long roomId);
+
+    /** Khach san co don dat phong o cac trang thai cho truoc khong. Goi tu HotelAdminService.delete() (T083). */
+    boolean existsByRoomHotelIdAndStatusIn(Long hotelId, Collection<BookingStatus> statuses);
 }

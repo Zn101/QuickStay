@@ -25,10 +25,11 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    // JwtAuthFilter khong phai @Component: neu la bean, Spring Boot dang ky them no o tang servlet va filter chay 2 lan
     private final JwtAuthFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-        this.jwtAuthFilter = jwtAuthFilter;
+    public SecurityConfig(JwtService jwtService) {
+        this.jwtAuthFilter = new JwtAuthFilter(jwtService);
     }
 
     @Bean

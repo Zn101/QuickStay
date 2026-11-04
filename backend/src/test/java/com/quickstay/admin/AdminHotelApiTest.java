@@ -436,7 +436,7 @@ class AdminHotelApiTest extends ApiTestBase {
                 .andExpect(status().isNoContent());
 
         assertFalse(hotelRepository.existsById(hotelId), "Khach san phai bi xoa khoi DB");
-        assertEquals(0, roomRepository.findByHotelIdOrderByPricePerNight(hotelId).size(),
+        assertEquals(0, roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(hotelId).size(),
                 "Cac phong cua khach san phai bi xoa theo");
     }
 
@@ -542,7 +542,7 @@ class AdminHotelApiTest extends ApiTestBase {
 
         // Khach san va phong phai van con nguyen
         assertTrue(hotelRepository.existsById(hotelId), "Khach san phai van con trong DB");
-        assertEquals(1, roomRepository.findByHotelIdOrderByPricePerNight(hotelId).size(),
+        assertEquals(1, roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(hotelId).size(),
                 "Phong phai van con trong DB");
     }
 
