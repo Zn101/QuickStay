@@ -13,6 +13,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    List<Booking> findAllByOrderByCreatedAtDesc();
+
     /**
      * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong trong khach san, trong MOT truy van (T077).
      * Chong lan khi b.checkIn < checkOut va b.checkOut > checkIn: bat dang thuc chat nen hai ky nghi

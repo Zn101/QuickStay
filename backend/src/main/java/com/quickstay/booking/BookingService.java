@@ -85,6 +85,22 @@ public class BookingService {
         return BookingView.of(b);
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingView> all() {
+        return bookings.findAllByOrderByCreatedAtDesc().stream().map(BookingView::of).toList();
+    }
+
+    @Transactional
+    public BookingView changeStatus(Long id, BookingStatus status) {
+        Booking b = bookings.findById(id).orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getStatus().next().contains(status)) {
+            throw ApiException.conflict("Khong the chuyen trang thai tu " + b.getStatus() + " sang " + status);
+        }
+        b.setStatus(status);
+        log.info("Admin chuyen trang thai dat phong #{} sang {}", id, status);
+        return BookingView.of(b);
+    }
+
     /** T087: ngay tra sau ngay nhan; ngay nhan khong truoc hom nay (theo app.timezone). */
     void validateDates(LocalDate checkIn, LocalDate checkOut) {
         if (!checkOut.isAfter(checkIn)) {
