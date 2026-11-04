@@ -36,4 +36,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * Goi tu RoomAdminService.delete() (T095).
      */
     boolean existsByRoomId(Long roomId);
+
+    boolean existsByRoomHotelIdAndStatusIn(Long hotelId, List<BookingStatus> statuses);
 }

@@ -1,9 +1,11 @@
 export const formatVnd = (n) =>
-  n == null ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)) + ' ₫'
+  n == null || isNaN(n) ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)) + ' ₫'
 
 export const formatDate = (iso) => {
   if (!iso) return ''
-  const [y, m, d] = iso.split('-')
+  const parts = String(iso).split('-')
+  if (parts.length !== 3) return ''
+  const [y, m, d] = parts
   return `${d}/${m}/${y}`
 }
 
@@ -16,8 +18,16 @@ export const todayIso = (offsetDays = 0) => {
 
 export const nightsBetween = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return 0
-  const ms = new Date(checkOut) - new Date(checkIn)
-  return Math.max(0, Math.round(ms / 86400000))
+  const parts1 = String(checkIn).split('-').map(Number)
+  const parts2 = String(checkOut).split('-').map(Number)
+  if (parts1.length !== 3 || parts2.length !== 3) return 0
+  const [y1, m1, d1] = parts1
+  const [y2, m2, d2] = parts2
+  if (!y1 || !m1 || !d1 || !y2 || !m2 || !d2) return 0
+  const utc1 = Date.UTC(y1, m1 - 1, d1)
+  const utc2 = Date.UTC(y2, m2 - 1, d2)
+  const diffDays = Math.round((utc2 - utc1) / 86400000)
+  return Math.max(0, diffDays)
 }
 
 export const STATUS_LABEL = {
