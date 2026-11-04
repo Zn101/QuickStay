@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -25,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit test BookingService.create (T087, T088, T089), khong khoi dong Spring.
+ * Unit test BookingService.create (T087, T088, T089, T100), khong khoi dong Spring.
  * Dong ho co dinh 2026-11-03T18:00Z = 01h sang 04/11 o Viet Nam (UTC van la 03/11):
  * "hom nay" phai la 04/11 theo app.timezone, khong theo gio may chu.
  */
@@ -52,10 +53,12 @@ class BookingServiceTest {
         room.setRoomType("Standard");
         room.setPricePerNight(BigDecimal.valueOf(650_000));
         room.setCapacity(2);
+        room.setQuantity(2);
+        ReflectionTestUtils.setField(room, "id", 1L);   // entity chua luu nen chua co id
         User user = new User();
         user.setEmail("an@test.com");
         when(users.findByEmail("an@test.com")).thenReturn(Optional.of(user));
-        when(rooms.findById(1L)).thenReturn(Optional.of(room));
+        when(rooms.findByIdForUpdate(1L)).thenReturn(Optional.of(room));
     }
 
     private static BookingRequest req(LocalDate in, LocalDate out, int guests) {
@@ -116,6 +119,35 @@ class BookingServiceTest {
         assertEquals(HttpStatus.UNAUTHORIZED, assertThrows(ApiException.class,
                 () -> service.create("ghost@test.com", req(TODAY.plusDays(1), TODAY.plusDays(2), 1))).getStatus());
         verify(bookings, never()).save(any());
+    }
+
+    @Test
+    void full_room_is_409_and_nothing_is_saved() {
+        when(bookings.countOverlapping(1L, TODAY.plusDays(1), TODAY.plusDays(3))).thenReturn(2L);
+        ApiException e = assertThrows(ApiException.class,
+                () -> service.create("an@test.com", req(TODAY.plusDays(1), TODAY.plusDays(3), 1)));
+        assertEquals(HttpStatus.CONFLICT, e.getStatus());
+        assertEquals("Phong da het trong khoang ngay da chon", e.getMessage());
+        verify(bookings, never()).save(any());
+    }
+
+    @Test
+    void last_free_room_can_still_be_booked() {
+        when(bookings.countOverlapping(1L, TODAY.plusDays(1), TODAY.plusDays(3))).thenReturn(1L);
+        assertDoesNotThrow(() -> service.create("an@test.com", req(TODAY.plusDays(1), TODAY.plusDays(3), 1)));
+        verify(bookings).save(any());
+    }
+
+    @Test
+    void room_is_locked_before_any_other_read() {
+        // Khoa phong phai la lan doc dau tien cua transaction (xem javadoc BookingService.create)
+        service.create("an@test.com", req(TODAY.plusDays(1), TODAY.plusDays(2), 1));
+        var order = inOrder(rooms, users, bookings);
+        order.verify(rooms).findByIdForUpdate(1L);
+        order.verify(users).findByEmail("an@test.com");
+        order.verify(bookings).countOverlapping(1L, TODAY.plusDays(1), TODAY.plusDays(2));
+        order.verify(bookings).save(any());
+        verify(rooms, never()).findById(any());
     }
 
     @Test
