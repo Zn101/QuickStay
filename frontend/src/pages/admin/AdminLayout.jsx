@@ -22,6 +22,15 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-60 shrink-0 border-r border-slate-100 bg-white p-4 space-y-1">
         <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Quản trị</p>
+        <NavLink to="/admin" end className={linkClass}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 shrink-0">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          </svg>
+          Tổng quan
+        </NavLink>
         <NavLink to="/admin/hotels" className={linkClass}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 shrink-0">
             <path d="M3 10.5 12 3l9 7.5V21H3V10.5Z"/><path d="M9 21v-7h6v7"/>

@@ -8,6 +8,7 @@ import BookingForm from './pages/BookingForm'
 import MyBookings from './pages/MyBookings'
 import Profile from './pages/Profile'
 import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminHotels from './pages/admin/AdminHotels'
 import AdminRooms from './pages/admin/AdminRooms'
 import AdminBookings from './pages/admin/AdminBookings'
@@ -26,7 +27,8 @@ export default function App() {
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/hotels" replace />} />
+        <Route index element={<AdminDashboard />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="hotels" element={<AdminHotels />} />
         <Route path="rooms" element={<AdminRooms />} />
         <Route path="bookings" element={<AdminBookings />} />
