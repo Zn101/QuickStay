@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
 import { ErrorBox, FieldError } from '../components/ui'
 
@@ -13,6 +13,7 @@ const inputClass = (hasError) =>
 export default function Login() {
   const login = useAuth((s) => s.login)
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
@@ -55,7 +56,13 @@ export default function Login() {
     setBusy(true)
     try {
       const user = await login(form.email, form.password)
-      navigate(user.role === 'ADMIN' ? '/admin' : '/')
+      if (user.role === 'ADMIN') {
+        navigate('/admin')
+      } else if (location.state?.from) {
+        navigate(location.state.from, { state: location.state, replace: true })
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       if (err?.errors) {
         setErrors(err.errors)

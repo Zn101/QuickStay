@@ -190,6 +190,11 @@ export default function BookingForm() {
       return
     }
 
+    if (user.role === 'ADMIN') {
+      setError('Tài khoản Quản trị viên (Admin) không thể đặt phòng. Vui lòng đăng nhập tài khoản Khách hàng (Customer) để đặt phòng.')
+      return
+    }
+
     const isValid = validateAll()
     if (!isValid) {
       setError('Vui lòng kiểm tra và sửa các thông tin chưa hợp lệ trong form.')
@@ -229,6 +234,8 @@ export default function BookingForm() {
             checkOut,
           },
         })
+      } else if (err.status === 403) {
+        setError('Tài khoản Quản trị viên (Admin) không có quyền đặt phòng. Vui lòng dùng tài khoản Khách hàng.')
       } else {
         setError(err.message || 'Đã có lỗi xảy ra khi tạo đơn đặt phòng.')
       }
@@ -301,6 +308,17 @@ export default function BookingForm() {
           >
             Đăng nhập ngay
           </Link>
+        </div>
+      )}
+
+      {user?.role === 'ADMIN' && (
+        <div className="mb-8 flex items-center justify-between rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">⚠️</span>
+            <span>
+              Bạn đang đăng nhập bằng tài khoản <strong>Quản trị viên (Admin)</strong>. Theo quy định của hệ thống, tài khoản Admin không được phép đặt phòng. Vui lòng đăng xuất và đăng nhập tài khoản <strong>Khách hàng (Customer)</strong>.
+            </span>
+          </div>
         </div>
       )}
 

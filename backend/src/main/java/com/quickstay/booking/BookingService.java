@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class BookingService {
@@ -61,6 +62,26 @@ public class BookingService {
         b.setStatus(BookingStatus.PENDING);
         bookings.save(b);
         log.info("Dat phong moi #{} roomId={} {} -> {}", b.getId(), room.getId(), req.checkIn(), req.checkOut());
+        return BookingView.of(b);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingView> mine(String email) {
+        User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        return bookings.findByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(BookingView::of).toList();
+    }
+
+    @Transactional
+    public BookingView cancel(String email, Long id) {
+        Booking b = bookings.findById(id).orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getUser().getEmail().equals(email)) {
+            throw ApiException.forbidden("Ban khong co quyen huy don dat phong nay");
+        }
+        if (b.getStatus() != BookingStatus.PENDING) {
+            throw ApiException.conflict("Chi co the huy don dat phong o trang thai Cho xac nhan (PENDING)");
+        }
+        b.setStatus(BookingStatus.CANCELLED);
+        log.info("Khach {} huy dat phong #{}", email, id);
         return BookingView.of(b);
     }
 
