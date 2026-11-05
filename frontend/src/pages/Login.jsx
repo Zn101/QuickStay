@@ -117,7 +117,7 @@ export default function Login() {
   const activeSlide = SLIDES[currentSlide]
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden rounded-[32px] border border-slate-200/80 bg-[#f8fafc] text-slate-900 shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
+    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden  border border-slate-200/80 bg-[#f8fafc] text-slate-900 shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
       {/* CỘT TRÁI: Cinematic Auto-Carousel Showcase (7/12 cột) */}
       <div className="relative hidden min-h-[700px] flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:col-span-6 lg:flex xl:col-span-7 xl:p-16">
         {/* Danh sách ảnh nền tự động chuyển động với hiệu ứng Ken Burns */}
@@ -239,8 +239,8 @@ export default function Login() {
                   onClick={() => setCurrentSlide(idx)}
                   aria-label={`Xem ảnh ${idx + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentSlide
-                      ? 'w-8 bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]'
-                      : 'w-2 bg-white/30 hover:bg-white/60'
+                    ? 'w-8 bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]'
+                    : 'w-2 bg-white/30 hover:bg-white/60'
                     }`}
                 />
               ))}
