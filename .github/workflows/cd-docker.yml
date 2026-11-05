@@ -1,0 +1,110 @@
+# ============================================================
+# QuickStay – CD: Build & Push Docker Images to GHCR (T121)
+# ============================================================
+# Trigger: push vao nhanh main (merge PR)
+# Output: ghcr.io/zn101/quickstay-backend:<tag>
+#         ghcr.io/zn101/quickstay-frontend:<tag>
+# Tag: sha-<short-commit> + latest
+# ============================================================
+
+name: CD – Build & Push to GHCR
+
+on:
+  push:
+    branches:
+      - main
+
+# Quyen toi thieu: doc source, ghi package len GHCR
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Cau hinh Docker Buildx (ho tro cache va multi-platform neu can)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Dang nhap GHCR bang GITHUB_TOKEN (khong can PAT)
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── BACKEND ──────────────────────────────────────────────
+
+      # 4a. Tao tag va label cho backend image
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/quickstay-backend
+          # Ten image luon o chu thuong (yeu cau cua GHCR)
+          flavor: |
+            latest=true
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # 4b. Build va push backend image
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          # Cache layer de tang toc build lan sau
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      # ── FRONTEND ─────────────────────────────────────────────
+
+      # 5a. Tao tag va label cho frontend image
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/quickstay-frontend
+          flavor: |
+            latest=true
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # 5b. Build va push frontend image
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      # 6. In tom tat ket qua
+      - name: Summary
+        run: |
+          echo "## Docker Images pushed to GHCR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backend" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta-backend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta-frontend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

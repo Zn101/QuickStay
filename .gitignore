@@ -8,6 +8,22 @@
 .env.*.local
 *.secret
 
+# ─── Certificate & Private Key ───────────────────────────────
+# Ngan commit nham private key, certificate hoac keystore (T069)
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+*.crt
+*.cer
+
+# ─── Local-only config (chua secret production) ──────────────
+application-local.properties
+application-local.yml
+application-secret.properties
+application-secret.yml
+
 # ─── Frontend ────────────────────────────────────────────────
 frontend/node_modules/
 frontend/dist/

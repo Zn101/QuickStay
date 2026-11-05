@@ -180,6 +180,115 @@ cd backend
 
 ---
 
+## 📦 Sử dụng Docker Image từ GHCR (T121)
+
+Sau khi merge vào `main`, GitHub Actions tự động build và push image lên GitHub Container Registry.
+
+### Địa chỉ image
+
+| Service | Image |
+|---------|-------|
+| Backend | `ghcr.io/zn101/quickstay-backend` |
+| Frontend | `ghcr.io/zn101/quickstay-frontend` |
+
+### Quy tắc tag
+
+| Tag | Ý nghĩa |
+|-----|---------|
+| `latest` | Bản build mới nhất từ nhánh `main` |
+| `sha-<7 ký tự>` | Bản build tương ứng commit SHA cụ thể |
+
+### Đăng nhập GHCR
+
+```bash
+# Dung Personal Access Token (classic) voi quyen read:packages
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+### Pull image
+
+```bash
+# Pull ban moi nhat
+docker pull ghcr.io/zn101/quickstay-backend:latest
+docker pull ghcr.io/zn101/quickstay-frontend:latest
+
+# Pull theo commit SHA cu the
+docker pull ghcr.io/zn101/quickstay-backend:sha-a1b2c3d
+docker pull ghcr.io/zn101/quickstay-frontend:sha-a1b2c3d
+```
+
+### Chạy Docker Compose với image đã publish (không cần build lại)
+
+Tạo file `docker-compose.prod.yml`:
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: quickstay
+      MYSQL_USER: quickstay
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    image: ghcr.io/zn101/quickstay-backend:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USER: quickstay
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    image: ghcr.io/zn101/quickstay-frontend:latest
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8081}:80"
+
+volumes:
+  mysql-data:
+```
+
+```bash
+# Chay voi image tu GHCR (can dang nhap truoc)
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Biến môi trường bắt buộc khi dùng image GHCR
+
+| Biến | Bắt buộc | Mô tả |
+|------|---------|-------|
+| `JWT_SECRET` | ✅ | Khóa ký JWT, tối thiểu 32 ký tự ngẫu nhiên |
+| `DB_PASSWORD` | ✅ | Mật khẩu MySQL user `quickstay` |
+| `DB_ROOT_PASSWORD` | ✅ | Mật khẩu MySQL root |
+| `CORS_ORIGINS` | ✅ | Domain frontend, ví dụ `https://yourdomain.com` |
+| `ADMIN_EMAIL` | Khuyến nghị | Email tài khoản admin mặc định |
+| `ADMIN_PASSWORD` | Khuyến nghị | Mật khẩu admin (đổi khỏi `Admin@123`) |
+| `ANTHROPIC_API_KEY` | Không bắt buộc | AI features, để trống nếu không dùng |
+
+> **Lưu ý bảo mật:** Không commit file `.env` chứa giá trị thật lên Git.
+> Tạo JWT_SECRET mạnh: `openssl rand -base64 48`
+
+---
+
 ## GitHub Actions CI/CD
 
 ### CI Frontend (`ci-frontend.yml`)
