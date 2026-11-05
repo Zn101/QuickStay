@@ -150,6 +150,45 @@ class BookingServiceTest {
         verify(rooms, never()).findById(any());
     }
 
+    private Booking existing(String ownerEmail, BookingStatus status) {
+        User owner = new User();
+        owner.setEmail(ownerEmail);
+        Booking b = new Booking();
+        b.setUser(owner);
+        b.setRoom(room);
+        b.setStatus(status);
+        when(bookings.findByIdForUpdate(5L)).thenReturn(Optional.of(b));
+        return b;
+    }
+
+    @Test
+    void cancel_locks_booking_and_sets_cancelled() {
+        Booking b = existing("an@test.com", BookingStatus.PENDING);
+        assertEquals(BookingStatus.CANCELLED, service.cancel("an@test.com", 5L).status());
+        assertEquals(BookingStatus.CANCELLED, b.getStatus());
+        verify(bookings).findByIdForUpdate(5L);
+        verify(bookings, never()).findById(any());
+    }
+
+    @Test
+    void cancel_checks_owner_before_status() {
+        // Don cua nguoi khac, du khong con PENDING, van tra 403: khong de lo trang thai don
+        Booking b = existing("khac@test.com", BookingStatus.CONFIRMED);
+        ApiException e = assertThrows(ApiException.class, () -> service.cancel("an@test.com", 5L));
+        assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+        assertEquals(BookingStatus.CONFIRMED, b.getStatus());
+    }
+
+    @Test
+    void cancel_non_pending_is_409_and_unknown_is_404() {
+        Booking b = existing("an@test.com", BookingStatus.CONFIRMED);
+        assertEquals(HttpStatus.CONFLICT,
+                assertThrows(ApiException.class, () -> service.cancel("an@test.com", 5L)).getStatus());
+        assertEquals(BookingStatus.CONFIRMED, b.getStatus());
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApiException.class, () -> service.cancel("an@test.com", 99L)).getStatus());
+    }
+
     @Test
     void total_price_counts_nights_not_days() {
         LocalDate d = LocalDate.of(2026, 12, 30);

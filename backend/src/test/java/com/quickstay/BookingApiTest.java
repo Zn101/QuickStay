@@ -22,11 +22,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * POST /api/bookings, GET /api/bookings/me (T087-T090, T100-T102). JwtAuthFilter (T043) chua co nen gia lap dang nhap bang user(email);
+ * POST /api/bookings, GET /api/bookings/me, PATCH /api/bookings/{id}/cancel (T087-T090, T100-T102, T112-T113). JwtAuthFilter (T043) chua co nen gia lap dang nhap bang user(email);
  * filter se dat email cua token vao Authentication.getName() giong vay.
  * Loai phong rieng cho moi test: Deluxe 500k/dem, toi da 2 khach.
  */
@@ -223,9 +224,8 @@ class BookingApiTest extends ApiTestBase {
     void TC_BOOK_06b_cancelled_booking_frees_the_room() throws Exception {
         Room single = newRoom(1);
         long id = read(book(single, 30, 32).andExpect(status().isCreated()).andReturn()).get("id").asLong();
-        Booking b = bookings.findById(id).orElseThrow();
-        b.setStatus(BookingStatus.CANCELLED);   // API huy don la T112
-        bookings.save(b);
+        book(single, 30, 32).andExpect(status().isConflict());
+        cancel(id, customer).andExpect(status().isOk());
         book(single, 30, 32).andExpect(status().isCreated());
     }
 
@@ -269,5 +269,76 @@ class BookingApiTest extends ApiTestBase {
         mvc.perform(get("/api/bookings/me")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/bookings/me").with(user(customer).roles("CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+    }
+
+    // ---- T112, T113: huy don ----
+
+    private ResultActions cancel(long id, String email) throws Exception {
+        return mvc.perform(patch("/api/bookings/{id}/cancel", id).with(user(email).roles("CUSTOMER")));
+    }
+
+    private long pendingBooking() throws Exception {
+        LocalDate in = today().plusDays(60);
+        return read(book(body(in, in.plusDays(2), 1)).andExpect(status().isCreated()).andReturn()).get("id").asLong();
+    }
+
+    private void setStatus(long id, BookingStatus status) {
+        Booking b = bookings.findById(id).orElseThrow();
+        b.setStatus(status);
+        bookings.save(b);
+    }
+
+    @Test
+    void TC_BOOK_10_owner_cancels_pending_booking() throws Exception {
+        long id = pendingBooking();
+        cancel(id, customer)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.hotelName").value(room.getHotel().getName()));
+        assertEquals(BookingStatus.CANCELLED, bookings.findById(id).orElseThrow().getStatus());
+        mvc.perform(get("/api/bookings/me").with(user(customer).roles("CUSTOMER")))
+                .andExpect(jsonPath("$[0].status").value("CANCELLED"));
+    }
+
+    @Test
+    void TC_BOOK_11_cannot_cancel_someone_elses_booking() throws Exception {
+        long id = pendingBooking();
+        String other = newCustomerEmail();
+        registerCustomer(other);
+        cancel(id, other).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Ban khong co quyen huy don dat phong nay"));
+        mvc.perform(patch("/api/bookings/{id}/cancel", id).with(user(ADMIN_EMAIL).roles("ADMIN")))
+                .andExpect(status().isForbidden());
+        assertEquals(BookingStatus.PENDING, bookings.findById(id).orElseThrow().getStatus(), "don khong doi");
+    }
+
+    @Test
+    void TC_BOOK_11b_only_pending_booking_can_be_cancelled() throws Exception {
+        for (BookingStatus status : new BookingStatus[]{BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN,
+                BookingStatus.COMPLETED, BookingStatus.CANCELLED}) {
+            long id = pendingBooking();
+            setStatus(id, status);
+            cancel(id, customer).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Chi huy duoc dat phong dang cho xac nhan (PENDING)"));
+            assertEquals(status, bookings.findById(id).orElseThrow().getStatus(), "don khong doi");
+            setStatus(id, BookingStatus.CANCELLED);   // tra lai phong cho vong lap sau
+        }
+    }
+
+    @Test
+    void TC_BOOK_11c_cancelling_twice_is_409() throws Exception {
+        long id = pendingBooking();
+        cancel(id, customer).andExpect(status().isOk());
+        cancel(id, customer).andExpect(status().isConflict());
+    }
+
+    @Test
+    void TC_BOOK_11d_unknown_booking_login_and_bad_id() throws Exception {
+        cancel(999999, customer).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Khong tim thay don dat phong"));
+        mvc.perform(patch("/api/bookings/{id}/cancel", pendingBooking())).andExpect(status().isUnauthorized());
+        mvc.perform(patch("/api/bookings/abc/cancel").with(user(customer).roles("CUSTOMER")))
+                .andExpect(status().isBadRequest());
     }
 }
