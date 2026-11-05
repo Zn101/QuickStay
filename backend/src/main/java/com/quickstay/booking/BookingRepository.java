@@ -1,12 +1,18 @@
 package com.quickstay.booking;
 
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -36,6 +42,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                           @Param("checkIn") LocalDate checkIn,
                           @Param("checkOut") LocalDate checkOut);
 
+    /** Danh sach toan bo don cho admin, moi nhat truoc. */
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    List<Booking> findAllByOrderByCreatedAtDesc();
+
+    /**
+     * Doc don va khoa dong do toi het transaction (T112): khach huy va admin doi trang thai cung luc
+     * phai xep hang, nguoi sau thay trang thai moi nhat thay vi ghi de len nguoi truoc.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    @Query("select b from Booking b where b.id = :id")
+    Optional<Booking> findByIdForUpdate(@Param("id") Long id);
+
     /**
      * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong trong khach san, trong MOT truy van (T077).
      * Chong lan khi b.checkIn < checkOut va b.checkOut > checkIn: bat dang thuc chat nen hai ky nghi
@@ -62,6 +81,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByRoomId(Long roomId);
 
-    /** Khach san co don dat phong o cac trang thai cho truoc khong. Goi tu HotelAdminService.delete() (T083). */
+    /**
+     * Kiem tra xem khach san co don dat phong o cac trang thai cho truoc khong.
+     * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).
+     * Goi tu HotelAdminService.delete() (T083).
+     */
     boolean existsByRoomHotelIdAndStatusIn(Long hotelId, Collection<BookingStatus> statuses);
 }

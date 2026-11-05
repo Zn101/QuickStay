@@ -83,6 +83,44 @@ public class BookingService {
         return bookings.findMine(user.getId()).stream().map(BookingView::of).toList();
     }
 
+    /**
+     * PATCH /api/bookings/{id}/cancel (T112): chi chu don, chi khi con PENDING.
+     * Khoa dong don truoc khi doc trang thai de khong ghi de khi admin dang xac nhan cung luc.
+     */
+    @Transactional
+    public BookingView cancel(String email, Long id) {
+        Booking b = bookings.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getUser().getEmail().equals(email)) {
+            throw ApiException.forbidden("Ban khong co quyen huy don dat phong nay");
+        }
+        if (b.getStatus() != BookingStatus.PENDING) {
+            throw ApiException.conflict("Chi huy duoc dat phong dang cho xac nhan (PENDING)");
+        }
+        b.setStatus(BookingStatus.CANCELLED);
+        log.info("Khach {} huy dat phong #{}", email, id);
+        return BookingView.of(b);
+    }
+
+    /** GET /api/admin/bookings: toan bo don, moi nhat truoc. */
+    @Transactional(readOnly = true)
+    public List<BookingView> all() {
+        return bookings.findAllByOrderByCreatedAtDesc().stream().map(BookingView::of).toList();
+    }
+
+    /** PATCH /api/admin/bookings/{id}/status: doi trang thai theo BookingStatus.next(); cung khoa dong don nhu cancel. */
+    @Transactional
+    public BookingView changeStatus(Long id, BookingStatus status) {
+        Booking b = bookings.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getStatus().next().contains(status)) {
+            throw ApiException.conflict("Khong the chuyen trang thai tu " + b.getStatus() + " sang " + status);
+        }
+        b.setStatus(status);
+        log.info("Admin chuyen trang thai dat phong #{} sang {}", id, status);
+        return BookingView.of(b);
+    }
+
     /** T087: ngay tra sau ngay nhan; ngay nhan khong truoc hom nay (theo app.timezone). */
     void validateDates(LocalDate checkIn, LocalDate checkOut) {
         if (!checkOut.isAfter(checkIn)) {

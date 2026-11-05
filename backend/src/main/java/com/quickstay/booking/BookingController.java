@@ -31,4 +31,10 @@ public class BookingController {
     public List<BookingView> mine(Authentication auth) {
         return bookings.mine(auth.getName());
     }
+
+    /** PATCH /api/bookings/{id}/cancel: khach tu huy don cua minh khi con PENDING. */
+    @PatchMapping("/{id}/cancel")
+    public BookingView cancel(Authentication auth, @PathVariable Long id) {
+        return bookings.cancel(auth.getName(), id);
+    }
 }
