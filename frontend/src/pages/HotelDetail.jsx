@@ -2,8 +2,24 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatVnd, todayIso, nightsBetween } from '../lib/format'
-import { HotelImage, Spinner, ErrorBox } from '../components/ui'
+import { HotelImage, Spinner, ErrorBox, FieldError } from '../components/ui'
 import { useAuth } from '../store/authStore'
+
+function getNextDay(isoDate) {
+  if (!isoDate) return todayIso(1)
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const next = new Date(y, m - 1, d + 1)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`
+}
+
+function validateDates(inDate, outDate) {
+  if (!inDate || !outDate) return 'Vui lòng chọn cả ngày nhận và ngày trả phòng.'
+  const today = todayIso()
+  if (inDate < today) return 'Ngày nhận phòng không được ở trong quá khứ.'
+  if (outDate <= inDate) return 'Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm.'
+  return ''
+}
 
 export default function HotelDetail() {
   const { id } = useParams()
@@ -13,29 +29,90 @@ export default function HotelDetail() {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [roomError, setRoomError] = useState('')
   const [checkIn, setCheckIn] = useState(todayIso(1))
   const [checkOut, setCheckOut] = useState(todayIso(2))
+  const [dateError, setDateError] = useState('')
   const [searching, setSearching] = useState(false)
 
   useEffect(() => {
-    Promise.all([api(`/hotels/${id}`), api(`/hotels/${id}/rooms`)])
-      .then(([h, r]) => { setHotel(h); setRooms(r) })
+    setLoading(true)
+    setError('')
+    setRoomError('')
+    const initIn = todayIso(1)
+    const initOut = todayIso(2)
+    Promise.all([
+      api(`/hotels/${id}`),
+      api(`/hotels/${id}/rooms`, { params: { checkIn: initIn, checkOut: initOut } }),
+    ])
+      .then(([h, r]) => {
+        setHotel(h)
+        setRooms(r || [])
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
 
-  function searchRooms(e) {
-    e.preventDefault()
-    if (!checkIn || !checkOut || checkIn >= checkOut) return
+  function fetchRoomsAvailability(cIn, cOut) {
+    setRoomError('')
     setSearching(true)
-    api(`/hotels/${id}/rooms`, { params: { checkIn, checkOut } })
-      .then(setRooms)
-      .catch((err) => setError(err.message))
+    api(`/hotels/${id}/rooms`, { params: { checkIn: cIn, checkOut: cOut } })
+      .then((r) => setRooms(r || []))
+      .catch((err) => setRoomError(err.message))
       .finally(() => setSearching(false))
   }
 
+  function handleCheckInChange(val) {
+    setCheckIn(val)
+    const err = validateDates(val, checkOut)
+    setDateError(err)
+    if (!err && val && checkOut) {
+      fetchRoomsAvailability(val, checkOut)
+    }
+  }
+
+  function handleCheckOutChange(val) {
+    setCheckOut(val)
+    const err = validateDates(checkIn, val)
+    setDateError(err)
+    if (!err && checkIn && val) {
+      fetchRoomsAvailability(checkIn, val)
+    }
+  }
+
+  function searchRooms(e) {
+    e?.preventDefault()
+    const err = validateDates(checkIn, checkOut)
+    if (err) {
+      setDateError(err)
+      return
+    }
+    setDateError('')
+    fetchRoomsAvailability(checkIn, checkOut)
+  }
+
   function handleBook(room) {
-    if (!user) { navigate('/login'); return }
+    const err = validateDates(checkIn, checkOut)
+    if (err) {
+      setDateError(err)
+      return
+    }
+    if (typeof room.available !== 'number' || room.available <= 0) {
+      setRoomError('Loại phòng này hiện không còn phòng trống trong khoảng thời gian đã chọn.')
+      return
+    }
+    if (!user) {
+      navigate('/login', {
+        state: {
+          from: `/hotels/${id}/rooms/${room.id}/book`,
+          hotel,
+          room,
+          checkIn,
+          checkOut,
+        },
+      })
+      return
+    }
     navigate(`/hotels/${id}/rooms/${room.id}/book`, {
       state: { hotel, room, checkIn, checkOut },
     })
@@ -43,7 +120,22 @@ export default function HotelDetail() {
 
   if (loading) return <div className="py-20"><Spinner text="Đang tải thông tin khách sạn..." /></div>
   if (error) return <div className="mx-auto max-w-3xl px-4 py-16"><ErrorBox message={error} /></div>
-  if (!hotel) return null
+  if (!hotel) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8 text-slate-400">
+            <path d="M3 10.5 12 3l9 7.5V21H3V10.5Z" /><path d="M9 21v-7h6v7" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-slate-800">Không tìm thấy thông tin khách sạn</h2>
+        <p className="mt-2 text-sm text-slate-500">Khách sạn bạn đang tìm kiếm không tồn tại hoặc đã ngừng hoạt động.</p>
+        <Link to="/" className="mt-6 inline-block rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-sky-700 transition-colors">
+          Quay lại trang chủ
+        </Link>
+      </div>
+    )
+  }
 
   const amenityList = hotel.amenities ? hotel.amenities.split(',').map((a) => a.trim()) : []
   const nights = nightsBetween(checkIn, checkOut)
@@ -106,49 +198,73 @@ export default function HotelDetail() {
             <h2 className="mb-4 text-xl font-bold text-slate-900">Loại phòng</h2>
 
             {/* Date picker */}
-            <form onSubmit={searchRooms} className="mb-6 flex flex-col sm:flex-row gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Ngày nhận</label>
-                <input
-                  type="date"
-                  value={checkIn}
-                  min={todayIso()}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Ngày trả</label>
-                <input
-                  type="date"
-                  value={checkOut}
-                  min={checkIn || todayIso()}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={searching}
-                  className="w-full sm:w-auto rounded-lg bg-sky-600 px-5 py-2 text-sm font-bold text-white hover:bg-sky-700 transition-colors disabled:opacity-60"
-                >
-                  {searching ? 'Đang tìm...' : 'Kiểm tra'}
-                </button>
-              </div>
-            </form>
+            <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <form onSubmit={searchRooms} className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <label htmlFor="check-in-date" className="block text-xs font-semibold text-slate-500 mb-1">Ngày nhận</label>
+                  <input
+                    id="check-in-date"
+                    type="date"
+                    value={checkIn}
+                    min={todayIso()}
+                    onChange={(e) => handleCheckInChange(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="check-out-date" className="block text-xs font-semibold text-slate-500 mb-1">Ngày trả</label>
+                  <input
+                    id="check-out-date"
+                    type="date"
+                    value={checkOut}
+                    min={getNextDay(checkIn)}
+                    onChange={(e) => handleCheckOutChange(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    disabled={searching}
+                    className="w-full sm:w-auto rounded-lg bg-sky-600 px-5 py-2 text-sm font-bold text-white hover:bg-sky-700 transition-colors disabled:opacity-60"
+                  >
+                    {searching ? 'Đang kiểm tra...' : 'Kiểm tra'}
+                  </button>
+                </div>
+              </form>
+              {dateError && (
+                <div className="mt-2.5">
+                  <FieldError message={dateError} />
+                </div>
+              )}
+            </div>
 
-            {nights > 0 && (
+            {nights > 0 && !dateError && (
               <p className="mb-4 text-xs text-slate-500">
                 Thời gian lưu trú: <span className="font-semibold text-slate-700">{nights} đêm</span>
               </p>
             )}
 
+            {roomError && (
+              <div className="mb-4">
+                <ErrorBox message={roomError} />
+              </div>
+            )}
+
             <div className="space-y-4">
               {rooms.map((room) => (
-                <RoomCard key={room.id} room={room} nights={nights} onBook={() => handleBook(room)} />
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  nights={nights}
+                  disabled={!!dateError || !!roomError || nights <= 0}
+                  searching={searching}
+                  onBook={() => handleBook(room)}
+                />
               ))}
-              {rooms.length === 0 && <p className="text-sm text-slate-400 py-6 text-center">Không có phòng nào.</p>}
+              {rooms.length === 0 && !loading && (
+                <p className="text-sm text-slate-400 py-6 text-center">Không có loại phòng nào phù hợp.</p>
+              )}
             </div>
           </div>
         </div>
@@ -172,7 +288,7 @@ export default function HotelDetail() {
                 <span>Trả phòng</span><span className="font-medium">{checkOut || '—'}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Số đêm</span><span className="font-medium">{nights || '—'}</span>
+                <span>Số đêm</span><span className="font-medium">{!dateError && nights > 0 ? nights : '—'}</span>
               </div>
             </div>
             {!user && (
@@ -190,17 +306,23 @@ export default function HotelDetail() {
   )
 }
 
-function RoomCard({ room, nights, onBook }) {
-  const isAvailable = room.available == null || room.available > 0
+function RoomCard({ room, nights, disabled, searching, onBook }) {
+  const hasAvailable = typeof room.available === 'number'
+  const isAvailable = !disabled && !searching && hasAvailable && room.available > 0
+
   return (
     <div className={`rounded-xl border p-4 transition-all ${isAvailable ? 'border-slate-200 bg-white hover:border-sky-200 hover:shadow-md' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-slate-900">{room.roomType}</h3>
-            {room.available != null && (
+            {hasAvailable ? (
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${room.available > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                 {room.available > 0 ? `Còn ${room.available} phòng` : 'Hết phòng'}
+              </span>
+            ) : (
+              <span className="rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500">
+                Chưa kiểm tra phòng
               </span>
             )}
           </div>
@@ -216,7 +338,7 @@ function RoomCard({ room, nights, onBook }) {
           </div>
         </div>
         <div className="text-right">
-          {nights > 0 && (
+          {nights > 0 && room.pricePerNight && (
             <p className="text-lg font-extrabold text-sky-700">{formatVnd(room.pricePerNight * nights)}</p>
           )}
           <button

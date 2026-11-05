@@ -26,9 +26,13 @@ public class BookingController {
         return bookings.create(auth.getName(), req);
     }
 
-    /** GET /api/bookings/me: lich su dat phong cua toi, moi nhat truoc. */
     @GetMapping("/me")
     public List<BookingView> mine(Authentication auth) {
         return bookings.mine(auth.getName());
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public BookingView cancel(Authentication auth, @PathVariable Long id) {
+        return bookings.cancel(auth.getName(), id);
     }
 }

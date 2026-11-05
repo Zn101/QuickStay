@@ -76,11 +76,40 @@ public class BookingService {
         return BookingView.of(b);
     }
 
-    /** GET /api/bookings/me (T101): don cua nguoi dang dang nhap, moi nhat truoc. */
     @Transactional(readOnly = true)
     public List<BookingView> mine(String email) {
         User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
-        return bookings.findMine(user.getId()).stream().map(BookingView::of).toList();
+        return bookings.findByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(BookingView::of).toList();
+    }
+
+    @Transactional
+    public BookingView cancel(String email, Long id) {
+        Booking b = bookings.findById(id).orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getUser().getEmail().equals(email)) {
+            throw ApiException.forbidden("Ban khong co quyen huy don dat phong nay");
+        }
+        if (b.getStatus() != BookingStatus.PENDING) {
+            throw ApiException.conflict("Chi co the huy don dat phong o trang thai Cho xac nhan (PENDING)");
+        }
+        b.setStatus(BookingStatus.CANCELLED);
+        log.info("Khach {} huy dat phong #{}", email, id);
+        return BookingView.of(b);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingView> all() {
+        return bookings.findAllByOrderByCreatedAtDesc().stream().map(BookingView::of).toList();
+    }
+
+    @Transactional
+    public BookingView changeStatus(Long id, BookingStatus status) {
+        Booking b = bookings.findById(id).orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getStatus().next().contains(status)) {
+            throw ApiException.conflict("Khong the chuyen trang thai tu " + b.getStatus() + " sang " + status);
+        }
+        b.setStatus(status);
+        log.info("Admin chuyen trang thai dat phong #{} sang {}", id, status);
+        return BookingView.of(b);
     }
 
     /** T087: ngay tra sau ngay nhan; ngay nhan khong truoc hom nay (theo app.timezone). */

@@ -1,5 +1,6 @@
 package com.quickstay.booking;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,31 +11,11 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    /**
-     * Lich su dat phong cua mot nguoi dung (T101): moi nhat truoc, trung created_at thi theo id.
-     * Lay kem phong va khach san trong cung truy van de dung BookingView khong phat sinh N+1.
-     */
-    @Query("""
-            select b from Booking b
-            join fetch b.room r
-            join fetch r.hotel
-            join fetch b.user u
-            where u.id = :userId
-            order by b.createdAt desc, b.id desc
-            """)
-    List<Booking> findMine(@Param("userId") Long userId);
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
-    /** So don chua huy chong lan [checkIn, checkOut) cua mot loai phong; cung dieu kien voi countOverlappingByHotel. */
-    @Query("""
-            select count(b) from Booking b
-            where b.room.id = :roomId
-              and b.checkIn < :checkOut
-              and b.checkOut > :checkIn
-              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
-            """)
-    long countOverlapping(@Param("roomId") Long roomId,
-                          @Param("checkIn") LocalDate checkIn,
-                          @Param("checkOut") LocalDate checkOut);
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    List<Booking> findAllByOrderByCreatedAtDesc();
 
     /**
      * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong trong khach san, trong MOT truy van (T077).
@@ -62,6 +43,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByRoomId(Long roomId);
 
-    /** Khach san co don dat phong o cac trang thai cho truoc khong. Goi tu HotelAdminService.delete() (T083). */
-    boolean existsByRoomHotelIdAndStatusIn(Long hotelId, Collection<BookingStatus> statuses);
+    /**
+     * Kiem tra xem khach san co bat ky don dat phong nao khong (moi trang thai).
+     * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).
+     * Goi tu HotelAdminService.delete() (T083).
+     */
+    boolean existsByRoomHotelIdAndStatusIn(Long hotelId, List<BookingStatus> statuses);
 }
