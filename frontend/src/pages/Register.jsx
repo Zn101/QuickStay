@@ -152,7 +152,9 @@ export default function Register() {
       errs.email = 'Địa chỉ email không đúng định dạng'
     }
 
-    if (phoneTrimmed && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phoneTrimmed.replace(/\s+/g, ''))) {
+    if (!phoneTrimmed) {
+      errs.phone = 'Vui lòng nhập số điện thoại'
+    } else if (phoneTrimmed && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phoneTrimmed.replace(/\s+/g, ''))) {
       errs.phone = 'Số điện thoại không hợp lệ (gồm 10 chữ số)'
     }
 
@@ -318,8 +320,8 @@ export default function Register() {
                   aria-label={`Chuyển đến ảnh ${idx + 1}`}
                   onClick={() => setActiveSlide(idx)}
                   className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeSlide
-                      ? 'w-6 bg-cyan-400'
-                      : 'w-1.5 bg-white/35 hover:bg-white/60'
+                    ? 'w-6 bg-cyan-400'
+                    : 'w-1.5 bg-white/35 hover:bg-white/60'
                     }`}
                 />
               ))}
