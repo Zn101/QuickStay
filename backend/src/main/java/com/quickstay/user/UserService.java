@@ -1,6 +1,7 @@
 package com.quickstay.user;
 
 import com.quickstay.config.ApiException;
+import com.quickstay.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,10 +16,12 @@ public class UserService {
 
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final JwtService jwt;
 
-    public UserService(UserRepository users, PasswordEncoder encoder) {
+    public UserService(UserRepository users, PasswordEncoder encoder, JwtService jwt) {
         this.users = users;
         this.encoder = encoder;
+        this.jwt = jwt;
     }
 
     /** email: subject cua JWT, JwtAuthFilter dat vao Authentication.getName(). */
@@ -28,8 +31,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto update(String email, UpdateProfileRequest req) {
+    public UpdateProfileResponse update(String email, UpdateProfileRequest req) {
         User u = current(email);
+        boolean emailChanged = false;
         if (req.fullName() != null) {
             u.setFullName(req.fullName());
         }
@@ -42,13 +46,15 @@ public class UserService {
             }
             log.info("Nguoi dung id={} doi email", u.getId());
             u.setEmail(req.email());
+            emailChanged = true;
         }
         if (req.password() != null) {
             u.setPasswordHash(encoder.encode(req.password()));
             log.info("Nguoi dung id={} doi mat khau", u.getId());
         }
-        // Entity dang duoc quan ly trong transaction: thay doi tu ghi xuong DB khi commit
-        return UserDto.of(u);
+        // Entity dang duoc quan ly trong transaction: thay doi tu ghi xuong DB khi commit.
+        // Token mang email lam subject nen doi email thi token cu het tac dung: cap token moi de khong bi mat dang nhap.
+        return UpdateProfileResponse.of(u, emailChanged ? jwt.generate(u) : null);
     }
 
     private User current(String email) {

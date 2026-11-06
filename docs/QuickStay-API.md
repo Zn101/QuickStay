@@ -113,7 +113,7 @@ Mọi trường đều tùy chọn. Trường không gửi thì giữ nguyên; r
 | email | Đúng định dạng; 409 nếu đã có người dùng |
 | password | Tối thiểu 6 ký tự; được mã hóa BCrypt trước khi lưu |
 
-**200 OK** trả về hồ sơ sau cập nhật. Lưu ý: nếu đổi email, token cũ vẫn mang email cũ, nên cần đăng nhập lại.
+**200 OK** trả về hồ sơ sau cập nhật. Nếu email thực sự đổi, phản hồi có thêm `token` mới và token cũ hết tác dụng (401): client phải thay bằng token mới. Email không đổi thì không có trường `token`.
 
 ## 5. Khách sạn và phòng (công khai)
 

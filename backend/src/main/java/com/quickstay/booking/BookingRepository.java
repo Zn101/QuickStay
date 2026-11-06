@@ -42,9 +42,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                           @Param("checkIn") LocalDate checkIn,
                           @Param("checkOut") LocalDate checkOut);
 
-    /** Danh sach toan bo don cho admin, moi nhat truoc. */
+    /** Danh sach toan bo don cho admin, moi nhat truoc; trung created_at thi theo id de thu tu on dinh. */
     @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
-    List<Booking> findAllByOrderByCreatedAtDesc();
+    List<Booking> findAllByOrderByCreatedAtDescIdDesc();
 
     /**
      * Doc don va khoa dong do toi het transaction (T112): khach huy va admin doi trang thai cung luc

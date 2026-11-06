@@ -105,7 +105,7 @@ public class BookingService {
     /** GET /api/admin/bookings: toan bo don, moi nhat truoc. */
     @Transactional(readOnly = true)
     public List<BookingView> all() {
-        return bookings.findAllByOrderByCreatedAtDesc().stream().map(BookingView::of).toList();
+        return bookings.findAllByOrderByCreatedAtDescIdDesc().stream().map(BookingView::of).toList();
     }
 
     /** PATCH /api/admin/bookings/{id}/status: doi trang thai theo BookingStatus.next(); cung khoa dong don nhu cancel. */

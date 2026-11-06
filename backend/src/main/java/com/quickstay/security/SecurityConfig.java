@@ -1,5 +1,6 @@
 package com.quickstay.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,12 +11,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -51,10 +52,21 @@ public class SecurityConfig {
                         // Chi CUSTOMER moi dat phong
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
                         .anyRequest().authenticated())
+                // Ghi JSON truc tiep, khong dung sendError(): sendError chuyen sang /error, trang nay can dang nhap
+                // nen 403 bi doi thanh 401 khi chay that (MockMvc khong bat duoc, xem RealHttpApiTest)
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-                        .accessDeniedHandler((req, res, ex) -> res.sendError(HttpStatus.FORBIDDEN.value())));
+                        .authenticationEntryPoint((req, res, ex) ->
+                                writeError(res, HttpStatus.UNAUTHORIZED, "Chua dang nhap hoac token khong hop le"))
+                        .accessDeniedHandler((req, res, ex) ->
+                                writeError(res, HttpStatus.FORBIDDEN, "Ban khong co quyen thuc hien thao tac nay")));
         return http.build();
+    }
+
+    /** Loi tu tang bao mat cung dang {"message": "..."} nhu ApiExceptionHandler; message la hang so, khong can escape. */
+    private static void writeError(HttpServletResponse res, HttpStatus status, String message) throws IOException {
+        res.setStatus(status.value());
+        res.setContentType("application/json;charset=UTF-8");
+        res.getWriter().write("{\"message\":\"" + message + "\"}");
     }
 
     @Bean
