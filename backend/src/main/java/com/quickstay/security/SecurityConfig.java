@@ -1,6 +1,5 @@
 package com.quickstay.security;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,82 +9,60 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Cau hinh bao mat: JWT stateless, phan quyen theo role.
+ * T043/T094 (Minh): them JwtAuthFilter, bao ve /api/admin/** chi danh cho ADMIN.
+ */
 @Configuration
 public class SecurityConfig {
+
+    // JwtAuthFilter khong phai @Component: neu la bean, Spring Boot dang ky them no o tang servlet va filter chay 2 lan
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtService jwtService) {
+        this.jwtAuthFilter = new JwtAuthFilter(jwtService);
+    }
 
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * T055: tra JSON {"message":"..."} cho 401 de dong nhat voi format loi cua du an.
-     * Dung cho ca truong hop chua co JWT lan JWT khong hop le / het han.
-     */
     @Bean
-    AuthenticationEntryPoint jsonAuthEntryPoint() {
-        return (req, res, ex) -> {
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            res.setContentType("application/json;charset=UTF-8");
-            res.getWriter().write("{\"message\":\"Chua xac thuc hoac token khong hop le\"}");
-        };
-    }
-
-    /**
-     * T055: tra JSON {"message":"..."} cho 403, tranh sendError() bi chuyen sang /error.
-     */
-    @Bean
-    AccessDeniedHandler jsonAccessDeniedHandler() {
-        return (req, res, ex) -> {
-            res.setStatus(HttpStatus.FORBIDDEN.value());
-            res.setContentType("application/json;charset=UTF-8");
-            res.getWriter().write("{\"message\":\"Ban khong co quyen truy cap\"}");
-        };
-    }
-
-    @Bean
-    SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
-                        .requestMatchers("/api/ai/chat").permitAll()
+                        // Chi ADMIN moi truy cap duoc /api/admin/**
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Chi CUSTOMER moi dat phong
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("CUSTOMER")
-                        .requestMatchers("/api/admin/**", "/api/ai/describe").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(jsonAuthEntryPoint())
-                        .accessDeniedHandler(jsonAccessDeniedHandler()))
-                .addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((req, res, ex) -> res.sendError(HttpStatus.FORBIDDEN.value())));
         return http.build();
     }
 
-    /**
-     * T054: CORS chi cho phep origin Frontend tu bien moi truong CORS_ORIGINS.
-     * Khong dung wildcard, tich hop voi Spring Security qua .cors(Customizer.withDefaults()).
-     * Preflight OPTIONS duoc Spring Security xu ly tu dong nho corsConfigurationSource nay.
-     */
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origins}") String origins) {
+    CorsConfigurationSource corsConfigurationSource(CorsProperties cors) {
         CorsConfiguration config = new CorsConfiguration();
-        List<String> allowed = Arrays.stream(origins.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
-        config.setAllowedOrigins(allowed);
+        config.setAllowedOrigins(cors.allowedOrigins().stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        // allowCredentials can be set to true if frontend sends cookies; currently using Bearer JWT so not needed
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
         return source;

@@ -78,7 +78,7 @@ class RepositoryTest {
 
         assertEquals(BookingStatus.PENDING, first.getStatus());
         assertNotNull(first.getCreatedAt());
-        List<Booking> mine = bookings.findByUserIdOrderByCreatedAtDesc(u.getId());
+        List<Booking> mine = bookings.findMine(u.getId());
         assertEquals(List.of(second.getId(), first.getId()), mine.stream().map(Booking::getId).toList());
     }
 
@@ -89,7 +89,7 @@ class RepositoryTest {
         newRoom(h, "Standard", 500_000);
         newRoom(h, "Deluxe", 900_000);
         assertEquals(List.of("Standard", "Deluxe", "Suite"),
-                rooms.findByHotelIdOrderByPricePerNight(h.getId()).stream().map(Room::getRoomType).toList());
+                rooms.findByHotelIdOrderByPricePerNightAscIdAsc(h.getId()).stream().map(Room::getRoomType).toList());
     }
 
     @Test

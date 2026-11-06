@@ -3,6 +3,7 @@ package com.quickstay.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -38,13 +39,21 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<Map<String, String>> invalid(MethodArgumentNotValidException e) {
         String msg = e.getBindingResult().getFieldErrors().stream()
-                .map(f -> f.getField() + ": " + f.getDefaultMessage()).collect(Collectors.joining("; "));
+                .map(f -> f.getField() + ": " + (f.isBindingFailure() ? "khong dung dinh dang" : f.getDefaultMessage()))
+                .collect(Collectors.joining("; "));
         return body(HttpStatus.BAD_REQUEST, msg.isEmpty() ? "Du lieu khong hop le" : msg);
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ResponseEntity<Map<String, String>> unreadable(Exception e) {
         return body(HttpStatus.BAD_REQUEST, "Du lieu gui len khong dung dinh dang");
+    }
+
+    /** Cho khoa phong qua lau (nhieu nguoi cung dat mot loai phong): bao thu lai thay vi loi 500. */
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    ResponseEntity<Map<String, String>> lockTimeout(PessimisticLockingFailureException e) {
+        log.warn("Het thoi gian cho khoa: {}", e.getMostSpecificCause().getMessage());
+        return body(HttpStatus.CONFLICT, "Phong dang duoc nhieu nguoi dat, vui long thu lai");
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -1,64 +1,90 @@
 package com.quickstay.booking;
 
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
-
-    default List<Booking> findByUser(Long userId) {
-        return findByUserIdOrderByCreatedAtDesc(userId);
-    }
-
+    /**
+     * Lich su dat phong cua mot nguoi dung (T101): moi nhat truoc, trung created_at thi theo id.
+     * Lay kem phong va khach san trong cung truy van de dung BookingView khong phat sinh N+1.
+     */
     @Query("""
-            SELECT COUNT(b) FROM Booking b
-            WHERE b.room.id = :roomId
-              AND b.checkIn < :checkOut
-              AND b.checkOut > :checkIn
-              AND b.status <> :cancelled
+            select b from Booking b
+            join fetch b.room r
+            join fetch r.hotel
+            join fetch b.user u
+            where u.id = :userId
+            order by b.createdAt desc, b.id desc
             """)
-    long countOverlapping(
-            @Param("roomId") Long roomId,
-            @Param("checkIn") LocalDate checkIn,
-            @Param("checkOut") LocalDate checkOut,
-            @Param("cancelled") BookingStatus cancelled
-    );
+    List<Booking> findMine(@Param("userId") Long userId);
 
-    default long countOverlapping(
-            Long roomId,
-            LocalDate checkIn,
-            LocalDate checkOut
-    ) {
-        return countOverlapping(
-                roomId, checkIn, checkOut, BookingStatus.CANCELLED
-        );
-    }
-
+    /** So don chua huy chong lan [checkIn, checkOut) cua mot loai phong; cung dieu kien voi countOverlappingByHotel. */
     @Query("""
-            SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END
-            FROM Booking b
-            WHERE b.room.id IN :roomIds
+            select count(b) from Booking b
+            where b.room.id = :roomId
+              and b.checkIn < :checkOut
+              and b.checkOut > :checkIn
+              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
             """)
-    boolean existsByRoomIdInQuery(@Param("roomIds") List<Long> roomIds);
+    long countOverlapping(@Param("roomId") Long roomId,
+                          @Param("checkIn") LocalDate checkIn,
+                          @Param("checkOut") LocalDate checkOut);
 
-    default boolean existsByRoomIdIn(List<Long> roomIds) {
-        return roomIds != null
-                && !roomIds.isEmpty()
-                && existsByRoomIdInQuery(roomIds);
-    }
-
+    /** Danh sach toan bo don cho admin, moi nhat truoc. */
     @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
-    @Query("SELECT b FROM Booking b WHERE b.id = :id")
-    Optional<Booking> findDetailed(@Param("id") Long id);
+    List<Booking> findAllByOrderByCreatedAtDesc();
 
-    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
-    @Query("SELECT b FROM Booking b ORDER BY b.createdAt DESC")
-    List<Booking> findAllDetailed();
+    /**
+     * Doc don va khoa dong do toi het transaction (T112): khach huy va admin doi trang thai cung luc
+     * phai xep hang, nguoi sau thay trang thai moi nhat thay vi ghi de len nguoi truoc.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    @Query("select b from Booking b where b.id = :id")
+    Optional<Booking> findByIdForUpdate(@Param("id") Long id);
+
+    /**
+     * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong trong khach san, trong MOT truy van (T077).
+     * Chong lan khi b.checkIn < checkOut va b.checkOut > checkIn: bat dang thuc chat nen hai ky nghi
+     * lien ke (ngay tra cua don nay = ngay nhan cua don kia) khong xung dot.
+     * Loai phong khong co don nao chong lan thi khong co trong ket qua.
+     */
+    @Query("""
+            select new com.quickstay.booking.RoomBookedCount(b.room.id, count(b))
+            from Booking b
+            where b.room.hotel.id = :hotelId
+              and b.checkIn < :checkOut
+              and b.checkOut > :checkIn
+              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
+            group by b.room.id
+            """)
+    List<RoomBookedCount> countOverlappingByHotel(@Param("hotelId") Long hotelId,
+                                                  @Param("checkIn") LocalDate checkIn,
+                                                  @Param("checkOut") LocalDate checkOut);
+
+    /**
+     * Kiem tra xem loai phong co bat ky don dat phong nao khong (moi trang thai).
+     * bookings.room_id NOT NULL nen khong the xoa Room khi con Booking, ke ca CANCELLED.
+     * Goi tu RoomAdminService.delete() (T095).
+     */
+    boolean existsByRoomId(Long roomId);
+
+    /**
+     * Kiem tra xem khach san co don dat phong o cac trang thai cho truoc khong.
+     * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).
+     * Goi tu HotelAdminService.delete() (T083).
+     */
+    boolean existsByRoomHotelIdAndStatusIn(Long hotelId, Collection<BookingStatus> statuses);
 }
