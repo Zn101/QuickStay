@@ -1,0 +1,94 @@
+# ============================================================
+# docker-compose.prod.yml – T134
+# Triển khai bằng image đã build từ GHCR.
+# Không build từ source – phù hợp cho VPS không cần Java/Node.
+#
+# Tên image đối chiếu từ .github/workflows/cd-docker.yml:
+#   ghcr.io/<repository_owner>/quickstay-backend
+#   ghcr.io/<repository_owner>/quickstay-frontend
+# Repository owner: zn101 (lowercase theo quy tắc GHCR)
+#
+# Cách dùng:
+#   cp .env.example .env   # Sửa giá trị production
+#   docker compose -f docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+
+  # ── MySQL ──────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: quickstay
+      MYSQL_USER: quickstay
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    # MySQL KHÔNG expose port ra ngoài host trên production
+    # Backend kết nối qua Docker internal network (tên service: mysql)
+    networks:
+      - internal
+
+  # ── Backend ────────────────────────────────────────────────
+  backend:
+    image: ghcr.io/zn101/quickstay-backend:latest
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      DB_USER: quickstay
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # Backend chỉ expose nếu cần debug trực tiếp.
+    # Trong production thông thường, Nginx (frontend) proxy đến backend:8080
+    # qua internal network nên không cần expose ra host.
+    # Bỏ comment dòng dưới nếu cần truy cập API trực tiếp (debug):
+    # ports:
+    #   - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── Frontend (Nginx + React SPA) ───────────────────────────
+  frontend:
+    image: ghcr.io/zn101/quickstay-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      # Chỉ expose frontend ra ngoài. Nginx proxy /api/* → backend:8080 nội bộ.
+      # Nếu dùng reverse proxy (Nginx/Caddy) bên ngoài, đổi thành 127.0.0.1:8081:80
+      - "${FRONTEND_PORT:-8081}:80"
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    # Volume lưu trữ dữ liệu MySQL bền vững.
+    # KHÔNG bị xóa khi chạy "docker compose down" (chỉ mất khi "docker compose down -v")

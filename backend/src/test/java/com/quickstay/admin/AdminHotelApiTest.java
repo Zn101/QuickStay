@@ -562,4 +562,41 @@ class AdminHotelApiTest extends ApiTestBase {
                         .header("Authorization", "Bearer " + customerToken))
                 .andExpect(status().isForbidden());
     }
+
+    // =========================================================================
+    // BUG-02 (T133): DELETE hotel 409 message dung theo API contract
+    // =========================================================================
+
+    /** TC_H035: DELETE hotel co booking – 409 voi message dung theo contract. */
+    @Test
+    void TC_H035_delete_hotel_409_message_matches_api_contract() throws Exception {
+        String token = adminToken();
+        Hotel h = createHotelDirectly("BUG02 Hotel", "Test City");
+        Room r = new Room();
+        r.setHotel(h);
+        r.setRoomType("Standard");
+        r.setPricePerNight(BigDecimal.valueOf(300_000));
+        r.setCapacity(2);
+        r.setQuantity(1);
+        roomRepository.save(r);
+
+        // Tao booking de kich 409
+        String email = "bug02-" + UUID.randomUUID() + "@test.com";
+        User u = new User();
+        u.setEmail(email); u.setPasswordHash("hash");
+        userRepository.save(u);
+        LocalDate ci = LocalDate.now().plusDays(5);
+        Booking b = new Booking();
+        b.setRoom(r); b.setUser(u);
+        b.setCheckIn(ci); b.setCheckOut(ci.plusDays(1));
+        b.setGuests(1); b.setTotalPrice(BigDecimal.valueOf(300_000));
+        b.setStatus(BookingStatus.PENDING);
+        bookingRepository.save(b);
+
+        mvc.perform(delete("/api/admin/hotels/" + h.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict())
+                // Message phai dung theo API contract
+                .andExpect(jsonPath("$.message").value("Khach san da co dat phong, khong the xoa"));
+    }
 }

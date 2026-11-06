@@ -705,4 +705,93 @@ class AdminRoomApiTest extends ApiTestBase {
                         .header("Authorization", "Bearer " + customerToken))
                 .andExpect(status().isForbidden());
     }
+
+    // =========================================================================
+    // BUG-01 (T133): GET /api/admin/rooms?hotelId filter
+    // =========================================================================
+
+    /** TC_R044: GET /admin/rooms?hotelId={id} – chi tra phong thuoc hotel do. */
+    @Test
+    void TC_R044_list_rooms_filtered_by_hotelId() throws Exception {
+        String token = adminToken();
+
+        // Tao 2 hotel voi phong rieng
+        Hotel other = new Hotel();
+        other.setName("Other Hotel " + UUID.randomUUID());
+        other.setCity("Other City");
+        hotelRepository.save(other);
+
+        Room roomForHotel = createRoomDirectly(); // thuoc hotel tao trong @BeforeEach
+        Room roomForOther = new Room();
+        roomForOther.setHotel(other);
+        roomForOther.setRoomType("Suite");
+        roomForOther.setPricePerNight(BigDecimal.valueOf(800_000));
+        roomForOther.setCapacity(2);
+        roomForOther.setQuantity(1);
+        roomRepository.save(roomForOther);
+
+        var result = mvc.perform(get("/api/admin/rooms")
+                        .param("hotelId", hotel.getId().toString())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var arr = read(result);
+        // Tat ca phan tu phai co hotelId cua hotel tao trong @BeforeEach
+        for (var node : arr) {
+            assertEquals(hotel.getId().longValue(), node.get("hotelId").asLong(),
+                    "Tat ca phong phai thuoc hotel da loc");
+        }
+        // Phong cua hotel khac KHONG duoc co trong ket qua
+        boolean otherFound = false;
+        for (var node : arr) {
+            if (node.get("id").asLong() == roomForOther.getId()) {
+                otherFound = true;
+                break;
+            }
+        }
+        assertFalse(otherFound, "Phong cua hotel khac khong duoc co trong ket qua");
+    }
+
+    /** TC_R045: GET /admin/rooms?hotelId=999999 – hotel khong ton tai tra 200 + mang rong. */
+    @Test
+    void TC_R045_list_rooms_nonexistent_hotelId_returns_empty_array() throws Exception {
+        String token = adminToken();
+
+        mvc.perform(get("/api/admin/rooms")
+                        .param("hotelId", "999999")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    /** TC_R046: GET /admin/rooms (khong co hotelId) – van tra toan bo phong nhu cu. */
+    @Test
+    void TC_R046_list_rooms_without_hotelId_returns_all() throws Exception {
+        String token = adminToken();
+
+        // Tao them 1 phong de dam bao co nhieu phong
+        createRoomDirectly();
+
+        var result = mvc.perform(get("/api/admin/rooms")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andReturn();
+
+        // Phai co it nhat 1 phong (khong loc gi ca)
+        assertTrue(read(result).size() >= 1, "Phai tra ve it nhat 1 phong");
+    }
+
+    /** TC_R047: GET /admin/rooms?hotelId – phan quyen CUSTOMER bi tu choi 403. */
+    @Test
+    void TC_R047_list_rooms_with_hotelId_customer_returns_403() throws Exception {
+        String customerToken = registerCustomer(newCustomerEmail());
+
+        mvc.perform(get("/api/admin/rooms")
+                        .param("hotelId", hotel.getId().toString())
+                        .header("Authorization", "Bearer " + customerToken))
+                .andExpect(status().isForbidden());
+    }
 }
