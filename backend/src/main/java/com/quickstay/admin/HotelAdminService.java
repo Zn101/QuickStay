@@ -111,7 +111,7 @@ public class HotelAdminService {
                     "Khong the xoa khach san dang co or da tung co don dat phong");
         }
 
-        roomRepository.deleteAll(roomRepository.findByHotelIdOrderByPricePerNight(id));
+        roomRepository.deleteAll(roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(id));
         hotelRepository.delete(hotel);
         log.info("Admin xoa khach san id={} name=\"{}\"", id, hotel.getName());
     }

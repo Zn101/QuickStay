@@ -78,7 +78,7 @@ class RepositoryTest {
 
         assertEquals(BookingStatus.PENDING, first.getStatus());
         assertNotNull(first.getCreatedAt());
-        List<Booking> mine = bookings.findByUserIdOrderByCreatedAtDesc(u.getId());
+        List<Booking> mine = bookings.findMine(u.getId());
         assertEquals(List.of(second.getId(), first.getId()), mine.stream().map(Booking::getId).toList());
     }
 
