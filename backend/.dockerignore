@@ -1,0 +1,24 @@
+# Build output
+build/
+.gradle/
+out/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation & Logs
+*.md
+docs/
+*.log
