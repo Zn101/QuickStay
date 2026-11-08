@@ -106,3 +106,49 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.meta-frontend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      # 7. Deploy to VPS after both images are pushed
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -e
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -t rsa "$VPS_HOST" > ~/.ssh/known_hosts
+
+          ssh-keygen -lf ~/.ssh/known_hosts | grep -F "SHA256:fC0vLYUEKoEyoQsLPjKfSwCm1N9fN5g08MRUyKgAgQM"
+
+          ssh -i ~/.ssh/id_ed25519 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
+          set -e
+          cd /opt/quickstay
+
+          echo "Pulling latest QuickStay images..."
+          docker compose pull backend frontend
+
+          echo "Restarting backend and frontend..."
+          docker compose up -d --no-build --no-deps backend frontend
+
+          echo "Waiting for backend health..."
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+              echo "Backend is healthy."
+              curl -fsSI http://localhost
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Backend health check failed."
+          docker compose logs --tail=100 backend
+          exit 1
+          REMOTE
