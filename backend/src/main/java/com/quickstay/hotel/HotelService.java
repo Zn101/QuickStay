@@ -3,6 +3,8 @@ package com.quickstay.hotel;
 import com.quickstay.booking.BookingRepository;
 import com.quickstay.booking.RoomBookedCount;
 import com.quickstay.config.ApiException;
+import com.quickstay.config.PageResponse;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +30,23 @@ public class HotelService {
     /** GET /api/hotels: danh sach, tim kiem (T049) va loc theo phong (T050), kem gia thap nhat (T048). */
     @Transactional(readOnly = true)
     public List<HotelSummary> search(HotelSearch s) {
+        validatePriceRange(s);
+        return hotels.search(containsPattern(s.q()), containsPattern(s.city()), lower(s.roomType()),
+                s.minPrice(), s.maxPrice(), s.filtersRooms());
+    }
+
+    /** GET /api/hotels?page=&size= (T165): cung bo loc voi search, tra theo trang. */
+    @Transactional(readOnly = true)
+    public PageResponse<HotelSummary> searchPage(HotelSearch s, Pageable pageable) {
+        validatePriceRange(s);
+        return PageResponse.of(hotels.searchPage(containsPattern(s.q()), containsPattern(s.city()), lower(s.roomType()),
+                s.minPrice(), s.maxPrice(), s.filtersRooms(), pageable));
+    }
+
+    private static void validatePriceRange(HotelSearch s) {
         if (s.minPrice() != null && s.maxPrice() != null && s.minPrice().compareTo(s.maxPrice()) > 0) {
             throw ApiException.badRequest("minPrice phai nho hon hoac bang maxPrice");
         }
-        return hotels.search(containsPattern(s.q()), containsPattern(s.city()), lower(s.roomType()),
-                s.minPrice(), s.maxPrice(), s.filtersRooms());
     }
 
     /** GET /api/hotels/{id} (T062). */

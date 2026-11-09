@@ -10,9 +10,9 @@ public final class AuthDtos {
     private AuthDtos() {}
 
     public record RegisterRequest(
-            @NotBlank @Email String email,
-            // BCrypt chi xu ly 72 byte dau; dai hon se bi tu choi thay vi loi 500
-            @NotBlank @Size(min = 6, max = 72, message = "mat khau tu 6 den 72 ky tu") String password,
+            @NotBlank @Email @Size(max = 255) String email,
+            @NotBlank @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
+            @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String password,
             @NotBlank @Size(max = 255) String fullName,
             @Size(max = 30) String phone) {
 

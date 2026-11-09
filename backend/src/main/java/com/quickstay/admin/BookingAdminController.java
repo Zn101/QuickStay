@@ -4,9 +4,10 @@ import com.quickstay.booking.BookingDtos.BookingView;
 import com.quickstay.booking.BookingService;
 import com.quickstay.booking.BookingStatus;
 import com.quickstay.config.ApiException;
+import com.quickstay.config.PageQuery;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,8 +28,8 @@ public class BookingAdminController {
      * GET /api/admin/bookings - Danh sach tat ca don dat phong, moi nhat truoc.
      */
     @GetMapping
-    public List<BookingView> list() {
-        return bookingService.all();
+    public Object list(@Valid PageQuery paging) {
+        return paging.requested() ? bookingService.all(paging.toPageable()) : bookingService.all();
     }
 
     /**
