@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { ErrorBox, FieldError } from '../components/ui'
+import { ErrorBox, FieldError, SuccessModal } from '../components/ui'
 
 const SLIDES = [
   {
@@ -121,6 +121,19 @@ export default function Register() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
+  const [registeredSuccess, setRegisteredSuccess] = useState(false)
+
+  const goToLogin = useCallback(() => {
+    navigate('/login', { state: { registeredEmail: form.email.trim() }, replace: true })
+  }, [navigate, form.email])
+
+  useEffect(() => {
+    if (!registeredSuccess) return
+    const timer = setTimeout(() => {
+      goToLogin()
+    }, 1800)
+    return () => clearTimeout(timer)
+  }, [registeredSuccess, goToLogin])
 
   // Tự động chuyển đổi ảnh nền mỗi 5 giây
   useEffect(() => {
@@ -181,7 +194,7 @@ export default function Register() {
     setBusy(true)
     try {
       await register(form)
-      navigate('/')
+      setRegisteredSuccess(true)
     } catch (err) {
       if (err?.errors) {
         setErrors(err.errors)
@@ -513,6 +526,14 @@ export default function Register() {
           </p>
         </div>
       </section>
+
+      <SuccessModal
+        isOpen={registeredSuccess}
+        title="Đăng ký thành công!"
+        message="Tài khoản của bạn đã được tạo thành công. Vui lòng đăng nhập lại để bắt đầu sử dụng QuickStay."
+        buttonText="Đến trang đăng nhập"
+        onClose={goToLogin}
+      />
     </main>
   )
 }
