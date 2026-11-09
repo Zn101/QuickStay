@@ -2,6 +2,8 @@ package com.quickstay.booking;
 
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -20,15 +22,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * Lich su dat phong cua mot nguoi dung (T101): moi nhat truoc, trung created_at thi theo id.
      * Lay kem phong va khach san trong cung truy van de dung BookingView khong phat sinh N+1.
      */
-    @Query("""
+    String MINE_QUERY = """
             select b from Booking b
             join fetch b.room r
             join fetch r.hotel
             join fetch b.user u
             where u.id = :userId
             order by b.createdAt desc, b.id desc
-            """)
+            """;
+
+    @Query(MINE_QUERY)
     List<Booking> findMine(@Param("userId") Long userId);
+
+    /** Ban phan trang cua findMine (T165); chi join to-one nen LIMIT chay trong SQL. */
+    @Query(value = MINE_QUERY, countQuery = "select count(b) from Booking b where b.user.id = :userId")
+    Page<Booking> findMine(@Param("userId") Long userId, Pageable pageable);
 
     /** So don chua huy chong lan [checkIn, checkOut) cua mot loai phong; cung dieu kien voi countOverlappingByHotel. */
     @Query("""
@@ -45,6 +53,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /** Danh sach toan bo don cho admin, moi nhat truoc; trung created_at thi theo id de thu tu on dinh. */
     @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
     List<Booking> findAllByOrderByCreatedAtDescIdDesc();
+
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    Page<Booking> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
 
     /**
      * Doc don va khoa dong do toi het transaction (T112): khach huy va admin doi trang thai cung luc

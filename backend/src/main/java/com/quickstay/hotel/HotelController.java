@@ -1,5 +1,6 @@
 package com.quickstay.hotel;
 
+import com.quickstay.config.PageQuery;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +22,10 @@ public class HotelController {
         this.hotels = hotels;
     }
 
-    /** GET /api/hotels?q=&city=&roomType=&minPrice=&maxPrice= (cong khai). */
+    /** GET /api/hotels?q=&city=&roomType=&minPrice=&maxPrice= (cong khai); them page, size thi tra theo trang. */
     @GetMapping
-    public List<HotelSummary> list(@Valid HotelSearch search) {
-        return hotels.search(search);
+    public Object list(@Valid HotelSearch search, @Valid PageQuery paging) {
+        return paging.requested() ? hotels.searchPage(search, paging.toPageable()) : hotels.search(search);
     }
 
     /** GET /api/hotels/{id} (cong khai); 404 neu khong co. */

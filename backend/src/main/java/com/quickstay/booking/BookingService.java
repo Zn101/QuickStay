@@ -3,12 +3,14 @@ package com.quickstay.booking;
 import com.quickstay.booking.BookingDtos.BookingRequest;
 import com.quickstay.booking.BookingDtos.BookingView;
 import com.quickstay.config.ApiException;
+import com.quickstay.config.PageResponse;
 import com.quickstay.hotel.Room;
 import com.quickstay.hotel.RoomRepository;
 import com.quickstay.user.User;
 import com.quickstay.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,6 +85,13 @@ public class BookingService {
         return bookings.findMine(user.getId()).stream().map(BookingView::of).toList();
     }
 
+    /** GET /api/bookings/me?page=&size= (T165). */
+    @Transactional(readOnly = true)
+    public PageResponse<BookingView> mine(String email, Pageable pageable) {
+        User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        return PageResponse.of(bookings.findMine(user.getId(), pageable).map(BookingView::of));
+    }
+
     /**
      * PATCH /api/bookings/{id}/cancel (T112): chi chu don, chi khi con PENDING.
      * Khoa dong don truoc khi doc trang thai de khong ghi de khi admin dang xac nhan cung luc.
@@ -106,6 +115,12 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingView> all() {
         return bookings.findAllByOrderByCreatedAtDescIdDesc().stream().map(BookingView::of).toList();
+    }
+
+    /** GET /api/admin/bookings?page=&size= (T165). */
+    @Transactional(readOnly = true)
+    public PageResponse<BookingView> all(Pageable pageable) {
+        return PageResponse.of(bookings.findAllByOrderByCreatedAtDescIdDesc(pageable).map(BookingView::of));
     }
 
     /** PATCH /api/admin/bookings/{id}/status: doi trang thai theo BookingStatus.next(); cung khoa dong don nhu cancel. */
