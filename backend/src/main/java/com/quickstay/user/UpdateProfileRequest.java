@@ -10,8 +10,9 @@ import jakarta.validation.constraints.Size;
 public record UpdateProfileRequest(
         @Size(max = 255) String fullName,
         @Size(max = 30) String phone,
-        @Email String email,
-        @Size(min = 6, max = 72, message = "mat khau tu 6 den 72 ky tu") String password) {
+        @Email @Size(max = 255) String email,
+        @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
+        @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String password) {
 
     public UpdateProfileRequest {
         fullName = blankToNull(fullName);
