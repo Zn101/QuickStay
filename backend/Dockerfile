@@ -27,6 +27,10 @@ FROM eclipse-temurin:17-jre-alpine
 # Tao user khong co quyen root de chay ung dung (best practice bao mat)
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+# T146: cai curl de Docker healthcheck trong docker-compose.prod.yml co the kiem tra /actuator/health
+# alpine package nho (~500KB), khong anh huong security profile cua image
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy JAR tu stage build

@@ -6,6 +6,8 @@ Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng b�
 
 ## 🚀 Triển khai trên VPS Ubuntu (Production)
 
+> 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)
+
 ### Yêu cầu hệ thống
 
 | Thành phần | Tối thiểu | Khuyến nghị |
@@ -281,6 +283,21 @@ docker compose up --build backend
 > **Lưu ý:** Dữ liệu MySQL được lưu trong Docker volume `quickstay_mysql-data-recovery`.
 > Lệnh `docker compose down` **không xóa** dữ liệu. Chỉ `docker compose down -v` mới xóa (dùng cẩn thận!).
 
+### Sao lưu & Phục hồi cơ sở dữ liệu MySQL (T147)
+
+> 📄 Xem tài liệu chi tiết tại: [docs/deployment/T147-mysql-backup-restore.md](docs/deployment/T147-mysql-backup-restore.md)
+
+```powershell
+# 1. Sao lưu database quickstay (tự động lưu vào thư mục backups/)
+.\scripts\backup-mysql.ps1
+
+# 2. Khôi phục an toàn vào database kiểm thử (quickstay_test_restore)
+.\scripts\restore-mysql.ps1
+
+# 3. Khôi phục với file backup cụ thể
+.\scripts\restore-mysql.ps1 -BackupFile .\backups\quickstay_backup_YYYYMMDD_HHMMSS.sql -TargetDatabase quickstay_test_restore
+```
+
 ---
 
 ## Cấu trúc dự án
@@ -289,6 +306,7 @@ docker compose up --build backend
 QuickStay/
 ├── frontend/          # React + Vite + Tailwind CSS
 ├── backend/           # Spring Boot + Java 17
+├── scripts/           # Script tự động hóa (Backup/Restore MySQL)
 ├── docs/              # Tài liệu dự án
 ├── qa/                # Kiểm thử chất lượng
 ├── .github/workflows/ # GitHub Actions CI/CD

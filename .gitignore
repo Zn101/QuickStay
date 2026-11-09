@@ -71,6 +71,11 @@ test-results/
 # (docker-compose.yml is tracked; local overrides are not)
 docker-compose.override.yml
 
+# ─── Database Backups (T147) ─────────────────────────────────
+backups/
+*.sql
+*.sql.gz
+
 # ─── OS ──────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
@@ -80,3 +85,4 @@ docker-compose.override.yml
 ehthumbs.db
 Thumbs.db
 desktop.ini
+

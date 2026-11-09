@@ -55,6 +55,10 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # T146: tat seed data mau tren production (chi seed khi bang trong, nhung an toan hon la tat han)
+      SEED_SAMPLE_DATA: "false"
+      # T146: dam bao mui gio nghiep vu dung voi Ho Chi Minh
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Ho_Chi_Minh}
     # Backend chỉ expose nếu cần debug trực tiếp.
     # Trong production thông thường, Nginx (frontend) proxy đến backend:8080
     # qua internal network nên không cần expose ra host.
@@ -64,7 +68,10 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      # T146: eclipse-temurin:17-jre-alpine khong co curl/wget theo mac dinh.
+      # curl duoc cai them trong backend Dockerfile (stage runtime) de healthcheck hoat dong.
+      # Xem backend/Dockerfile: RUN apk add --no-cache curl
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
