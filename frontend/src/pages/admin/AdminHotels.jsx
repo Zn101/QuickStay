@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
-import { ErrorBox } from '../../components/ui'
+import { ErrorBox, ConfirmModal } from '../../components/ui'
 
 const EMPTY = { name: '', city: '', address: '', description: '', imageUrl: '', amenities: '' }
 
@@ -13,6 +13,11 @@ export default function AdminHotels() {
   const [formError, setFormError] = useState('')
   const [busy, setBusy] = useState(false)
   const [showForm, setShowForm] = useState(false)
+
+  // State cho Modal xác nhận xóa khách sạn
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   // States cho tìm kiếm và lọc theo thành phố
   const [search, setSearch] = useState('')
@@ -71,13 +76,23 @@ export default function AdminHotels() {
     }
   }
 
-  async function deleteHotel(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa khách sạn này khỏi hệ thống?')) return
+  function triggerDelete(hotel) {
+    setDeleteTarget(hotel)
+    setDeleteError('')
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    setDeleteError('')
     try {
-      await api(`/admin/hotels/${id}`, { method: 'DELETE' })
-      setHotels((hs) => hs.filter((h) => h.id !== id))
+      await api(`/admin/hotels/${deleteTarget.id}`, { method: 'DELETE' })
+      setHotels((hs) => hs.filter((h) => h.id !== deleteTarget.id))
+      setDeleteTarget(null)
     } catch (err) {
-      alert(err.message)
+      setDeleteError(err.message || 'Không thể xóa khách sạn này (có thể cơ sở đang có đơn đặt phòng liên kết).')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -110,31 +125,109 @@ export default function AdminHotels() {
   const inputClass =
     'w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/10 transition-all'
 
+  const totalCities = cities.filter((c) => c !== 'ALL').length
+  const hotelsWithImages = hotels.filter((h) => !!h.imageUrl).length
+  const hotelsWithAmenities = hotels.filter((h) => !!h.amenities).length
+
   return (
     <div className="space-y-6 pb-10">
-      {/* Top Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Quản lý Khách sạn</h1>
-            <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-extrabold text-sky-700 ring-1 ring-sky-600/10">
-              {hotels.length} cơ sở
-            </span>
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 p-6 sm:p-8 text-white shadow-xl">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-sky-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 right-1/4 h-48 w-48 rounded-full bg-indigo-500/15 blur-3xl" />
+
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-sky-300 backdrop-blur-md mb-2.5 border border-white/10">
+              <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+              Hệ thống quản trị lưu trú
+            </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Quản lý khách sạn</h1>
+              <span className="rounded-full bg-sky-400/20 px-2.5 py-0.5 text-xs font-bold text-sky-200 border border-sky-400/30">
+                {hotels.length} cơ sở
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-300 max-w-xl">
+              Quản lý danh sách cơ sở lưu trú, thông tin địa điểm, hình ảnh và tiện ích đi kèm cho từng khách sạn.
+            </p>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            Quản lý danh sách cơ sở lưu trú, thông tin địa điểm, hình ảnh và tiện ích đi kèm.
-          </p>
+          <button
+            onClick={openCreate}
+            className="group inline-flex items-center justify-center gap-2.5 self-start sm:self-auto rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4 transition-transform group-hover:rotate-90">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Thêm khách sạn mới
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Tổng khách sạn</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900">{hotels.length}</span>
+            <span className="text-xs font-medium text-slate-400">cơ sở hoạt động</span>
+          </div>
         </div>
 
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-sky-500/20 hover:from-sky-500 hover:to-indigo-500 active:scale-95 transition-all"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
-          </svg>
-          Thêm khách sạn mới
-        </button>
+        <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Địa bàn phủ sóng</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900">{totalCities}</span>
+            <span className="text-xs font-medium text-slate-400">tỉnh / thành phố</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Có hình ảnh minh họa</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900">{hotelsWithImages}</span>
+            <span className="text-xs font-medium text-slate-400">/ {hotels.length} cơ sở</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Có tiện ích đi kèm</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900">{hotelsWithAmenities}</span>
+            <span className="text-xs font-medium text-slate-400">cơ sở có tiện ích</span>
+          </div>
+        </div>
       </div>
 
       {error && <ErrorBox message={error} />}
@@ -318,8 +411,8 @@ export default function AdminHotels() {
                     Chỉnh sửa
                   </button>
                   <button
-                    onClick={() => deleteHotel(h.id)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-50 hover:border-rose-300 transition-all"
+                    onClick={() => triggerDelete(h)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-50 hover:border-rose-300 transition-all cursor-pointer"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -498,6 +591,24 @@ export default function AdminHotels() {
           </div>
         </div>
       )}
+      {/* Modal xác nhận Xóa khách sạn */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Xác nhận xóa khách sạn"
+        message={`Bạn có chắc chắn muốn xóa khách sạn "${deleteTarget?.name}" khỏi hệ thống? Toàn bộ các hạng phòng thuộc khách sạn này cũng sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn tác.`}
+        confirmText="Xác nhận xóa"
+        cancelText="Hủy bỏ"
+        danger={true}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!deleting) {
+            setDeleteTarget(null)
+            setDeleteError('')
+          }
+        }}
+      />
     </div>
   )
 }

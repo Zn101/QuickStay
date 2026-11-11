@@ -1,16 +1,23 @@
 import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
 import { useState } from 'react'
+import { ConfirmModal } from './ui'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
-  function handleLogout() {
+  function openLogoutModal() {
+    setMenuOpen(false)
+    setShowLogoutConfirm(true)
+  }
+
+  function handleConfirmLogout() {
+    setShowLogoutConfirm(false)
     logout()
     navigate('/')
-    setMenuOpen(false)
   }
 
   const linkClass = ({ isActive }) =>
@@ -47,8 +54,9 @@ export default function Layout() {
                   <span className="font-medium max-w-[120px] truncate">{user.fullName}</span>
                 </Link>
                 <button
-                  onClick={handleLogout}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  type="button"
+                  onClick={openLogoutModal}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   Đăng xuất
                 </button>
@@ -89,7 +97,9 @@ export default function Layout() {
             {user && <Link to="/profile" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Hồ sơ</Link>}
             {user?.role === 'ADMIN' && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Quản trị</Link>}
             {user ? (
-              <button onClick={handleLogout} className="block w-full text-left text-sm font-medium text-red-600">Đăng xuất</button>
+              <button type="button" onClick={openLogoutModal} className="block w-full text-left text-sm font-medium text-red-600">
+                Đăng xuất
+              </button>
             ) : (
               <div className="flex gap-3 pt-2">
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="flex-1 rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-700">Đăng nhập</Link>
@@ -109,6 +119,18 @@ export default function Layout() {
       <footer className="border-t border-slate-100 bg-white py-6 text-center text-xs text-slate-400">
         © {new Date().getFullYear()} QuickStay. Your stay, your way.
       </footer>
+
+      {/* Modal xác nhận Đăng xuất */}
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Bạn có muốn đăng xuất không?"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại trên QuickStay không?"
+        confirmText="Đăng xuất"
+        cancelText="Ở lại"
+        danger={true}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   )
 }
