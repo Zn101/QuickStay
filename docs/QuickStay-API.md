@@ -64,6 +64,23 @@ Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>;
 | POST | `/ai/chat` | Công khai | Chatbot hỏi đáp |
 | GET | `/actuator/health` | Công khai | Kiểm tra sức khỏe (nằm ngoài `/api`) |
 
+## Phân trang
+
+`GET /hotels`, `GET /bookings/me`, `GET /admin/bookings` nhận thêm tham số tùy chọn:
+
+| Tham số | Mô tả |
+|---|---|
+| `page` | Trang cần lấy, tính từ 0 (mặc định 0) |
+| `size` | Số phần tử mỗi trang, từ 1 đến 100 (mặc định 10) |
+
+Không gửi cả hai thì API trả **mảng đầy đủ** như các ví dụ trong tài liệu. Gửi ít nhất một tham số thì trả:
+
+```json
+{ "items": [ ... ], "page": 0, "size": 10, "totalItems": 23, "totalPages": 3 }
+```
+
+Trang vượt quá trang cuối trả `items` rỗng. `page` âm, `size` ngoài khoảng 1–100 hoặc sai kiểu số trả 400.
+
 ## 4. Xác thực và hồ sơ
 
 ### POST `/auth/register`
@@ -126,7 +143,7 @@ Mọi trường đều tùy chọn. Trường không gửi thì giữ nguyên; r
 | `roomType` | Loại phòng, khớp chính xác không phân biệt hoa thường |
 | `minPrice`, `maxPrice` | Khoảng giá một đêm (VND) |
 
-Khi có `roomType`, `minPrice` hoặc `maxPrice`, chỉ trả về khách sạn có ít nhất một loại phòng phù hợp; `minPrice` trong kết quả là giá thấp nhất trong các phòng phù hợp. Không phân trang.
+Khi có `roomType`, `minPrice` hoặc `maxPrice`, chỉ trả về khách sạn có ít nhất một loại phòng phù hợp; `minPrice` trong kết quả là giá thấp nhất trong các phòng phù hợp. Có thể phân trang, xem mục "Phân trang".
 
 `GET /hotels?q=sunrise` → **200 OK**
 
