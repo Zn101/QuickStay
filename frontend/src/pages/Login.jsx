@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { ErrorBox, FieldError } from '../components/ui'
+import { ErrorBox, FieldError, SuccessModal } from '../components/ui'
 
 // Danh sách ảnh nền tự động chuyển động
 const SLIDES = [
@@ -45,12 +45,35 @@ export default function Login() {
   const login = useAuth((s) => s.login)
   const navigate = useNavigate()
   const location = useLocation()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ email: location.state?.registeredEmail || '', password: '' })
   const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [loggedInUser, setLoggedInUser] = useState(null)
+
+  const handleContinueLogin = useCallback(
+    (u) => {
+      if (!u) return
+      if (u.role === 'ADMIN') {
+        navigate('/admin')
+      } else if (location.state?.from) {
+        navigate(location.state.from, { state: location.state, replace: true })
+      } else {
+        navigate('/')
+      }
+    },
+    [navigate, location.state],
+  )
+
+  useEffect(() => {
+    if (!loggedInUser) return
+    const timer = setTimeout(() => {
+      handleContinueLogin(loggedInUser)
+    }, 1800)
+    return () => clearTimeout(timer)
+  }, [loggedInUser, handleContinueLogin])
 
   // Tự động chuyển ảnh mỗi 5.5 giây
   useEffect(() => {
@@ -96,13 +119,7 @@ export default function Login() {
     setBusy(true)
     try {
       const user = await login(form.email, form.password)
-      if (user.role === 'ADMIN') {
-        navigate('/admin')
-      } else if (location.state?.from) {
-        navigate(location.state.from, { state: location.state, replace: true })
-      } else {
-        navigate('/')
-      }
+      setLoggedInUser(user)
     } catch (err) {
       if (err?.errors) {
         setErrors(err.errors)
@@ -418,6 +435,14 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      <SuccessModal
+        isOpen={!!loggedInUser}
+        title="Đăng nhập thành công!"
+        message={`Chào mừng ${loggedInUser?.fullName || loggedInUser?.email || 'bạn'} quay trở lại QuickStay. Hệ thống đang chuyển hướng...`}
+        buttonText="Tiếp tục ngay"
+        onClose={() => handleContinueLogin(loggedInUser)}
+      />
     </div>
   )
 }

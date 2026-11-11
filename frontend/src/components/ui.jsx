@@ -186,3 +186,50 @@ export function ConfirmModal({
     </div>
   )
 }
+
+export function SuccessModal({
+  isOpen,
+  title = 'Thành công!',
+  message,
+  buttonText = 'Tiếp tục',
+  onClose,
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+      <div
+        className="relative w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl border border-slate-100 transition-all"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="success-modal-headline"
+      >
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/60">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        <h3 id="success-modal-headline" className="mt-5 text-xl font-extrabold text-slate-900">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          {message}
+        </p>
+
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition-all active:scale-95 cursor-pointer"
+          >
+            <span>{buttonText}</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

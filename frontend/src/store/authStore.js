@@ -34,8 +34,8 @@ export const useAuth = create((set, get) => ({
 
   async register(payload) {
     const res = await api('/auth/register', { method: 'POST', body: payload })
-    persist({ token: res.token, user: res.user })
-    set({ token: res.token, user: res.user })
+    localStorage.removeItem(AUTH_KEY)
+    set({ token: null, user: null })
     return res.user
   },
 

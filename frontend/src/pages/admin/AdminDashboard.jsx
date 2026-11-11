@@ -149,32 +149,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Executive Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-8 lg:p-10 text-white shadow-2xl border border-slate-800/80">
-        {/* Subtle decorative grid & glows */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(#fff 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-sky-500/15 blur-3xl" />
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 p-6 sm:p-8 text-white shadow-xl">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-sky-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 right-1/4 h-48 w-48 rounded-full bg-indigo-500/15 blur-3xl" />
 
-        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-300 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-              </span>
-              Hệ thống Quản trị & Điều hành Lưu trú
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-sky-300 backdrop-blur-md mb-1 border border-white/10">
+              <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+              Hệ thống quản trị lưu trú
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Trung tâm Điều khiển Tổng quan
             </h1>
-            <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed">
               Giám sát dòng tiền, hiệu suất công suất phòng và phê duyệt các giao dịch đặt phòng trên toàn hệ thống theo thời gian thực.
             </p>
           </div>
@@ -185,10 +174,10 @@ export default function AdminDashboard() {
               type="button"
               onClick={() => loadData(true)}
               disabled={isRefreshing}
-              className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-white/10 px-5 py-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/15 hover:shadow-lg active:scale-95 disabled:opacity-60 border border-white/15 cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2.5 self-start sm:self-auto rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
             >
               <svg
-                className={`h-4 w-4 text-sky-400 ${isRefreshing ? 'animate-spin' : ''}`}
+                className={`h-4 w-4 transition-transform ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
