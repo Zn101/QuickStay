@@ -1,5 +1,6 @@
 package com.quickstay.user;
 
+import com.quickstay.user.UserService.UserSettingsDto;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,5 +24,15 @@ public class UserController {
     @PutMapping("/me")
     public UpdateProfileResponse update(Authentication auth, @Valid @RequestBody UpdateProfileRequest req) {
         return users.update(auth.getName(), req);
+    }
+
+    @GetMapping("/me/settings")
+    public UserSettingsDto settings(Authentication auth) {
+        return users.settings(auth.getName());
+    }
+
+    @PutMapping("/me/settings")
+    public UserSettingsDto updateSettings(Authentication auth, @RequestBody UserSettingsDto req) {
+        return users.updateSettings(auth.getName(), req);
     }
 }

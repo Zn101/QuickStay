@@ -74,6 +74,7 @@ docker-compose.override.yml
 # ─── Database Backups (T147) ─────────────────────────────────
 backups/
 *.sql
+!backend/src/main/resources/db/migration/*.sql
 *.sql.gz
 
 # ─── OS ──────────────────────────────────────────────────────

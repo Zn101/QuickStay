@@ -22,10 +22,16 @@ public class HotelController {
         this.hotels = hotels;
     }
 
-    /** GET /api/hotels?q=&city=&roomType=&minPrice=&maxPrice= (cong khai); them page, size thi tra theo trang. */
+    /** GET /api/hotels?q=&city=&roomType=&minPrice=&maxPrice=&checkIn=&checkOut= (cong khai); them page, size thi tra theo trang. */
     @GetMapping
     public Object list(@Valid HotelSearch search, @Valid PageQuery paging) {
         return paging.requested() ? hotels.searchPage(search, paging.toPageable()) : hotels.search(search);
+    }
+
+    /** GET /api/hotels/room-types (cong khai): danh sach loai phong de loc. */
+    @GetMapping("/room-types")
+    public List<String> roomTypes() {
+        return hotels.roomTypes();
     }
 
     /** GET /api/hotels/{id} (cong khai); 404 neu khong co. */

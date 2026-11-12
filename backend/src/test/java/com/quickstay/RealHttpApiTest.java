@@ -265,4 +265,48 @@ class RealHttpApiTest {
             pool.shutdownNow();
         }
     }
+
+    // ---- T164: Nhieu yeu cau HTTP cung luc cho phong cuoi ----
+
+    @Test
+    void TC_HTTP_11_many_simultaneous_requests_for_last_room() throws Exception {
+        int n = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(n);
+        try {
+            Room last = newRoom(1);
+            List<String> tokens = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                tokens.add(newCustomer());
+            }
+            CountDownLatch ready = new CountDownLatch(n);
+            CountDownLatch go = new CountDownLatch(1);
+            List<Future<ResponseEntity<String>>> futures = new ArrayList<>();
+            for (String token : tokens) {
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return call(HttpMethod.POST, "/api/bookings", token, bookingBody(last, 10, 12));
+                }));
+            }
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            go.countDown();
+
+            int created = 0;
+            int conflict = 0;
+            for (Future<ResponseEntity<String>> f : futures) {
+                ResponseEntity<String> r = f.get(60, TimeUnit.SECONDS);
+                if (r.getStatusCode().value() == 201) {
+                    created++;
+                } else if (r.getStatusCode().value() == 409) {
+                    conflict++;
+                    String msg = parse(r).get("message").asText();
+                    assertTrue(msg.equals("Phong da het trong khoang ngay da chon") || msg.equals("Phong dang duoc nhieu nguoi dat, vui long thu lai"));
+                }
+            }
+            assertEquals(1, created, "Chi dung 1 yeu cau dat phong thanh cong cho phong cuoi");
+            assertEquals(n - 1, conflict, "Cac yeu cau con lai phai tra ve 409 Conflict");
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 }

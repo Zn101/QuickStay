@@ -7,11 +7,16 @@ import HotelDetail from './pages/HotelDetail'
 import BookingForm from './pages/BookingForm'
 import MyBookings from './pages/MyBookings'
 import Profile from './pages/Profile'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
+import Policies from './pages/Policies'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminHotels from './pages/admin/AdminHotels'
 import AdminRooms from './pages/admin/AdminRooms'
 import AdminBookings from './pages/admin/AdminBookings'
+import AdminEmails from './pages/admin/AdminEmails'
 
 export default function App() {
   return (
@@ -21,6 +26,10 @@ export default function App() {
         <Route path="/hotels/:id" element={<HotelDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/policies" element={<Policies />} />
         <Route path="/hotels/:hotelId/rooms/:roomId/book" element={<BookingForm />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/profile" element={<Profile />} />
@@ -32,6 +41,7 @@ export default function App() {
         <Route path="hotels" element={<AdminHotels />} />
         <Route path="rooms" element={<AdminRooms />} />
         <Route path="bookings" element={<AdminBookings />} />
+        <Route path="emails" element={<AdminEmails />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

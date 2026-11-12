@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
  * @param page trang can lay, tinh tu 0 (mac dinh 0)
  * @param size so phan tu moi trang, 1-100 (mac dinh 10)
  */
-public record PageQuery(@Min(0) Integer page, @Min(1) @Max(100) Integer size) {
+public record PageQuery(@Min(0) @Max(1_000_000) Integer page, @Min(1) @Max(100) Integer size) {
 
     private static final int DEFAULT_SIZE = 10;
 

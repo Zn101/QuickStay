@@ -2,22 +2,26 @@ package com.quickstay.hotel;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
- * Tham so tim kiem GET /api/hotels (T049, T050). Chuoi rong hoac toan khoang trang coi nhu khong loc.
- *
- * @param q        khop mot phan voi ten hoac thanh pho, khong phan biet hoa thuong
- * @param city     khop mot phan voi thanh pho
- * @param roomType khop chinh xac loai phong, khong phan biet hoa thuong
+ * Tham so tim kiem GET /api/hotels (T049, T050 + loc theo ngay). Chuoi rong hoac toan khoang trang coi nhu khong loc.
  */
 public record HotelSearch(
-        @Size(max = 100) String q,
-        @Size(max = 100) String city,
-        @Size(max = 100) String roomType,
-        @PositiveOrZero BigDecimal minPrice,
-        @PositiveOrZero BigDecimal maxPrice) {
+        @Size(max = 100, message = "toi da 100 ky tu") String q,
+        @Size(max = 100, message = "toi da 100 ky tu") String city,
+        @Size(max = 100, message = "toi da 100 ky tu") String roomType,
+        @PositiveOrZero(message = "khong duoc am") BigDecimal minPrice,
+        @PositiveOrZero(message = "khong duoc am") BigDecimal maxPrice,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut) {
+
+    public HotelSearch(String q, String city, String roomType, BigDecimal minPrice, BigDecimal maxPrice) {
+        this(q, city, roomType, minPrice, maxPrice, null, null);
+    }
 
     public HotelSearch {
         q = blankToNull(q);

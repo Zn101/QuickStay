@@ -362,9 +362,9 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 **Phùng Văn Vượng** (6.5 giờ)
 
-- [ ] T164 Test đồng thời chống đặt trùng: nhiều yêu cầu cho phòng cuối (3 giờ) → Chỉ 1 yêu cầu thành công
-- [ ] T166 Sửa lỗi QA phía backend (1 giờ) → Bug backend đã đóng
-- [ ] T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) (2.5 giờ) → Test xanh
+- [x] T164 Test đồng thời chống đặt trùng: nhiều yêu cầu cho phòng cuối (3 giờ) → Chỉ 1 yêu cầu thành công
+- [x] T166 Sửa lỗi QA phía backend (1 giờ) → Bug backend đã đóng
+- [x] T141 Bổ sung test: khách sạn, tìm kiếm, phòng trống (nhánh lỗi) (2.5 giờ) → Test xanh
 
 **Lê Tiến Đức** (6 giờ)
 
@@ -387,9 +387,9 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 
 **Phùng Văn Vượng** (6 giờ)
 
-- [ ] T176 Sửa lỗi backend theo kết quả tải và Lighthouse (3 giờ) → NFR-01 đạt
-- [ ] T177 Chốt tài liệu API và ERD theo thực tế (1 giờ) → API.md, ERD.md cập nhật
-- [ ] T175 Kiểm thử phân trang qua API và giao diện, sửa lỗi nếu có (2 giờ) → Phân trang chạy đầu cuối
+- [x] T176 Sửa lỗi backend theo kết quả tải và Lighthouse (3 giờ) → NFR-01 đạt
+- [x] T177 Chốt tài liệu API và ERD theo thực tế (1 giờ) → API.md, ERD.md cập nhật
+- [x] T175 Kiểm thử phân trang qua API và giao diện, sửa lỗi nếu có (2 giờ) → Phân trang chạy đầu cuối
 
 **Lê Tiến Đức** (6 giờ)
 

@@ -1,20 +1,14 @@
-# ============================================================
-# backend/.dockerignore – T134
-# Loai tru file khong can thiet khoi Docker build context.
-# Giam kich thuoc context, tang toc build, tranh lo secret.
-# ============================================================
-
-# Build output (Gradle tu build trong container, khong can output cu tren host)
+# Build output
 build/
 .gradle/
 out/
 
-# File moi truong – TUYET DOI khong copy vao image
+# Environment files
 .env
 .env.*
 !.env.example
 
-# IDE va OS
+# IDE and OS
 .idea/
 *.iml
 .DS_Store
@@ -24,18 +18,7 @@ Thumbs.db
 .git/
 .gitignore
 
-# Tai lieu
+# Documentation & Logs
 *.md
 docs/
-
-# Log
 *.log
-
-# Docker
-Dockerfile
-.dockerignore
-
-# NOTE: src/test/ KHONG bi loai tru vi Dockerfile build bang "-x test"
-# (Gradle skip test khi build JAR), nhung test files khong can thiet trong image.
-# Neu muon loai tru test de giam context size, bo comment dong duoi:
-# src/test/

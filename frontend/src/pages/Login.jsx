@@ -362,9 +362,17 @@ export default function Login() {
 
               {/* Mật khẩu */}
               <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">
-                  Mật khẩu
-                </label>
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+                    Mật khẩu
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-sky-600 transition hover:text-sky-800 hover:underline"
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
                 <div className="group relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors group-focus-within:text-sky-600">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">

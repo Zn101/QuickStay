@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../store/authStore'
+import { useSettings } from '../store/settingsStore'
 import { ErrorBox } from '../components/ui'
+import EmailInboxModal from '../components/EmailInboxModal'
 
 export default function Profile() {
   const { user, setUser } = useAuth()
+  const settings = useSettings()
   const [form, setForm] = useState({
     fullName: user?.fullName || '',
     phone: user?.phone || '',
@@ -14,8 +17,40 @@ export default function Profile() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [busy, setBusy] = useState(false)
-  const [activeTab, setActiveTab] = useState('general') // 'general' | 'security'
+  const [activeTab, setActiveTab] = useState('general') // 'general' | 'security' | 'settings'
   const [showPassword, setShowPassword] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [savingSettings, setSavingSettings] = useState(false)
+
+  async function updateAppSetting(partial) {
+    setSavingSettings(true)
+    setError('')
+    setSuccess('')
+    try {
+      await settings.saveSettings(partial, !!user)
+      setSuccess('Đã lưu cài đặt tài khoản & ứng dụng!')
+    } catch (err) {
+      setError(err.message || 'Không thể lưu cài đặt.')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!user?.email || resending) return
+    setResending(true)
+    setError('')
+    setSuccess('')
+    try {
+      await api('/auth/resend-verification', { method: 'POST', body: { email: user.email } })
+      setSuccess('Đã gửi lại email xác thực! Bạn có thể kiểm tra trong Hộp thư QuickStay.')
+    } catch (err) {
+      setError(err.message || 'Không thể gửi lại email xác thực.')
+    } finally {
+      setResending(false)
+    }
+  }
 
   function set(key) {
     return (e) => {
@@ -117,12 +152,16 @@ export default function Profile() {
                 {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div
-                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white shadow-sm"
-                title="Tài khoản đã xác thực"
+                className={`absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${user?.emailVerified ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                title={user?.emailVerified ? 'Email đã xác thực' : 'Email chưa xác thực'}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                {user?.emailVerified ? (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="text-xs font-black">!</span>
+                )}
               </div>
             </div>
 
@@ -136,12 +175,27 @@ export default function Profile() {
                   {user.phone}
                 </span>
               )}
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">
-                <svg className="h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                Bảo mật tiêu chuẩn
-              </span>
+              {user?.emailVerified ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                  ✓ Email đã xác thực
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={handleResendVerification}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100 transition"
+                >
+                  {resending ? 'Đang gửi...' : '⚠️ Chưa xác thực · Gửi lại email'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowInbox(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition"
+              >
+                📧 Hộp thư QuickStay
+              </button>
             </div>
           </div>
 
@@ -191,6 +245,21 @@ export default function Profile() {
               <span className="h-2 w-2 rounded-full bg-amber-500"></span>
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${activeTab === 'settings'
+              ? 'bg-white text-sky-600 shadow-sm ring-1 ring-slate-200/80'
+              : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+              }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Cài đặt ứng dụng
+          </button>
         </div>
       </div>
 
@@ -200,12 +269,18 @@ export default function Profile() {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-5">
           <div>
             <h2 className="text-lg font-extrabold text-slate-900">
-              {activeTab === 'general' ? 'Thông tin định danh & Liên hệ' : 'Bảo mật & Mật khẩu'}
+              {activeTab === 'general'
+                ? 'Thông tin định danh & Liên hệ'
+                : activeTab === 'security'
+                  ? 'Bảo mật & Mật khẩu'
+                  : 'Cài đặt ứng dụng & Thông báo'}
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">
               {activeTab === 'general'
                 ? 'Quản lý tên hiển thị, số điện thoại và địa chỉ nhận thông báo của bạn.'
-                : 'Thiết lập mật khẩu mạnh để bảo vệ tài khoản khỏi các truy cập trái phép.'}
+                : activeTab === 'security'
+                  ? 'Thiết lập mật khẩu mạnh để bảo vệ tài khoản khỏi các truy cập trái phép.'
+                  : 'Tùy chỉnh ngôn ngữ, đơn vị tiền tệ hiển thị, chế độ giao diện và thông báo email.'}
             </p>
           </div>
         </div>
@@ -386,7 +461,89 @@ export default function Profile() {
             </div>
           )}
 
+          {/* TAB 3: CÀI ĐẶT ỨNG DỤNG & TÀI KHOẢN */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Ngôn ngữ hiển thị
+                  </label>
+                  <select
+                    disabled={savingSettings}
+                    value={settings.preferredLanguage}
+                    onChange={(e) => updateAppSetting({ preferredLanguage: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-sky-500"
+                  >
+                    <option value="vi">Tiếng Việt (Mặc định)</option>
+                    <option value="en">English (International)</option>
+                  </select>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Tiền tệ hiển thị
+                  </label>
+                  <select
+                    disabled={savingSettings}
+                    value={settings.currencyDisplay}
+                    onChange={(e) => updateAppSetting({ currencyDisplay: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-sky-500"
+                  >
+                    <option value="VND">VND (₫ - Việt Nam Đồng)</option>
+                    <option value="USD">USD ($ - Quy đổi tham khảo)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white">
+                <label className="flex cursor-pointer items-center justify-between gap-4 p-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Thông báo Email giao dịch</p>
+                    <p className="text-xs text-slate-500">Nhận email xác nhận đặt phòng, biên lai thanh toán và cập nhật trạng thái.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    disabled={savingSettings}
+                    checked={settings.notifyEmail}
+                    onChange={(e) => updateAppSetting({ notifyEmail: e.target.checked })}
+                    className="h-5 w-5 accent-sky-600"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center justify-between gap-4 p-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Thông báo ưu đãi & Khuyến mãi</p>
+                    <p className="text-xs text-slate-500">Nhận mã giảm giá theo mùa và thông tin khách sạn mới tại điểm đến yêu thích.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    disabled={savingSettings}
+                    checked={settings.notifyPromo}
+                    onChange={(e) => updateAppSetting({ notifyPromo: e.target.checked })}
+                    className="h-5 w-5 accent-sky-600"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center justify-between gap-4 p-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Chế độ hiển thị gọn (Compact Mode)</p>
+                    <p className="text-xs text-slate-500">Tối ưu khoảng cách hiển thị danh sách phòng và đơn đặt trên màn hình nhỏ.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    disabled={savingSettings}
+                    checked={settings.compactMode}
+                    onChange={(e) => updateAppSetting({ compactMode: e.target.checked })}
+                    className="h-5 w-5 accent-sky-600"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* ==================== ACTION BUTTONS ==================== */}
+          {activeTab !== 'settings' && (
           <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 border-t border-slate-100 pt-6">
             <button
               type="button"
@@ -415,8 +572,10 @@ export default function Profile() {
               )}
             </button>
           </div>
+          )}
         </form>
       </div>
+      <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>
   )
 }

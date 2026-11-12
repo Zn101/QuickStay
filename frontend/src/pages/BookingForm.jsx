@@ -38,6 +38,7 @@ export default function BookingForm() {
     guestPhone: user?.phone || '',
     guests: 1,
     note: '',
+    paymentMethod: 'PAY_AT_HOTEL',
   })
 
   const [fieldErrors, setFieldErrors] = useState({})
@@ -219,9 +220,15 @@ export default function BookingForm() {
           guestName: form.guestName.trim(),
           guestPhone: cleanPhone,
           note: form.note ? form.note.trim() : '',
+          paymentMethod: form.paymentMethod,
         },
       })
-      navigate('/my-bookings', { state: { newBookingId: booking.id } })
+      navigate('/my-bookings', {
+        state: {
+          newBookingId: booking.id,
+          payBooking: form.paymentMethod !== 'PAY_AT_HOTEL' ? booking : null,
+        },
+      })
     } catch (err) {
       if (err.status === 401) {
         setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
@@ -442,8 +449,39 @@ export default function BookingForm() {
               />
             </div>
 
-            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              💳 Thanh toán <span className="font-bold">tại khách sạn</span> khi nhận phòng. Không thu phí trực tuyến.
+            {/* Payment Method */}
+            <div>
+              <p className="mb-2 block text-sm font-semibold text-slate-700">Phương thức thanh toán</p>
+              <div className="grid sm:grid-cols-2 gap-2.5">
+                {[
+                  { id: 'PAY_AT_HOTEL', title: 'Thanh toán tại khách sạn', desc: 'Trả tiền khi nhận phòng' },
+                  { id: 'BANK_TRANSFER', title: 'Chuyển khoản VietQR', desc: 'Quét mã QR ngân hàng 24/7' },
+                  { id: 'CREDIT_CARD', title: 'Thẻ Visa / Mastercard', desc: 'Thanh toán thẻ quốc tế' },
+                  { id: 'E_WALLET', title: 'Ví MoMo / VNPay', desc: 'Thanh toán nhanh qua OTP' },
+                ].map((opt) => (
+                  <label
+                    key={opt.id}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
+                      form.paymentMethod === opt.id
+                        ? 'border-sky-500 bg-sky-50/70 ring-2 ring-sky-500/20'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={opt.id}
+                      checked={form.paymentMethod === opt.id}
+                      onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="mt-0.5 accent-sky-600"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{opt.title}</p>
+                      <p className="text-[11px] text-slate-500">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <button
