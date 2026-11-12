@@ -2,12 +2,11 @@ package com.quickstay.booking;
 
 import com.quickstay.booking.BookingDtos.BookingRequest;
 import com.quickstay.booking.BookingDtos.BookingView;
+import com.quickstay.config.PageQuery;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /** /api/bookings: can dang nhap; dat phong chi danh cho CUSTOMER (SecurityConfig). */
 @RestController
@@ -26,10 +25,10 @@ public class BookingController {
         return bookings.create(auth.getName(), req);
     }
 
-    /** GET /api/bookings/me: lich su dat phong cua toi, moi nhat truoc. */
+    /** GET /api/bookings/me: lich su dat phong cua toi, moi nhat truoc; them page, size thi tra theo trang. */
     @GetMapping("/me")
-    public List<BookingView> mine(Authentication auth) {
-        return bookings.mine(auth.getName());
+    public Object mine(Authentication auth, @Valid PageQuery paging) {
+        return paging.requested() ? bookings.mine(auth.getName(), paging.toPageable()) : bookings.mine(auth.getName());
     }
 
     /** PATCH /api/bookings/{id}/cancel: khach tu huy don cua minh khi con PENDING. */

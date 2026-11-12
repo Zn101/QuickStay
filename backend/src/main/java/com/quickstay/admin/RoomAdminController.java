@@ -24,13 +24,14 @@ public class RoomAdminController {
     }
 
     /**
-     * GET /api/admin/rooms – Lay danh sach tat ca loai phong (T095).
-     * Yeu cau: ADMIN role.
-     * Thanh cong: 200 OK + List<RoomResponse>.
+     * GET /api/admin/rooms – Lay danh sach loai phong (T095, T133-BUG-01).
+     * Neu co hotelId: chi tra phong thuoc khach san do.
+     * Neu khong co hotelId: tra toan bo phong.
+     * Neu hotelId khong ton tai hoac khong co phong: tra mang rong (200 OK).
      */
     @GetMapping
-    public List<RoomResponse> list() {
-        return roomAdminService.list();
+    public List<RoomResponse> list(@RequestParam(required = false) Long hotelId) {
+        return roomAdminService.list(hotelId);
     }
 
     /**

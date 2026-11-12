@@ -4,6 +4,203 @@ Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng b�
 
 ---
 
+## 🚀 Triển khai trên VPS Ubuntu (Production)
+
+> 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)
+
+### Yêu cầu hệ thống
+
+| Thành phần | Tối thiểu | Khuyến nghị |
+|-----------|---------|------------|
+| OS | Ubuntu 20.04 LTS | Ubuntu 22.04 / 24.04 LTS |
+| RAM | 2 GB | 4 GB |
+| CPU | 1 core | 2 cores |
+| Disk | 10 GB | 20 GB |
+| Docker Engine | 24+ | Latest |
+| Docker Compose Plugin | v2+ | Latest |
+
+**Port cần mở trên firewall:**
+
+| Port | Dịch vụ | Ghi chú |
+|------|---------|---------|
+| 22 | SSH | Quản trị server |
+| 8081 | Frontend (Nginx) | Truy cập ứng dụng |
+| 80/443 | Nếu có reverse proxy | Tùy cấu hình |
+
+> MySQL (:3306) và Backend (:8080) **KHÔNG** expose ra ngoài trong `docker-compose.prod.yml` — chúng giao tiếp nội bộ qua Docker network.
+
+---
+
+### Bước 1 – Cài Docker Engine trên Ubuntu
+
+```bash
+# Cập nhật package list
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+
+# Thêm Docker GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Thêm Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Cài Docker Engine + Compose Plugin
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+
+# Cho phép user hiện tại dùng Docker không cần sudo
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Kiểm tra
+docker --version
+docker compose version
+```
+
+---
+
+### Bước 2 – Clone repository
+
+```bash
+git clone https://github.com/Zn101/QuickStay.git
+cd QuickStay
+```
+
+---
+
+### Bước 3 – Chuẩn bị file .env
+
+```bash
+cp .env.example .env
+nano .env   # Hoặc: vi .env
+```
+
+**Các giá trị BẮT BUỘC phải đổi trước khi chạy production:**
+
+```bash
+# Tạo JWT_SECRET mạnh (≥ 48 ký tự ngẫu nhiên)
+openssl rand -base64 48
+
+# Tạo mật khẩu DB mạnh
+openssl rand -hex 20
+```
+
+Ví dụ nội dung `.env` cho production (thay giá trị thật):
+
+```env
+DB_PASSWORD=<mat-khau-mysql-manh>
+DB_ROOT_PASSWORD=<mat-khau-root-manh>
+JWT_SECRET=<chuoi-ngau-nhien-48-ky-tu>
+CORS_ORIGINS=http://<IP-hoac-domain-VPS>:8081
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=<mat-khau-admin-manh>
+ANTHROPIC_API_KEY=          # Để trống nếu không dùng AI
+FRONTEND_PORT=8081
+```
+
+> **Lưu ý:** Không commit file `.env` lên Git. File này đã được `.gitignore` bảo vệ.
+
+---
+
+### Bước 4 – Đăng nhập GHCR (nếu package private)
+
+```bash
+# Tạo Personal Access Token tại: https://github.com/settings/tokens
+# Cần quyền: read:packages
+echo <GITHUB_TOKEN> | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
+```
+
+---
+
+### Bước 5 – Pull image và khởi chạy
+
+```bash
+# Pull image mới nhất từ GHCR
+docker pull ghcr.io/zn101/quickstay-backend:latest
+docker pull ghcr.io/zn101/quickstay-frontend:latest
+
+# Khởi chạy toàn hệ thống (chạy nền)
+docker compose -f docker-compose.prod.yml up -d
+```
+
+---
+
+### Bước 6 – Kiểm tra trạng thái
+
+```bash
+# Xem trạng thái các container
+docker compose -f docker-compose.prod.yml ps
+
+# Kiểm tra health của từng service
+docker inspect quickstay-backend-1 --format='{{.State.Health.Status}}'
+docker inspect quickstay-mysql-1   --format='{{.State.Health.Status}}'
+
+# Kiểm tra Backend health endpoint
+curl http://localhost:8080/actuator/health
+# Expected: {"status":"UP"}
+
+# Kiểm tra Frontend
+curl -I http://localhost:8081
+# Expected: HTTP/1.1 200 OK
+
+# Kiểm tra API qua Nginx proxy
+curl http://localhost:8081/api/hotels
+# Expected: JSON array danh sách khách sạn
+```
+
+---
+
+### Xem log khi gặp lỗi
+
+```bash
+# Log tất cả service
+docker compose -f docker-compose.prod.yml logs -f
+
+# Log từng service
+docker compose -f docker-compose.prod.yml logs backend  --tail=100
+docker compose -f docker-compose.prod.yml logs frontend --tail=50
+docker compose -f docker-compose.prod.yml logs mysql    --tail=50
+
+# Lỗi thường gặp:
+# - Backend không kết nối được MySQL: kiểm tra DB_PASSWORD khớp nhau
+# - Backend lỗi 401/403:             kiểm tra JWT_SECRET
+# - CORS error trên browser:         kiểm tra CORS_ORIGINS đúng domain/IP
+```
+
+---
+
+### Cập nhật phiên bản mới
+
+```bash
+# Pull image mới
+docker pull ghcr.io/zn101/quickstay-backend:latest
+docker pull ghcr.io/zn101/quickstay-frontend:latest
+
+# Restart service với image mới (không mất dữ liệu)
+docker compose -f docker-compose.prod.yml up -d --no-build
+```
+
+---
+
+### Dừng hệ thống an toàn (giữ nguyên dữ liệu)
+
+```bash
+# Dừng container, GIỮ NGUYÊN dữ liệu MySQL trong volume
+docker compose -f docker-compose.prod.yml down
+
+# CẢNH BÁO: Lệnh sau sẽ XÓA TOÀN BỘ dữ liệu MySQL
+# docker compose -f docker-compose.prod.yml down -v   # KHÔNG chạy trừ khi muốn reset hoàn toàn
+```
+
+---
+
 ## 🐳 Chạy bằng Docker Compose (Khuyến nghị)
 
 Đây là cách nhanh nhất để chạy toàn bộ hệ thống (MySQL + Backend + Frontend) chỉ với vài lệnh.
@@ -86,6 +283,21 @@ docker compose up --build backend
 > **Lưu ý:** Dữ liệu MySQL được lưu trong Docker volume `quickstay_mysql-data-recovery`.
 > Lệnh `docker compose down` **không xóa** dữ liệu. Chỉ `docker compose down -v` mới xóa (dùng cẩn thận!).
 
+### Sao lưu & Phục hồi cơ sở dữ liệu MySQL (T147)
+
+> 📄 Xem tài liệu chi tiết tại: [docs/deployment/T147-mysql-backup-restore.md](docs/deployment/T147-mysql-backup-restore.md)
+
+```powershell
+# 1. Sao lưu database quickstay (tự động lưu vào thư mục backups/)
+.\scripts\backup-mysql.ps1
+
+# 2. Khôi phục an toàn vào database kiểm thử (quickstay_test_restore)
+.\scripts\restore-mysql.ps1
+
+# 3. Khôi phục với file backup cụ thể
+.\scripts\restore-mysql.ps1 -BackupFile .\backups\quickstay_backup_YYYYMMDD_HHMMSS.sql -TargetDatabase quickstay_test_restore
+```
+
 ---
 
 ## Cấu trúc dự án
@@ -94,6 +306,7 @@ docker compose up --build backend
 QuickStay/
 ├── frontend/          # React + Vite + Tailwind CSS
 ├── backend/           # Spring Boot + Java 17
+├── scripts/           # Script tự động hóa (Backup/Restore MySQL)
 ├── docs/              # Tài liệu dự án
 ├── qa/                # Kiểm thử chất lượng
 ├── .github/workflows/ # GitHub Actions CI/CD
@@ -177,6 +390,115 @@ cd backend
 cd backend
 .\gradlew.bat test
 ```
+
+---
+
+## 📦 Sử dụng Docker Image từ GHCR (T121)
+
+Sau khi merge vào `main`, GitHub Actions tự động build và push image lên GitHub Container Registry.
+
+### Địa chỉ image
+
+| Service | Image |
+|---------|-------|
+| Backend | `ghcr.io/zn101/quickstay-backend` |
+| Frontend | `ghcr.io/zn101/quickstay-frontend` |
+
+### Quy tắc tag
+
+| Tag | Ý nghĩa |
+|-----|---------|
+| `latest` | Bản build mới nhất từ nhánh `main` |
+| `sha-<7 ký tự>` | Bản build tương ứng commit SHA cụ thể |
+
+### Đăng nhập GHCR
+
+```bash
+# Dung Personal Access Token (classic) voi quyen read:packages
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+### Pull image
+
+```bash
+# Pull ban moi nhat
+docker pull ghcr.io/zn101/quickstay-backend:latest
+docker pull ghcr.io/zn101/quickstay-frontend:latest
+
+# Pull theo commit SHA cu the
+docker pull ghcr.io/zn101/quickstay-backend:sha-a1b2c3d
+docker pull ghcr.io/zn101/quickstay-frontend:sha-a1b2c3d
+```
+
+### Chạy Docker Compose với image đã publish (không cần build lại)
+
+Tạo file `docker-compose.prod.yml`:
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: quickstay
+      MYSQL_USER: quickstay
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    image: ghcr.io/zn101/quickstay-backend:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USER: quickstay
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    image: ghcr.io/zn101/quickstay-frontend:latest
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8081}:80"
+
+volumes:
+  mysql-data:
+```
+
+```bash
+# Chay voi image tu GHCR (can dang nhap truoc)
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Biến môi trường bắt buộc khi dùng image GHCR
+
+| Biến | Bắt buộc | Mô tả |
+|------|---------|-------|
+| `JWT_SECRET` | ✅ | Khóa ký JWT, tối thiểu 32 ký tự ngẫu nhiên |
+| `DB_PASSWORD` | ✅ | Mật khẩu MySQL user `quickstay` |
+| `DB_ROOT_PASSWORD` | ✅ | Mật khẩu MySQL root |
+| `CORS_ORIGINS` | ✅ | Domain frontend, ví dụ `https://yourdomain.com` |
+| `ADMIN_EMAIL` | Khuyến nghị | Email tài khoản admin mặc định |
+| `ADMIN_PASSWORD` | Khuyến nghị | Mật khẩu admin (đổi khỏi `Admin@123`) |
+| `ANTHROPIC_API_KEY` | Không bắt buộc | AI features, để trống nếu không dùng |
+
+> **Lưu ý bảo mật:** Không commit file `.env` chứa giá trị thật lên Git.
+> Tạo JWT_SECRET mạnh: `openssl rand -base64 48`
 
 ---
 

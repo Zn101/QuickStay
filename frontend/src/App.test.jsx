@@ -104,7 +104,7 @@ describe('App', () => {
   it('shows admin panel hotels page for admin user', async () => {
     useAuth.setState({ token: 't', user: { id: 1, email: 'a@b.c', role: 'ADMIN', fullName: 'A' } })
     renderAt('/admin/hotels')
-    expect(await screen.findByText('Quản lý khách sạn')).toBeInTheDocument()
+    expect(await screen.findByText(/quản lý khách sạn/i)).toBeInTheDocument()
   })
 
   it('shows the backend error message when login fails', async () => {

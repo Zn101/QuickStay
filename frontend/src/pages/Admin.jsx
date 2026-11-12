@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import { NEXT_STATUS, STATUS_LABEL, formatDate, formatVnd } from '../lib/format'
-import { ErrorBox, Spinner, StatusBadge } from '../components/ui'
+import { ErrorBox, Spinner, StatusBadge, ConfirmModal } from '../components/ui'
 
 const TABS = [
   ['bookings', 'Đặt phòng'],
@@ -109,6 +109,9 @@ function HotelsTab() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const load = useCallback(() => api('/admin/hotels').then(setItems).catch((e) => setError(e.message)), [])
   useEffect(() => {
@@ -131,14 +134,19 @@ function HotelsTab() {
     }
   }
 
-  const remove = async (h) => {
-    if (!window.confirm(`Xóa khách sạn "${h.name}" và các phòng của nó?`)) return
+  const confirmRemove = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    setDeleteError('')
     try {
-      await api(`/admin/hotels/${h.id}`, { method: 'DELETE' })
+      await api(`/admin/hotels/${deleteTarget.id}`, { method: 'DELETE' })
+      setDeleteTarget(null)
       setError('')
       load()
     } catch (err) {
-      setError(err.message)
+      setDeleteError(err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -204,13 +212,28 @@ function HotelsTab() {
                 <td className="p-3">{h.minPrice != null ? formatVnd(h.minPrice) : '—'}</td>
                 <td className="p-3 text-right">
                   <button className="btn-outline mr-2 px-2 py-1 text-xs" onClick={() => edit(h)}>Sửa</button>
-                  <button className="btn-outline px-2 py-1 text-xs text-red-600" onClick={() => remove(h)}>Xóa</button>
+                  <button className="btn-outline px-2 py-1 text-xs text-red-600" onClick={() => { setDeleteTarget(h); setDeleteError('') }}>Xóa</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Xác nhận xóa khách sạn"
+        message={`Xóa khách sạn "${deleteTarget?.name}" và các phòng thuộc khách sạn này?`}
+        confirmText="Xác nhận xóa"
+        cancelText="Hủy bỏ"
+        danger={true}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={confirmRemove}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }
@@ -225,6 +248,9 @@ function RoomsTab() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const load = useCallback(() => {
     api('/admin/hotels').then(setHotels).catch((e) => setError(e.message))
@@ -252,14 +278,19 @@ function RoomsTab() {
     }
   }
 
-  const remove = async (r) => {
-    if (!window.confirm(`Xóa phòng ${r.roomType} của ${hotelName(r.hotelId)}?`)) return
+  const confirmRemove = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    setDeleteError('')
     try {
-      await api(`/admin/rooms/${r.id}`, { method: 'DELETE' })
+      await api(`/admin/rooms/${deleteTarget.id}`, { method: 'DELETE' })
+      setDeleteTarget(null)
       setError('')
       load()
     } catch (err) {
-      setError(err.message)
+      setDeleteError(err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -335,13 +366,28 @@ function RoomsTab() {
                           onClick={() => { setEditingId(r.id); setForm({ hotelId: r.hotelId, roomType: r.roomType, pricePerNight: r.pricePerNight, capacity: r.capacity, quantity: r.quantity, description: r.description || '' }) }}>
                     Sửa
                   </button>
-                  <button className="btn-outline px-2 py-1 text-xs text-red-600" onClick={() => remove(r)}>Xóa</button>
+                  <button className="btn-outline px-2 py-1 text-xs text-red-600" onClick={() => { setDeleteTarget(r); setDeleteError('') }}>Xóa</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Xác nhận xóa hạng phòng"
+        message={`Xóa phòng ${deleteTarget?.roomType} của ${hotelName(deleteTarget?.hotelId)}?`}
+        confirmText="Xác nhận xóa"
+        cancelText="Hủy bỏ"
+        danger={true}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={confirmRemove}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }

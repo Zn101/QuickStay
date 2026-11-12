@@ -1,6 +1,6 @@
 # QuickStay – Tài liệu API
 
-Phiên bản 1.0 · 26/10/2026 · Nhóm 05. Các ví dụ phản hồi lấy từ backend đang chạy với dữ liệu mẫu.
+Phiên bản 1.0 · Cập nhật 12/11/2026 (Chốt theo thực tế triển khai) · Nhóm 05. Các ví dụ phản hồi lấy từ backend đang chạy với dữ liệu mẫu.
 
 ## 1. Quy ước chung
 
@@ -32,9 +32,13 @@ Mọi lỗi do ứng dụng xử lý trả về:
 | 403 | Đã đăng nhập nhưng không đủ quyền (ví dụ khách gọi API admin, admin đặt phòng, khách hủy đơn của người khác) |
 | 404 | Không tìm thấy khách sạn, phòng hoặc đơn |
 | 409 | Xung đột: email trùng, hết phòng, đổi trạng thái không hợp lệ, xóa dữ liệu đã có đơn đặt phòng |
-| 500 | Lỗi hệ thống (chi tiết ghi trong log, không trả ra ngoài) |
+| 500 | Lỗi hệ thống (chi tiết ghi trong log, không trả ra ngoài): `Loi he thong, vui long thu lai` |
 
-Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>; ..."`, một số lý do là thông báo mặc định tiếng Anh. Thông báo tiếng Việt hiện không có dấu.
+Thông báo cố định từ tầng bảo mật: 401 `Chua dang nhap hoac token khong hop le`, 403 `Ban khong co quyen thuc hien thao tac nay`. Khi nhiều người cùng đặt một loại phòng và yêu cầu phải chờ khóa quá 3 giây: 409 `Phong dang duoc nhieu nguoi dat, vui long thu lai`.
+
+Số gửi vào trường số nguyên (`guests`, `roomId`, `capacity`, `quantity`, `page`, `size`) phải là số nguyên: `2.5` trả 400, không bị làm tròn.
+
+Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>; ..."`. Các thông báo lỗi xác thực đầu vào phổ biến (độ dài chuỗi, giá trị số âm) đã được chuẩn hóa tiếng Việt không dấu (ví dụ: `q: toi da 100 ky tu`, `minPrice: khong duoc am`).
 
 ## 3. Tổng hợp endpoint
 
@@ -60,9 +64,26 @@ Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>;
 | DELETE | `/admin/rooms/{id}` | ADMIN | Xóa loại phòng |
 | GET | `/admin/bookings` | ADMIN | Toàn bộ đơn đặt phòng |
 | PATCH | `/admin/bookings/{id}/status` | ADMIN | Đổi trạng thái đơn |
-| POST | `/ai/describe` | ADMIN | Sinh mô tả bằng AI |
-| POST | `/ai/chat` | Công khai | Chatbot hỏi đáp |
+| POST | `/ai/describe` | ADMIN | Sinh mô tả bằng AI (**chưa triển khai**, xem mục 8) |
+| POST | `/ai/chat` | Công khai | Chatbot hỏi đáp (**chưa triển khai**, xem mục 8) |
 | GET | `/actuator/health` | Công khai | Kiểm tra sức khỏe (nằm ngoài `/api`) |
+
+## Phân trang
+
+`GET /hotels`, `GET /bookings/me`, `GET /admin/bookings` nhận thêm tham số tùy chọn:
+
+| Tham số | Mô tả |
+|---|---|
+| `page` | Trang cần lấy, tính từ 0 (mặc định 0) |
+| `size` | Số phần tử mỗi trang, từ 1 đến 100 (mặc định 10) |
+
+Không gửi cả hai thì API trả **mảng đầy đủ** như các ví dụ trong tài liệu. Gửi ít nhất một tham số thì trả:
+
+```json
+{ "items": [ ... ], "page": 0, "size": 10, "totalItems": 23, "totalPages": 3 }
+```
+
+Trang vượt quá trang cuối trả `items` rỗng. `page` âm hoặc vượt quá 1.000.000, `size` ngoài khoảng 1–100 hoặc sai kiểu số trả 400.
 
 ## 4. Xác thực và hồ sơ
 
@@ -70,10 +91,12 @@ Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>;
 
 | Trường | Kiểu | Bắt buộc | Ràng buộc |
 |---|---|---|---|
-| email | string | có | Đúng định dạng email; không phân biệt hoa thường |
-| password | string | có | Tối thiểu 6 ký tự |
-| fullName | string | có | Không rỗng |
-| phone | string | không | |
+| email | string | có | Đúng định dạng email, tối đa 255 ký tự; không phân biệt hoa thường |
+| password | string | có | Tối thiểu 6 ký tự, tối đa 72 byte UTF-8 (chữ có dấu chiếm 2–3 byte) |
+| fullName | string | có | Không rỗng, tối đa 255 ký tự |
+| phone | string | không | Tối đa 30 ký tự |
+
+Gửi kèm `role` sẽ bị bỏ qua: tài khoản tự đăng ký luôn là `CUSTOMER`.
 
 ```json
 { "email": "mau@test.com", "password": "secret123", "fullName": "Nguyen Van A", "phone": "0912345678" }
@@ -108,12 +131,14 @@ Mọi trường đều tùy chọn. Trường không gửi thì giữ nguyên; r
 
 | Trường | Ràng buộc |
 |---|---|
-| fullName | Không rỗng thì cập nhật |
-| phone | |
-| email | Đúng định dạng; 409 nếu đã có người dùng |
-| password | Tối thiểu 6 ký tự; được mã hóa BCrypt trước khi lưu |
+| fullName | Không rỗng thì cập nhật; tối đa 255 ký tự |
+| phone | Tối đa 30 ký tự |
+| email | Đúng định dạng, tối đa 255 ký tự; 409 `Email da duoc su dung` nếu đã có người dùng |
+| password | Tối thiểu 6 ký tự, tối đa 72 byte; được mã hóa BCrypt trước khi lưu |
 
-**200 OK** trả về hồ sơ sau cập nhật. Lưu ý: nếu đổi email, token cũ vẫn mang email cũ, nên cần đăng nhập lại.
+Không đổi được `role` qua API này.
+
+**200 OK** trả về hồ sơ sau cập nhật. Nếu email thực sự đổi, phản hồi có thêm `token` mới và token cũ hết tác dụng (401): client phải thay bằng token mới. Email không đổi thì không có trường `token`.
 
 ## 5. Khách sạn và phòng (công khai)
 
@@ -121,12 +146,12 @@ Mọi trường đều tùy chọn. Trường không gửi thì giữ nguyên; r
 
 | Tham số | Mô tả |
 |---|---|
-| `q` | Từ khóa, khớp một phần với tên hoặc thành phố, không phân biệt hoa thường |
-| `city` | Khớp một phần với thành phố |
-| `roomType` | Loại phòng, khớp chính xác không phân biệt hoa thường |
-| `minPrice`, `maxPrice` | Khoảng giá một đêm (VND) |
+| `q` | Từ khóa, khớp một phần với tên hoặc thành phố, không phân biệt hoa thường (tối đa 100 ký tự) |
+| `city` | Khớp một phần với thành phố (tối đa 100 ký tự) |
+| `roomType` | Loại phòng, khớp chính xác không phân biệt hoa thường (tối đa 100 ký tự) |
+| `minPrice`, `maxPrice` | Khoảng giá một đêm (VND), không được âm, `minPrice ≤ maxPrice` |
 
-Khi có `roomType`, `minPrice` hoặc `maxPrice`, chỉ trả về khách sạn có ít nhất một loại phòng phù hợp; `minPrice` trong kết quả là giá thấp nhất trong các phòng phù hợp. Không phân trang.
+Khi có `roomType`, `minPrice` hoặc `maxPrice`, chỉ trả về khách sạn có ít nhất một loại phòng phù hợp; `minPrice` trong kết quả là giá thấp nhất trong các phòng phù hợp. Có thể phân trang, xem mục "Phân trang".
 
 `GET /hotels?q=sunrise` → **200 OK**
 
@@ -235,11 +260,11 @@ Không có body. **200 OK** trả về đơn với `status: "CANCELLED"`. Lỗi:
 | quantity | có | ≥ 1 |
 | description | không | |
 
-`GET /admin/rooms?hotelId=1` trả mảng phòng (`available` luôn `null`); bỏ `hotelId` để lấy tất cả. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204**; xóa phòng đã có đơn trả 409 `Phong da co dat phong, khong the xoa`.
+`GET /admin/rooms?hotelId=1` trả mảng phòng (`available` luôn `null`); bỏ `hotelId` để lấy tất cả. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204**; xóa loại phòng đã có đơn trả 409 `Khong the xoa loai phong da co don dat phong`. Không tìm thấy: 404 `Khong tim thay loai phong voi id=...`.
 
 ### Đơn đặt phòng
 
-`GET /admin/bookings` trả toàn bộ đơn, mới nhất trước.
+`GET /admin/bookings` trả toàn bộ đơn, mới nhất trước (có thể phân trang bằng `page`, `size`).
 
 `PATCH /admin/bookings/{id}/status`
 
@@ -256,9 +281,15 @@ Không có body. **200 OK** trả về đơn với `status: "CANCELLED"`. Lỗi:
 | CHECKED_IN | COMPLETED, CANCELLED |
 | COMPLETED, CANCELLED | (không đi tiếp) |
 
-**200 OK** trả về đơn sau cập nhật. Bước không hợp lệ: 409 `Khong the chuyen trang thai PENDING -> COMPLETED`.
+**200 OK** trả về đơn sau cập nhật. `status` không phân biệt hoa thường. Lỗi:
+
+- 400 `Trang thai khong duoc de trong` nếu thiếu hoặc rỗng; 400 `Trang thai khong hop le: ...` nếu không phải một trong 5 giá trị trên.
+- 404 `Khong tim thay don dat phong`.
+- 409 `Khong the chuyen trang thai tu PENDING sang COMPLETED` nếu bước không hợp lệ.
 
 ## 8. AI
+
+> **Chưa triển khai trên backend** (12/11/2026): nhánh `recovery/clean-dev` chưa có `AiController`, hai API dưới đây hiện trả 401/404. Phần này giữ lại làm đặc tả cho nhóm task AI.
 
 ### POST `/ai/describe` (ADMIN)
 

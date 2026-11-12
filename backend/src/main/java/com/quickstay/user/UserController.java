@@ -21,7 +21,7 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public UserDto update(Authentication auth, @Valid @RequestBody UpdateProfileRequest req) {
+    public UpdateProfileResponse update(Authentication auth, @Valid @RequestBody UpdateProfileRequest req) {
         return users.update(auth.getName(), req);
     }
 }

@@ -1,6 +1,6 @@
 # QuickStay – Sơ đồ ERD và từ điển dữ liệu
 
-Phiên bản 1.0 · 26/10/2026 · Nhóm 05. Khớp với các entity JPA trong `backend/src/main/java/com/quickstay`. Tên bảng và cột dùng `snake_case` (Hibernate tự chuyển từ camelCase).
+Phiên bản 1.0 · Cập nhật 12/11/2026 (Chốt theo thực tế triển khai) · Nhóm 05. Khớp với các entity JPA trong `backend/src/main/java/com/quickstay`. Tên bảng và cột dùng `snake_case` (Hibernate tự chuyển từ camelCase).
 
 ## 1. Sơ đồ quan hệ
 
@@ -154,7 +154,7 @@ còn_lại = R.quantity − đã_đặt
 ## 6. Ghi chú và đề xuất
 
 - Lược đồ do **Flyway** quản lý: `backend/src/main/resources/db/migration/V1__init_schema.sql`. Hibernate chỉ kiểm tra entity khớp lược đồ (`ddl-auto=validate`). Muốn đổi lược đồ thì thêm file `V2__mo_ta.sql`, không sửa file đã merge.
-- Chỉ mục: `hotels (city)` cho tìm kiếm, `bookings (room_id, check_in, check_out)` cho truy vấn đếm đơn chồng lấn, `bookings (user_id, created_at)` cho lịch sử đặt phòng; cùng khóa chính, khóa ngoại và `uk_users_email`.
+- Chỉ mục: `hotels (city)` (thực tế **không được dùng** vì tìm kiếm là `lower(city) LIKE '%...%'`, xem báo cáo T153), `bookings (room_id, check_in, check_out)` cho truy vấn đếm đơn chồng lấn, `bookings (user_id, created_at)` cho lịch sử đặt phòng; cùng khóa chính, khóa ngoại và `uk_users_email`. (Đã kiểm tra qua EXPLAIN trong báo cáo T153, các truy vấn đạt dưới 500 ms, đạt yêu cầu NFR-01).
 - Ràng buộc CHECK ở CSDL: `price_per_night ≥ 0`, `capacity ≥ 1`, `quantity ≥ 1`, `guests ≥ 1`, `total_price ≥ 0`, `check_out > check_in`. Các cột `role`, `status`, `created_at`, `check_in`, `check_out`, `total_price` là NOT NULL.
 - `role` và `status` lưu dạng VARCHAR(20) (không dùng kiểu ENUM của MySQL) để thêm giá trị mới không cần đổi kiểu cột.
 - `rooms.quantity` có thể bị admin sửa nhỏ hơn số đơn đang có. Hệ thống không chặn trường hợp này, các đơn cũ vẫn giữ nguyên.
