@@ -13,11 +13,11 @@ import java.math.BigDecimal;
  * @param roomType khop chinh xac loai phong, khong phan biet hoa thuong
  */
 public record HotelSearch(
-        @Size(max = 100) String q,
-        @Size(max = 100) String city,
-        @Size(max = 100) String roomType,
-        @PositiveOrZero BigDecimal minPrice,
-        @PositiveOrZero BigDecimal maxPrice) {
+        @Size(max = 100, message = "toi da 100 ky tu") String q,
+        @Size(max = 100, message = "toi da 100 ky tu") String city,
+        @Size(max = 100, message = "toi da 100 ky tu") String roomType,
+        @PositiveOrZero(message = "khong duoc am") BigDecimal minPrice,
+        @PositiveOrZero(message = "khong duoc am") BigDecimal maxPrice) {
 
     public HotelSearch {
         q = blankToNull(q);
