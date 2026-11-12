@@ -108,7 +108,7 @@ public class HotelAdminService {
         // Khong xoa Booking de dam bao toan ven lich su dat phong.
         if (bookingRepository.existsByRoomHotelIdAndStatusIn(id, List.of(BookingStatus.values()))) {
             throw ApiException.conflict(
-                    "Khong the xoa khach san dang co or da tung co don dat phong");
+                    "Khach san da co dat phong, khong the xoa");
         }
 
         roomRepository.deleteAll(roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(id));

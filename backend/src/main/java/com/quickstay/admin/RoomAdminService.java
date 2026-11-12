@@ -37,12 +37,19 @@ public class RoomAdminService {
     }
 
     /**
-     * GET /api/admin/rooms – Lay danh sach tat ca loai phong (T095).
+     * GET /api/admin/rooms – Lay danh sach loai phong (T095, T133-BUG-01).
      *
-     * @return danh sach RoomResponse, sap xep theo hotel_id asc, price asc, id asc
+     * @param hotelId neu co: chi tra phong cua khach san do; neu null: tra tat ca.
+     *                Neu hotelId khong ton tai hoac khong co phong: tra mang rong (200).
+     * @return danh sach RoomResponse
      */
     @Transactional(readOnly = true)
-    public List<RoomResponse> list() {
+    public List<RoomResponse> list(Long hotelId) {
+        if (hotelId != null) {
+            return roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(hotelId).stream()
+                    .map(RoomResponse::of)
+                    .toList();
+        }
         return roomRepository.findAll().stream()
                 .map(RoomResponse::of)
                 .toList();
