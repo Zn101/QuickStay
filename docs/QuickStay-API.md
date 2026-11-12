@@ -1,6 +1,6 @@
 # QuickStay – Tài liệu API
 
-Phiên bản 1.0 · 26/10/2026 · Nhóm 05. Các ví dụ phản hồi lấy từ backend đang chạy với dữ liệu mẫu.
+Phiên bản 1.0 · Cập nhật 12/11/2026 (Chốt theo thực tế triển khai) · Nhóm 05. Các ví dụ phản hồi lấy từ backend đang chạy với dữ liệu mẫu.
 
 ## 1. Quy ước chung
 
@@ -34,7 +34,7 @@ Mọi lỗi do ứng dụng xử lý trả về:
 | 409 | Xung đột: email trùng, hết phòng, đổi trạng thái không hợp lệ, xóa dữ liệu đã có đơn đặt phòng |
 | 500 | Lỗi hệ thống (chi tiết ghi trong log, không trả ra ngoài) |
 
-Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>; ..."`, một số lý do là thông báo mặc định tiếng Anh. Thông báo tiếng Việt hiện không có dấu.
+Lưu ý: lỗi 400 do kiểm tra dữ liệu có dạng `"<trường>: <lý do>; ..."`. Các thông báo lỗi xác thực đầu vào phổ biến (độ dài chuỗi, giá trị số âm) đã được chuẩn hóa tiếng Việt không dấu (ví dụ: `q: toi da 100 ky tu`, `minPrice: khong duoc am`).
 
 ## 3. Tổng hợp endpoint
 
@@ -79,7 +79,7 @@ Không gửi cả hai thì API trả **mảng đầy đủ** như các ví dụ 
 { "items": [ ... ], "page": 0, "size": 10, "totalItems": 23, "totalPages": 3 }
 ```
 
-Trang vượt quá trang cuối trả `items` rỗng. `page` âm, `size` ngoài khoảng 1–100 hoặc sai kiểu số trả 400.
+Trang vượt quá trang cuối trả `items` rỗng. `page` âm hoặc vượt quá 1.000.000, `size` ngoài khoảng 1–100 hoặc sai kiểu số trả 400.
 
 ## 4. Xác thực và hồ sơ
 
@@ -138,10 +138,10 @@ Mọi trường đều tùy chọn. Trường không gửi thì giữ nguyên; r
 
 | Tham số | Mô tả |
 |---|---|
-| `q` | Từ khóa, khớp một phần với tên hoặc thành phố, không phân biệt hoa thường |
-| `city` | Khớp một phần với thành phố |
-| `roomType` | Loại phòng, khớp chính xác không phân biệt hoa thường |
-| `minPrice`, `maxPrice` | Khoảng giá một đêm (VND) |
+| `q` | Từ khóa, khớp một phần với tên hoặc thành phố, không phân biệt hoa thường (tối đa 100 ký tự) |
+| `city` | Khớp một phần với thành phố (tối đa 100 ký tự) |
+| `roomType` | Loại phòng, khớp chính xác không phân biệt hoa thường (tối đa 100 ký tự) |
+| `minPrice`, `maxPrice` | Khoảng giá một đêm (VND), không được âm, `minPrice ≤ maxPrice` |
 
 Khi có `roomType`, `minPrice` hoặc `maxPrice`, chỉ trả về khách sạn có ít nhất một loại phòng phù hợp; `minPrice` trong kết quả là giá thấp nhất trong các phòng phù hợp. Có thể phân trang, xem mục "Phân trang".
 
