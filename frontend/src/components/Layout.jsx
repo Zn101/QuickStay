@@ -1,18 +1,26 @@
 import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { useState } from 'react'
+import { useSettings } from '../store/settingsStore'
+import { useState, useEffect } from 'react'
 import { ConfirmModal } from './ui'
 import EmailInboxModal from './EmailInboxModal'
 import { api } from '../lib/api'
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { syncFromServer } = useSettings()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showInbox, setShowInbox] = useState(false)
   const [resending, setResending] = useState(false)
   const [resendNotice, setResendNotice] = useState('')
+
+  useEffect(() => {
+    if (user) {
+      syncFromServer()
+    }
+  }, [user, syncFromServer])
 
   async function handleQuickResend() {
     if (!user?.email || resending) return
@@ -59,7 +67,9 @@ export default function Layout() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
             <NavLink to="/" className={linkClass} end>Trang chủ</NavLink>
+            <NavLink to="/policies" className={linkClass}>Chính sách & Q&A</NavLink>
             {user && <NavLink to="/my-bookings" className={linkClass}>Đặt phòng của tôi</NavLink>}
+            {user && <NavLink to="/profile" className={linkClass}>Cài đặt</NavLink>}
             {user?.role === 'ADMIN' && <NavLink to="/admin" className={linkClass}>Quản trị</NavLink>}
           </nav>
 
@@ -186,7 +196,13 @@ export default function Layout() {
 
       {/* Footer */}
       <footer className="border-t border-slate-100 bg-white py-6 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} QuickStay. Your stay, your way.
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-4 px-4">
+          <span>© {new Date().getFullYear()} QuickStay. Your stay, your way.</span>
+          <span>·</span>
+          <Link to="/policies" className="font-medium text-slate-500 hover:text-sky-600">
+            Chính sách lưu trú & Q&A
+          </Link>
+        </div>
       </footer>
 
       <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />

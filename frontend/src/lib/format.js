@@ -1,6 +1,15 @@
 export const formatVnd = (n) =>
   n == null || isNaN(n) ? '' : new Intl.NumberFormat('vi-VN').format(Number(n)) + ' ₫'
 
+export const formatMoney = (n, currency = 'VND') => {
+  if (n == null || isNaN(n)) return ''
+  if (currency === 'USD') {
+    const usd = Number(n) / 25000
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(usd)
+  }
+  return formatVnd(n)
+}
+
 export const formatDate = (iso) => {
   if (!iso) return ''
   const parts = String(iso).split('-')

@@ -48,6 +48,21 @@ public class User {
 
     private Instant resetTokenExpiresAt;
 
+    @Column(nullable = false, length = 10)
+    private String preferredLanguage = "vi";
+
+    @Column(nullable = false, length = 10)
+    private String currencyDisplay = "VND";
+
+    @Column(nullable = false)
+    private boolean notifyEmail = true;
+
+    @Column(nullable = false)
+    private boolean notifyPromo = false;
+
+    @Column(nullable = false)
+    private boolean compactMode = false;
+
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -70,4 +85,14 @@ public class User {
     public void setResetToken(String resetToken) { this.resetToken = resetToken; }
     public Instant getResetTokenExpiresAt() { return resetTokenExpiresAt; }
     public void setResetTokenExpiresAt(Instant resetTokenExpiresAt) { this.resetTokenExpiresAt = resetTokenExpiresAt; }
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
+    public String getCurrencyDisplay() { return currencyDisplay; }
+    public void setCurrencyDisplay(String currencyDisplay) { this.currencyDisplay = currencyDisplay; }
+    public boolean isNotifyEmail() { return notifyEmail; }
+    public void setNotifyEmail(boolean notifyEmail) { this.notifyEmail = notifyEmail; }
+    public boolean isNotifyPromo() { return notifyPromo; }
+    public void setNotifyPromo(boolean notifyPromo) { this.notifyPromo = notifyPromo; }
+    public boolean isCompactMode() { return compactMode; }
+    public void setCompactMode(boolean compactMode) { this.compactMode = compactMode; }
 }

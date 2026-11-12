@@ -78,6 +78,39 @@ public class UserService {
         return UpdateProfileResponse.of(u, emailChanged ? jwt.generate(u) : null);
     }
 
+    public record UserSettingsDto(
+            String preferredLanguage,
+            String currencyDisplay,
+            boolean notifyEmail,
+            boolean notifyPromo,
+            boolean compactMode) {
+        public static UserSettingsDto of(User u) {
+            return new UserSettingsDto(u.getPreferredLanguage(), u.getCurrencyDisplay(),
+                    u.isNotifyEmail(), u.isNotifyPromo(), u.isCompactMode());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public UserSettingsDto settings(String email) {
+        return UserSettingsDto.of(current(email));
+    }
+
+    @Transactional
+    public UserSettingsDto updateSettings(String email, UserSettingsDto req) {
+        User u = current(email);
+        if (req.preferredLanguage() != null && (req.preferredLanguage().equals("vi") || req.preferredLanguage().equals("en"))) {
+            u.setPreferredLanguage(req.preferredLanguage());
+        }
+        if (req.currencyDisplay() != null && (req.currencyDisplay().equals("VND") || req.currencyDisplay().equals("USD"))) {
+            u.setCurrencyDisplay(req.currencyDisplay());
+        }
+        u.setNotifyEmail(req.notifyEmail());
+        u.setNotifyPromo(req.notifyPromo());
+        u.setCompactMode(req.compactMode());
+        log.info("Nguoi dung id={} cap nhat cai dat ung dung", u.getId());
+        return UserSettingsDto.of(u);
+    }
+
     private User current(String email) {
         // Token hop le nhung tai khoan khong con (vd. vua doi email): yeu cau dang nhap lai
         return users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatVnd } from '../lib/format'
+import { formatMoney, todayIso } from '../lib/format'
+import { useSettings } from '../store/settingsStore'
 import { HotelImage, Spinner, ErrorBox } from '../components/ui'
 
 const HERO_SLIDES = [
@@ -85,13 +86,28 @@ const POPULAR_CITIES = [
 const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'TP. Hồ Chí Minh']
 
 export default function Home() {
+  const { currencyDisplay } = useSettings()
   const [hotels, setHotels] = useState([])
+  const [roomTypes, setRoomTypes] = useState(['Standard', 'Deluxe', 'Family Suite'])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const [q, setQ] = useState(searchParams.get('q') || '')
   const [city, setCity] = useState(searchParams.get('city') || '')
+  const [roomType, setRoomType] = useState(searchParams.get('roomType') || '')
+  const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || '')
+  const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || '')
   const [activeSlide, setActiveSlide] = useState(0)
+
+  useEffect(() => {
+    api('/hotels/room-types')
+      .then((list) => {
+        if (Array.isArray(list) && list.length > 0 && typeof list[0] === 'string') {
+          setRoomTypes(list)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Tự động chuyển slide ảnh nền Hero mỗi 5.5 giây
   useEffect(() => {
@@ -105,26 +121,51 @@ export default function Home() {
   useEffect(() => {
     const currentQ = searchParams.get('q') || ''
     const currentCity = searchParams.get('city') || ''
+    const currentRoomType = searchParams.get('roomType') || ''
+    const currentCheckIn = searchParams.get('checkIn') || ''
+    const currentCheckOut = searchParams.get('checkOut') || ''
     setQ(currentQ)
     setCity(currentCity)
+    setRoomType(currentRoomType)
+    setCheckIn(currentCheckIn)
+    setCheckOut(currentCheckOut)
 
     setLoading(true)
     setError('')
     const params = {}
     if (currentQ) params.q = currentQ
     if (currentCity) params.city = currentCity
+    if (currentRoomType) params.roomType = currentRoomType
+    if (currentCheckIn && currentCheckOut) {
+      params.checkIn = currentCheckIn
+      params.checkOut = currentCheckOut
+    }
 
     api('/hotels', { params })
-      .then(setHotels)
+      .then((res) => setHotels(Array.isArray(res) ? res : []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [searchParams])
 
   function handleSearch(e) {
     e.preventDefault()
+    if ((checkIn && !checkOut) || (!checkIn && checkOut)) {
+      setError('Vui lòng chọn cả ngày nhận và ngày trả phòng để lọc phòng trống.')
+      return
+    }
+    if (checkIn && checkOut && checkOut <= checkIn) {
+      setError('Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm.')
+      return
+    }
+    setError('')
     const p = {}
     if (q.trim()) p.q = q.trim()
     if (city.trim()) p.city = city.trim()
+    if (roomType) p.roomType = roomType
+    if (checkIn && checkOut) {
+      p.checkIn = checkIn
+      p.checkOut = checkOut
+    }
     setSearchParams(p)
   }
 
@@ -133,17 +174,31 @@ export default function Home() {
     const p = {}
     if (q.trim()) p.q = q.trim()
     if (selectedCity) p.city = selectedCity
+    if (roomType) p.roomType = roomType
+    if (checkIn && checkOut) {
+      p.checkIn = checkIn
+      p.checkOut = checkOut
+    }
     setSearchParams(p)
   }
 
   function clearFilters() {
     setQ('')
     setCity('')
+    setRoomType('')
+    setCheckIn('')
+    setCheckOut('')
+    setError('')
     setSearchParams({})
   }
 
   const currentSlide = HERO_SLIDES[activeSlide]
-  const isFiltering = Boolean(searchParams.get('q') || searchParams.get('city'))
+  const isFiltering = Boolean(
+    searchParams.get('q') ||
+      searchParams.get('city') ||
+      searchParams.get('roomType') ||
+      (searchParams.get('checkIn') && searchParams.get('checkOut')),
+  )
 
   return (
     <div className="min-h-screen bg-[#f4f9fd]">
@@ -272,6 +327,52 @@ export default function Home() {
                       <path d="M5 12h14m-6-6 6 6-6 6" />
                     </svg>
                   </button>
+                </div>
+
+                {/* Bộ lọc nâng cao: Ngày nhận/trả & Loại phòng */}
+                <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
+                    <label htmlFor="home-checkin" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Ngày nhận phòng
+                    </label>
+                    <input
+                      id="home-checkin"
+                      type="date"
+                      min={todayIso()}
+                      value={checkIn}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                    />
+                  </div>
+                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
+                    <label htmlFor="home-checkout" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Ngày trả phòng
+                    </label>
+                    <input
+                      id="home-checkout"
+                      type="date"
+                      min={checkIn || todayIso()}
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                    />
+                  </div>
+                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
+                    <label htmlFor="home-roomtype" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Loại phòng
+                    </label>
+                    <select
+                      id="home-roomtype"
+                      value={roomType}
+                      onChange={(e) => setRoomType(e.target.value)}
+                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                    >
+                      <option value="">Tất cả loại phòng</option>
+                      {roomTypes.map((rt) => (
+                        <option key={rt} value={rt}>{rt}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Các nút chọn nhanh thành phố */}
@@ -408,7 +509,18 @@ export default function Home() {
                 <p className="text-sm text-slate-600">
                   Kết quả tìm kiếm cho{' '}
                   <span className="font-bold text-slate-900">
-                    "{[searchParams.get('q'), searchParams.get('city')].filter(Boolean).join(' • ')}"
+                    "
+                    {[
+                      searchParams.get('q'),
+                      searchParams.get('city'),
+                      searchParams.get('roomType'),
+                      searchParams.get('checkIn') && searchParams.get('checkOut')
+                        ? `${searchParams.get('checkIn')} → ${searchParams.get('checkOut')}`
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' • ')}
+                    "
                   </span>
                 </p>
                 <p className="text-xs text-slate-400">Tìm thấy {hotels.length} nơi lưu trú phù hợp</p>
@@ -470,7 +582,13 @@ export default function Home() {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {hotels.map((hotel) => (
-                <HotelCard key={hotel.id} hotel={hotel} />
+                <HotelCard
+                  key={hotel.id}
+                  hotel={hotel}
+                  checkIn={searchParams.get('checkIn')}
+                  checkOut={searchParams.get('checkOut')}
+                  currency={currencyDisplay}
+                />
               ))}
             </div>
           </>
@@ -480,7 +598,7 @@ export default function Home() {
   )
 }
 
-function HotelCard({ hotel }) {
+function HotelCard({ hotel, checkIn, checkOut, currency }) {
   const amenityList = hotel.amenities
     ? hotel.amenities
       .split(',')
@@ -489,9 +607,14 @@ function HotelCard({ hotel }) {
       .slice(0, 3)
     : []
 
+  const detailUrl =
+    checkIn && checkOut
+      ? `/hotels/${hotel.id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`
+      : `/hotels/${hotel.id}`
+
   return (
     <Link
-      to={`/hotels/${hotel.id}`}
+      to={detailUrl}
       className="group flex flex-col overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_30px_-15px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-200 hover:shadow-[0_22px_50px_-15px_rgba(2,132,199,0.18)]"
     >
       {/* Khung ảnh khách sạn với hiệu ứng zoom mượt */}
@@ -546,7 +669,7 @@ function HotelCard({ hotel }) {
           <div>
             <p className="text-[11px] font-medium text-slate-400">Giá mỗi đêm từ</p>
             <p className="text-lg font-extrabold text-[#0284c7]">
-              {formatVnd(hotel.minPrice)}
+              {formatMoney(hotel.minPrice, currency)}
             </p>
           </div>
           <span className="inline-flex items-center gap-1 rounded-xl bg-sky-50 px-3.5 py-2 text-xs font-bold text-[#0284c7] transition-all duration-200 group-hover:bg-[#0284c7] group-hover:text-white group-hover:shadow-md group-hover:shadow-sky-500/20">

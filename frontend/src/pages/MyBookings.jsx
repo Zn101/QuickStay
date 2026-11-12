@@ -14,10 +14,17 @@ export default function MyBookings() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
   const [payTarget, setPayTarget] = useState(state?.payBooking || null)
+  const [concierges, setConcierges] = useState([])
 
   useEffect(() => {
-    api('/bookings/me')
-      .then(setBookings)
+    Promise.all([
+      api('/bookings/me'),
+      api('/concierge/me').catch(() => []),
+    ])
+      .then(([b, c]) => {
+        setBookings(Array.isArray(b) ? b : [])
+        setConcierges(Array.isArray(c) ? c : [])
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
@@ -170,6 +177,36 @@ export default function MyBookings() {
         onClose={() => setPayTarget(null)}
         onPaid={handlePaid}
       />
+
+      {concierges.length > 0 && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-xl font-extrabold text-slate-900">Dịch vụ Đưa đón sân bay, Ẩm thực & Tham quan đã đặt</h2>
+          <div className="space-y-3">
+            {concierges.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-700">
+                      {c.serviceType === 'AIRPORT_TRANSFER' ? 'Đưa đón sân bay' : c.serviceType === 'DINING' ? 'Ẩm thực' : 'Xe tham quan'}
+                    </span>
+                    <span className="text-sm font-bold text-slate-900">{c.serviceTitle}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {c.hotelName} · Ngày {formatDate(c.serviceDate)} {c.serviceTime ? `lúc ${c.serviceTime}` : ''} · {c.guests} khách
+                  </p>
+                  {c.details && <p className="mt-0.5 text-xs italic text-slate-400">{c.details}</p>}
+                </div>
+                <div className="text-right">
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">Đã xác nhận</span>
+                  <p className="mt-1 text-sm font-extrabold text-sky-700">
+                    {c.estimatedFee > 0 ? formatVnd(c.estimatedFee) : 'Miễn phí / Theo thực tế'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ConfirmModal
         isOpen={!!cancelTarget}

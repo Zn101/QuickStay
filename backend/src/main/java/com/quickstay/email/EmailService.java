@@ -188,6 +188,28 @@ public class EmailService {
         return send(b.getUser().getEmail(), "[QuickStay] Cập nhật đơn đặt phòng #" + b.getId() + " - " + b.getStatus(), html, "BOOKING_STATUS");
     }
 
+    public EmailLog sendConciergeConfirmationEmail(String to, String guestName, String hotelName,
+                                                   String serviceTypeLabel, String serviceTitle,
+                                                   String serviceDate, String serviceTime, int guests,
+                                                   BigDecimal estimatedFee, String details) {
+        String html = wrapTemplate(
+                "Xác nhận dịch vụ hỗ trợ: " + escape(serviceTypeLabel),
+                "<p>Xin chào <strong>" + escape(guestName) + "</strong>,</p>"
+                + "<p>Yêu cầu dịch vụ của bạn tại <strong>" + escape(hotelName) + "</strong> đã được tiếp nhận và xác nhận.</p>"
+                + infoTable(new String[][]{
+                        {"Loại dịch vụ", escape(serviceTypeLabel)},
+                        {"Chi tiết dịch vụ", escape(serviceTitle)},
+                        {"Ngày thực hiện", escape(serviceDate)},
+                        {"Khung giờ", escape(serviceTime == null || serviceTime.isBlank() ? "Theo lịch trình" : serviceTime)},
+                        {"Số khách", guests + " khách"},
+                        {"Chi phí dự kiến", estimatedFee != null && estimatedFee.signum() > 0 ? formatVnd(estimatedFee) : "Miễn phí / Theo thực tế"},
+                        {"Ghi chú", escape(details == null || details.isBlank() ? "Không có" : details)}
+                })
+                + ctaButton(frontendUrl + "/my-bookings", "Quản lý lịch trình trên QuickStay", "#0284c7")
+        );
+        return send(to, "[QuickStay] Xác nhận " + serviceTypeLabel + " - " + hotelName, html, "CONCIERGE_SERVICE");
+    }
+
     private static String wrapTemplate(String heading, String content) {
         return "<div style='font-family:Inter,Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;'>"
                 + "<div style='max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;'>"
