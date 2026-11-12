@@ -189,6 +189,42 @@ class BookingConcurrencyTest {
         assertEquals(4, successes(race(tasks)));
     }
 
+    /**
+     * T164: 40 yeu cau cung luc voi khoang ngay ngau nhien (chong lan mot phan, bao trum, lien ke) vao loai phong
+     * co 2 phong, xen ca huy don. Du thu tu xen ke the nao, khong dem nao duoc co qua 2 don con hieu luc.
+     */
+    @Test
+    void random_concurrent_bookings_and_cancels_never_overbook_any_night() throws Exception {
+        Room r = room(2);
+        java.util.Random random = new java.util.Random(42);
+        List<Long> seeded = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            seeded.add(service.create(email, new BookingRequest(r.getId(), day(60 + i * 3), day(62 + i * 3), 1, "Khach", "0900", null)).id());
+        }
+        List<Callable<Object>> tasks = new ArrayList<>();
+        for (int i = 0; i < 40; i++) {
+            int from = 60 + random.nextInt(8);
+            int to = from + 1 + random.nextInt(3);
+            tasks.add(() -> booking(r, from, to).call());
+        }
+        for (long id : seeded) tasks.add(() -> service.cancel(email, id).status());
+
+        List<Object> results = race(tasks);
+
+        for (Object x : results) {
+            if (x instanceof Throwable t) {
+                assertInstanceOf(ApiException.class, t, () -> "loi khong mong doi: " + t);
+                assertEquals(HttpStatus.CONFLICT, ((ApiException) t).getStatus());
+            }
+        }
+        assertTrue(successes(results) > 2, "phai co don dat thanh cong de bai test co y nghia");
+        for (int night = 55; night < 75; night++) {
+            long active = activeBookings(r, night, night + 1);
+            int n = night;
+            assertTrue(active <= 2, () -> "dem +" + n + " co " + active + " don cho 2 phong");
+        }
+    }
+
     @Test
     void customer_cancel_and_admin_confirm_at_same_time_only_one_wins() throws Exception {
         Room r = room(20);
