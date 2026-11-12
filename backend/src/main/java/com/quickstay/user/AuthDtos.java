@@ -1,5 +1,6 @@
 package com.quickstay.user;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -29,6 +30,36 @@ public final class AuthDtos {
             email = normalizeEmail(email);
         }
     }
+
+    public record VerifyEmailRequest(@NotBlank String token) {
+        public VerifyEmailRequest {
+            token = token == null ? null : token.trim();
+        }
+    }
+
+    public record EmailActionRequest(@NotBlank @Email String email) {
+        public EmailActionRequest {
+            email = normalizeEmail(email);
+        }
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
+            @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String newPassword) {
+        public ResetPasswordRequest {
+            token = token == null ? null : token.trim();
+        }
+    }
+
+    public record EmailPreview(String recipient, String subject, String bodyHtml) {}
+
+    public record ForgotPasswordResponse(
+            String message,
+            boolean demoMode,
+            @JsonInclude(JsonInclude.Include.NON_NULL) EmailPreview demoEmail) {}
+
+    public record MessageResponse(String message) {}
 
     public record AuthResponse(String token, UserDto user) {}
 

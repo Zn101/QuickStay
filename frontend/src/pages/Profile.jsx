@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../store/authStore'
 import { ErrorBox } from '../components/ui'
+import EmailInboxModal from '../components/EmailInboxModal'
 
 export default function Profile() {
   const { user, setUser } = useAuth()
@@ -16,6 +17,23 @@ export default function Profile() {
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('general') // 'general' | 'security'
   const [showPassword, setShowPassword] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
+  const [resending, setResending] = useState(false)
+
+  async function handleResendVerification() {
+    if (!user?.email || resending) return
+    setResending(true)
+    setError('')
+    setSuccess('')
+    try {
+      await api('/auth/resend-verification', { method: 'POST', body: { email: user.email } })
+      setSuccess('Đã gửi lại email xác thực! Bạn có thể kiểm tra trong Hộp thư QuickStay.')
+    } catch (err) {
+      setError(err.message || 'Không thể gửi lại email xác thực.')
+    } finally {
+      setResending(false)
+    }
+  }
 
   function set(key) {
     return (e) => {
@@ -117,12 +135,16 @@ export default function Profile() {
                 {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div
-                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white shadow-sm"
-                title="Tài khoản đã xác thực"
+                className={`absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${user?.emailVerified ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                title={user?.emailVerified ? 'Email đã xác thực' : 'Email chưa xác thực'}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                {user?.emailVerified ? (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="text-xs font-black">!</span>
+                )}
               </div>
             </div>
 
@@ -136,12 +158,27 @@ export default function Profile() {
                   {user.phone}
                 </span>
               )}
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700">
-                <svg className="h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                Bảo mật tiêu chuẩn
-              </span>
+              {user?.emailVerified ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                  ✓ Email đã xác thực
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={handleResendVerification}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100 transition"
+                >
+                  {resending ? 'Đang gửi...' : '⚠️ Chưa xác thực · Gửi lại email'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowInbox(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition"
+              >
+                📧 Hộp thư QuickStay
+              </button>
             </div>
           </div>
 
@@ -417,6 +454,7 @@ export default function Profile() {
           </div>
         </form>
       </div>
+      <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />
     </div>
   )
 }

@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatVnd, formatDate } from '../lib/format'
-import { StatusBadge, Spinner, ErrorBox, ConfirmModal } from '../components/ui'
+import { formatVnd, formatDate, PAYMENT_METHOD_LABEL } from '../lib/format'
+import { StatusBadge, PaymentBadge, Spinner, ErrorBox, ConfirmModal } from '../components/ui'
+import PaymentModal from '../components/PaymentModal'
 
 export default function MyBookings() {
+  const { state } = useLocation()
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
-  const { state } = useLocation()
+  const [payTarget, setPayTarget] = useState(state?.payBooking || null)
 
   useEffect(() => {
     api('/bookings/me')
@@ -47,13 +49,17 @@ export default function MyBookings() {
     }
   }
 
+  function handlePaid(updated) {
+    setBookings((bs) => bs.map((b) => (b.id === updated.id ? updated : b)))
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10">
       <h1 className="mb-8 text-2xl font-extrabold tracking-tight text-slate-900">Đặt phòng của tôi</h1>
 
       {state?.newBookingId && (
         <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700">
-          ✅ Đặt phòng thành công! Mã đơn #{state.newBookingId}
+          ✅ Đặt phòng thành công! Mã đơn #{state.newBookingId} · Email xác nhận đã được gửi tới hộp thư của bạn.
         </div>
       )}
 
@@ -73,66 +79,106 @@ export default function MyBookings() {
       )}
 
       <div className="space-y-5">
-        {bookings.map((b) => (
-          <div key={b.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="font-extrabold text-slate-900">{b.hotelName}</h3>
-                  <StatusBadge status={b.status} />
+        {bookings.map((b) => {
+          const canPay = b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && (b.paymentStatus || 'UNPAID') === 'UNPAID'
+          return (
+            <div key={b.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="font-extrabold text-slate-900">{b.hotelName}</h3>
+                    <StatusBadge status={b.status} />
+                    <PaymentBadge status={b.paymentStatus} />
+                  </div>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {b.roomType} · {PAYMENT_METHOD_LABEL[b.paymentMethod] || 'Thanh toán tại khách sạn'}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-sm text-slate-500">{b.roomType}</p>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 whitespace-nowrap">Mã #{b.id}</p>
+                  {b.paymentRef && (
+                    <p className="mt-0.5 font-mono text-[11px] font-semibold text-emerald-700">{b.paymentRef}</p>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-slate-400 whitespace-nowrap">Mã #{b.id}</p>
-            </div>
 
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
-              <div>
-                <p className="text-xs text-slate-400 mb-0.5">Nhận phòng</p>
-                <p className="font-semibold text-slate-800">{formatDate(b.checkIn)}</p>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 rounded-xl bg-slate-50 p-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Nhận phòng</p>
+                  <p className="font-semibold text-slate-800">{formatDate(b.checkIn)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Trả phòng</p>
+                  <p className="font-semibold text-slate-800">{formatDate(b.checkOut)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Khách</p>
+                  <p className="font-semibold text-slate-800">{b.guestName} · {b.guests} người</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Tổng tiền</p>
+                  <p className="font-extrabold text-sky-700">{formatVnd(b.totalPrice)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-0.5">Trả phòng</p>
-                <p className="font-semibold text-slate-800">{formatDate(b.checkOut)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-0.5">Khách</p>
-                <p className="font-semibold text-slate-800">{b.guestName} · {b.guests} người</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-0.5">Tổng tiền</p>
-                <p className="font-extrabold text-sky-700">{formatVnd(b.totalPrice)}</p>
-              </div>
-            </div>
 
-            {b.note && (
-              <p className="mt-3 text-xs text-slate-500 italic">Ghi chú: {b.note}</p>
-            )}
-
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-xs text-slate-400">
-                Đặt lúc: {new Date(b.createdAt).toLocaleString('vi-VN')}
-              </p>
-              {b.status === 'PENDING' && (
-                <button
-                  type="button"
-                  onClick={() => handleOpenCancelModal(b)}
-                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
-                >
-                  Hủy đơn
-                </button>
+              {b.note && (
+                <p className="mt-3 text-xs text-slate-500 italic">Ghi chú: {b.note}</p>
               )}
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-slate-400">
+                  Đặt lúc: {new Date(b.createdAt).toLocaleString('vi-VN')}
+                </p>
+                <div className="flex items-center gap-2">
+                  {canPay && (
+                    <button
+                      type="button"
+                      onClick={() => setPayTarget(b)}
+                      className="rounded-lg bg-sky-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition-colors"
+                    >
+                      Thanh toán ngay
+                    </button>
+                  )}
+                  {b.paymentStatus === 'PAID' && (
+                    <button
+                      type="button"
+                      onClick={() => setPayTarget(b)}
+                      className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    >
+                      Xem biên lai
+                    </button>
+                  )}
+                  {b.status === 'PENDING' && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCancelModal(b)}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                    >
+                      Hủy đơn
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      <PaymentModal
+        booking={payTarget}
+        initialMethod={payTarget?.paymentMethod}
+        onClose={() => setPayTarget(null)}
+        onPaid={handlePaid}
+      />
 
       <ConfirmModal
         isOpen={!!cancelTarget}
         title="Xác nhận hủy đơn đặt phòng"
         message={
           cancelTarget
-            ? `Bạn có chắc chắn muốn hủy đơn đặt phòng #${cancelTarget.id} tại ${cancelTarget.hotelName} (${cancelTarget.roomType}) không? Thao tác này không thể hoàn tác.`
+            ? `Bạn có chắc chắn muốn hủy đơn đặt phòng #${cancelTarget.id} tại ${cancelTarget.hotelName} (${cancelTarget.roomType}) không?${
+                cancelTarget.paymentStatus === 'PAID' ? ' Khoản tiền đã thanh toán sẽ được hoàn trả tự động.' : ''
+              }`
             : ''
         }
         confirmText="Hủy đặt phòng"

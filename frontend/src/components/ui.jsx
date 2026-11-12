@@ -1,9 +1,18 @@
-import { STATUS_LABEL, STATUS_STYLE } from '../lib/format'
+import { STATUS_LABEL, STATUS_STYLE, PAYMENT_STATUS_LABEL, PAYMENT_STATUS_STYLE } from '../lib/format'
 
 export function StatusBadge({ status }) {
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status] || ''}`}>
       {STATUS_LABEL[status] || status}
+    </span>
+  )
+}
+
+export function PaymentBadge({ status }) {
+  const s = status || 'UNPAID'
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PAYMENT_STATUS_STYLE[s] || 'bg-slate-100 text-slate-600'}`}>
+      {PAYMENT_STATUS_LABEL[s] || s}
     </span>
   )
 }

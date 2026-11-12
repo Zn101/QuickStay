@@ -2,12 +2,32 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
 import { useState } from 'react'
 import { ConfirmModal } from './ui'
+import EmailInboxModal from './EmailInboxModal'
+import { api } from '../lib/api'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendNotice, setResendNotice] = useState('')
+
+  async function handleQuickResend() {
+    if (!user?.email || resending) return
+    setResending(true)
+    setResendNotice('')
+    try {
+      await api('/auth/resend-verification', { method: 'POST', body: { email: user.email } })
+      setResendNotice('Đã gửi lại email xác thực!')
+      setShowInbox(true)
+    } catch {
+      setResendNotice('Không thể gửi lại lúc này.')
+    } finally {
+      setResending(false)
+    }
+  }
 
   function openLogoutModal() {
     setMenuOpen(false)
@@ -47,6 +67,17 @@ export default function Layout() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInbox(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50/80 px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition-colors cursor-pointer"
+                  title="Xem email xác thực, đặt phòng & biên lai"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Hộp thư
+                </button>
                 <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-700 font-bold text-sm">
                     {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
@@ -95,6 +126,15 @@ export default function Layout() {
             <Link to="/" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Trang chủ</Link>
             {user && <Link to="/my-bookings" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Đặt phòng của tôi</Link>}
             {user && <Link to="/profile" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Hồ sơ</Link>}
+            {user && (
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setShowInbox(true) }}
+                className="block w-full text-left text-sm font-medium text-sky-600"
+              >
+                Hộp thư (Email đã gửi)
+              </button>
+            )}
             {user?.role === 'ADMIN' && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-slate-700">Quản trị</Link>}
             {user ? (
               <button type="button" onClick={openLogoutModal} className="block w-full text-left text-sm font-medium text-red-600">
@@ -110,6 +150,35 @@ export default function Layout() {
         )}
       </header>
 
+      {/* Banner nhắc xác thực email cho khách chưa xác thực */}
+      {user && user.role === 'CUSTOMER' && user.emailVerified === false && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2">
+            <span>
+              ⚠️ Email <strong>{user.email}</strong> chưa được xác thực.
+              {resendNotice && <span className="ml-2 font-semibold text-emerald-700">{resendNotice}</span>}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowInbox(true)}
+                className="rounded-lg bg-white px-2.5 py-1 font-bold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+              >
+                Mở hộp thư để xác thực
+              </button>
+              <button
+                type="button"
+                disabled={resending}
+                onClick={handleQuickResend}
+                className="rounded-lg bg-amber-600 px-2.5 py-1 font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {resending ? 'Đang gửi...' : 'Gửi lại email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page content */}
       <main className="flex-1">
         <Outlet />
@@ -119,6 +188,8 @@ export default function Layout() {
       <footer className="border-t border-slate-100 bg-white py-6 text-center text-xs text-slate-400">
         © {new Date().getFullYear()} QuickStay. Your stay, your way.
       </footer>
+
+      <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />
 
       {/* Modal xác nhận Đăng xuất */}
       <ConfirmModal

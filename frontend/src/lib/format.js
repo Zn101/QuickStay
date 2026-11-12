@@ -53,3 +53,31 @@ export const NEXT_STATUS = {
   COMPLETED: [],
   CANCELLED: [],
 }
+
+export const PAYMENT_METHOD_LABEL = {
+  PAY_AT_HOTEL: 'Thanh toán tại khách sạn',
+  BANK_TRANSFER: 'Chuyển khoản VietQR',
+  CREDIT_CARD: 'Thẻ Visa / Mastercard',
+  E_WALLET: 'Ví điện tử (MoMo / VNPay)',
+}
+
+export const PAYMENT_STATUS_LABEL = {
+  UNPAID: 'Chưa thanh toán',
+  PAID: 'Đã thanh toán',
+  REFUNDED: 'Đã hoàn tiền',
+}
+
+export const PAYMENT_STATUS_STYLE = {
+  UNPAID: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  PAID: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+  REFUNDED: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+}
+
+export const EMAIL_TYPE_LABEL = {
+  EMAIL_VERIFICATION: 'Xác thực email',
+  PASSWORD_RESET: 'Khôi phục mật khẩu',
+  PASSWORD_CHANGED: 'Đổi mật khẩu',
+  BOOKING_CONFIRMATION: 'Xác nhận đặt phòng',
+  PAYMENT_RECEIPT: 'Biên lai thanh toán',
+  BOOKING_STATUS: 'Cập nhật đơn đặt phòng',
+}

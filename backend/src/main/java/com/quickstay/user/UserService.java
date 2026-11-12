@@ -1,12 +1,18 @@
 package com.quickstay.user;
 
 import com.quickstay.config.ApiException;
+import com.quickstay.email.EmailService;
 import com.quickstay.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 /** Ho so nguoi dung dang dang nhap (T064). */
 @Service
@@ -17,11 +23,19 @@ public class UserService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final EmailService emails;
 
     public UserService(UserRepository users, PasswordEncoder encoder, JwtService jwt) {
+        this(users, encoder, jwt, null);
+    }
+
+    @Autowired
+    public UserService(UserRepository users, PasswordEncoder encoder, JwtService jwt,
+                       @Autowired(required = false) EmailService emails) {
         this.users = users;
         this.encoder = encoder;
         this.jwt = jwt;
+        this.emails = emails;
     }
 
     /** email: subject cua JWT, JwtAuthFilter dat vao Authentication.getName(). */
@@ -46,7 +60,14 @@ public class UserService {
             }
             log.info("Nguoi dung id={} doi email", u.getId());
             u.setEmail(req.email());
+            u.setEmailVerified(false);
+            String token = UUID.randomUUID().toString();
+            u.setVerificationToken(token);
+            u.setVerificationTokenExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
             emailChanged = true;
+            if (emails != null) {
+                emails.sendVerificationEmail(u.getEmail(), u.getFullName(), token);
+            }
         }
         if (req.password() != null) {
             u.setPasswordHash(encoder.encode(req.password()));
