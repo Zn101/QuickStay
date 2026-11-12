@@ -52,3 +52,4 @@ services:
 
 volumes:
   mysql-data:
+    name: quickstay_mysql-test

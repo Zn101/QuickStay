@@ -6,7 +6,8 @@ Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng b�
 
 ## 🚀 Triển khai trên VPS Ubuntu (Production)
 
-> 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)
+> 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)  
+> 📸 Xem tài liệu và minh chứng trạng thái triển khai tại: [docs/evidence/T181/README.md](docs/evidence/T181/README.md)
 
 ### Yêu cầu hệ thống
 

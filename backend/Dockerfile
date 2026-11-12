@@ -14,8 +14,11 @@ COPY gradlew gradlew.bat ./
 COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
 
-# Download dependency (cache layer nay chi bi invalidate khi build.gradle doi)
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon --quiet || true
+# Convert Windows CRLF to Linux LF and grant execute permission
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
+
+# Download dependencies
+RUN ./gradlew dependencies --no-daemon --quiet
 
 # Copy source code va build JAR
 COPY src ./src
