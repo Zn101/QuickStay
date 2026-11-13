@@ -182,7 +182,7 @@ jobs:
 
           echo "Waiting for backend health..."
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
+            if docker compose exec -T backend wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; then
               echo "Backend is healthy."
               curl -fsSI http://localhost
               exit 0

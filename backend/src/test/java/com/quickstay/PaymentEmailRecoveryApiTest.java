@@ -92,18 +92,15 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
         String email = newCustomerEmail();
         registerCustomer(email);
 
-        MvcResult forgotRes = mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
+        mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.demoMode").value(true))
-                .andExpect(jsonPath("$.demoEmail.recipient").value(email))
-                .andReturn();
+                .andExpect(jsonPath("$.demoEmail").doesNotExist());
 
-        JsonNode body = read(forgotRes);
         String resetToken = users.findByEmail(email).orElseThrow().getResetToken();
         assertNotNull(resetToken);
-        assertTrue(body.get("demoEmail").get("bodyHtml").asText().contains(resetToken));
 
-        // Khong bao gio lo token admin qua API forgot-password
+        // Khong bao gio lo token qua API forgot-password cho ca admin va customer
         mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", ADMIN_EMAIL)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.demoEmail").doesNotExist());

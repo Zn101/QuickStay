@@ -95,81 +95,6 @@ const POPULAR_CITIES = [
   },
 ]
 
-const PROMO_DEALS = [
-  {
-    id: 1,
-    tag: '⚡ FLASH SALE 24H',
-    title: 'Giảm 35% Resort Phú Quốc & Nha Trang',
-    desc: 'Áp dụng cho phòng Deluxe view biển & Villa riêng tư.',
-    code: 'BEACH35',
-    discount: '-35%',
-    badge: 'Còn 05:42:19',
-    badgeColor: 'bg-rose-500 text-white animate-pulse',
-    border: 'border-rose-200/90 hover:border-rose-400',
-    bg: 'from-rose-500/10 via-amber-500/5 to-white',
-  },
-  {
-    id: 2,
-    tag: '🎁 THÀNH VIÊN MỚI',
-    title: 'Voucher 20% cho lần đặt đầu tiên',
-    desc: 'Áp dụng ngay cho mọi khách sạn trên toàn quốc.',
-    code: 'QUICKSTAY20',
-    discount: '-20%',
-    badge: 'Đặc quyền',
-    badgeColor: 'bg-emerald-600 text-white',
-    border: 'border-emerald-200/90 hover:border-emerald-400',
-    bg: 'from-emerald-500/10 via-teal-500/5 to-white',
-  },
-  {
-    id: 3,
-    tag: '🌅 ĐẶT PHÒNG SỚM',
-    title: 'Tặng Buffet sáng & Đón sân bay miễn phí',
-    desc: 'Đặt trước 15 ngày tại Đà Nẵng, Phú Quốc, Hà Nội.',
-    code: 'EARLYBIRD',
-    discount: 'FREE 100%',
-    badge: 'Bao gồm xe đưa đón',
-    badgeColor: 'bg-sky-600 text-white',
-    border: 'border-sky-200/90 hover:border-sky-400',
-    bg: 'from-sky-500/10 via-blue-500/5 to-white',
-  },
-  {
-    id: 4,
-    tag: '🌲 WEEKEND ĐÀ LẠT',
-    title: 'Giảm 25% các Villa view đồi thông',
-    desc: 'Tận hưởng khí hậu se lạnh và tiệc BBQ ấm cúng.',
-    code: 'DALAT25',
-    discount: '-25%',
-    badge: 'Cuối tuần T6-CN',
-    badgeColor: 'bg-purple-600 text-white',
-    border: 'border-purple-200/90 hover:border-purple-400',
-    bg: 'from-purple-500/10 via-indigo-500/5 to-white',
-  },
-  {
-    id: 5,
-    tag: '💼 CÔNG TÁC & DOANH NGHIỆP',
-    title: 'Giảm 18% + Xuất VAT điện tử tức thì',
-    desc: 'Dành cho khách công tác tại trung tâm Quận 1 & Hoàn Kiếm.',
-    code: 'BIZSTAY',
-    discount: '-18%',
-    badge: 'Hóa đơn trong ngày',
-    badgeColor: 'bg-slate-800 text-white',
-    border: 'border-slate-300 hover:border-slate-500',
-    bg: 'from-slate-500/10 via-slate-600/5 to-white',
-  },
-  {
-    id: 6,
-    tag: '⏳ GIỜ CHÓT HÔM NAY',
-    title: 'Giảm thêm 15% khi nhận phòng hôm nay',
-    desc: 'Dành cho chuyến đi ngẫu hứng, xác nhận phòng tức thì.',
-    code: 'LAST15',
-    discount: '-15%',
-    badge: 'Xác nhận ngay',
-    badgeColor: 'bg-orange-500 text-white',
-    border: 'border-orange-200/90 hover:border-orange-400',
-    bg: 'from-orange-500/10 via-amber-500/5 to-white',
-  },
-]
-
 const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'Hồ Chí Minh']
 
 export default function Home() {
@@ -189,15 +114,6 @@ export default function Home() {
   // States bổ sung cho UI mới
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false)
   const [showAllCities, setShowAllCities] = useState(false)
-  const [copiedCoupon, setCopiedCoupon] = useState('')
-
-  function copyCoupon(code) {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(code).catch(() => {})
-    }
-    setCopiedCoupon(code)
-    setTimeout(() => setCopiedCoupon(''), 3000)
-  }
 
   function applyDatePreset(daysAhead, stayNights = 1) {
     const today = new Date()
@@ -447,7 +363,7 @@ export default function Home() {
                 </div>
 
                 {/* Hàng 2: Bộ chọn Ngày & Hạng phòng với Giao diện Custom UI độc quyền */}
-                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:items-stretch">
                   {/* Custom Date Pickers: Ngày nhận & Ngày trả phòng */}
                   <div className="sm:col-span-8 flex flex-col sm:flex-row items-center gap-2 rounded-xl bg-white p-2 text-slate-900 shadow-sm border border-slate-100">
                     {/* Thẻ Chọn Ngày Nhận */}
@@ -526,12 +442,12 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Custom Room Type Selector (Thay thế hoàn toàn thẻ select cơ bản) */}
-                  <div className="relative sm:col-span-4">
+                  {/* Custom Room Type Selector (Cùng chiều cao hoàn hảo với bộ chọn ngày) */}
+                  <div className="relative sm:col-span-4 flex">
                     <button
                       type="button"
                       onClick={() => setRoomDropdownOpen((v) => !v)}
-                      className="w-full flex items-center justify-between rounded-xl bg-white p-2.5 px-3 text-left shadow-sm border border-slate-100 hover:border-sky-300 transition-colors cursor-pointer"
+                      className="w-full h-full flex items-center justify-between rounded-xl bg-white p-2 px-3 text-left shadow-sm border border-slate-100 hover:border-sky-300 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 overflow-hidden">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-bold text-sm">
@@ -722,139 +638,6 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* KHAY KHUYẾN MÃI & FLASH SALE (BOOKING SALES TRAY) - NỀN ĐEN GLASSMORPHISM CÙNG STYLE ĐẶC QUYỀN */}
-      <section className="relative z-20 mx-auto -mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-white/20 bg-slate-950/90 py-3.5 px-4 sm:px-6 shadow-2xl backdrop-blur-xl text-white">
-          <div className="mb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 text-rose-400 text-sm font-bold border border-rose-500/30">
-                🔥
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  <h2 className="text-sm sm:text-base font-black tracking-tight text-white">
-                    Ưu Đãi Đặc Quyền & Voucher Giờ Chót
-                  </h2>
-                  <span className="hidden sm:inline-flex rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                    Tiết kiệm tới 30%
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300">Nhập mã ưu đãi độc quyền khi đặt phòng · Áp dụng tức thì</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>✓ Đưa đón sân bay & Buffet sáng</span>
-            </div>
-          </div>
-
-          {/* Dải Khay Ưu Đãi Kéo Ngang (Horizontal Scroll Tray) */}
-          <div className="flex gap-3 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
-            {PROMO_DEALS.map((deal) => (
-              <div
-                key={deal.id}
-                className="flex-none w-64 sm:w-72 rounded-2xl border border-white/15 bg-white/[0.07] hover:bg-white/[0.14] p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-cyan-400/40 backdrop-blur-md flex flex-col justify-between shimmer-card"
-              >
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300">
-                    {deal.tag}
-                  </span>
-                  <span className="rounded-full bg-emerald-400/20 border border-emerald-400/30 px-2 py-0.5 text-[9px] font-bold text-emerald-300">
-                    {deal.badge}
-                  </span>
-                </div>
-
-                <div className="my-1.5">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black text-rose-400 tracking-tight">{deal.discount}</span>
-                    <h3 className="text-xs font-bold text-white line-clamp-1">{deal.title}</h3>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-slate-300 line-clamp-1 leading-snug">{deal.desc}</p>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-white/10 pt-2 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase">Mã:</span>
-                    <span className="rounded-lg bg-black/70 px-2 py-0.5 font-mono text-[11px] font-black text-cyan-300 border border-cyan-400/30 shadow-inner">
-                      {deal.code}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => copyCoupon(deal.code)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-white/15 hover:bg-white/25 px-2.5 py-1 text-[11px] font-bold text-white transition-all cursor-pointer border border-white/20 active:scale-95 shadow-2xs"
-                  >
-                    {copiedCoupon === deal.code ? (
-                      <span className="text-emerald-300 font-bold flex items-center gap-1">
-                        ✓ Đã chép
-                      </span>
-                    ) : (
-                      <span>Sao chép mã</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* DẢI TIỆN ÍCH PRESENTATION EYE-CANDY VỚI CÁC ICON WEB CHUYÊN NGHIỆP */}
-      <section className="mx-auto mt-7 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4.5">
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Xác nhận tức thì</p>
-              <p className="text-[10px] text-slate-500">Giữ phòng trong 30 giây</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Cam kết giá tốt</p>
-              <p className="text-[10px] text-slate-500">Hoàn tiền chênh lệch 100%</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-sm">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Hỗ trợ 24/7</p>
-              <p className="text-[10px] text-slate-500">Đội ngũ CSKH chuyên nghiệp</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-400 to-indigo-500 text-white shadow-sm">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V4a2 2 0 10-2 2h2zm0 13a2 2 0 100-4 2 2 0 000 4zm0 0a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">Đặc quyền QuickStay</p>
-              <p className="text-[10px] text-slate-500">Tích điểm & Ưu đãi xe đưa đón</p>
             </div>
           </div>
         </div>

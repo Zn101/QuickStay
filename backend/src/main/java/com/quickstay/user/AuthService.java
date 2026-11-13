@@ -109,7 +109,6 @@ public class AuthService {
     @Transactional
     public ForgotPasswordResponse forgotPassword(String email) {
         boolean demoMode = emails == null || !emails.smtpEnabled();
-        EmailPreview preview = null;
 
         var opt = users.findByEmail(email);
         if (opt.isPresent()) {
@@ -119,19 +118,16 @@ public class AuthService {
             u.setResetTokenExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
             users.save(u);
             if (emails != null) {
-                EmailLog sent = emails.sendPasswordResetEmail(u.getEmail(), u.getFullName(), token);
-                // Chi tra xem truoc email trong che do mo phong cho tai khoan CUSTOMER (khong bao gio lo token ADMIN)
-                if (demoMode && u.getRole() == Role.CUSTOMER) {
-                    preview = new EmailPreview(sent.getRecipient(), sent.getSubject(), sent.getBodyHtml());
-                }
+                emails.sendPasswordResetEmail(u.getEmail(), u.getFullName(), token);
             }
             log.info("Tao yeu cau khoi phuc mat khau cho user id={}", u.getId());
         }
 
+        // Bao mat: Khong bao gio tra ve token khoi phuc trong response JSON ke ca o che do demo
         return new ForgotPasswordResponse(
                 "Neu email ton tai trong he thong, chung toi da gui huong dan dat lai mat khau.",
                 demoMode,
-                preview);
+                null);
     }
 
     @Transactional
