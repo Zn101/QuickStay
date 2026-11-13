@@ -257,9 +257,9 @@ export default function HotelDetail() {
         <span className="text-slate-700 font-medium">{hotel.name}</span>
       </nav>
 
-      <div className="grid lg:grid-cols-5 gap-10">
+      <div className="grid lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_335px] gap-8 items-start">
         {/* Left column */}
-        <div className="lg:col-span-3 space-y-10">
+        <div className="min-w-0 space-y-10">
           {/* Photo Gallery */}
           <div>
             <div
@@ -516,14 +516,25 @@ export default function HotelDetail() {
               )}
 
               {serviceTab === 'attractions' && (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-4">
                   {extras.attractionTransports.map((a) => (
-                    <div key={a.name} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4">
-                      <div>
-                        <p className="text-sm font-extrabold text-slate-900">{a.name}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Cách {a.distance} (~{a.estimatedDuration}) · Phương tiện: <strong>{a.transportMode}</strong>
-                        </p>
+                    <div
+                      key={a.name}
+                      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-4.5 hover:border-sky-300 hover:shadow-md transition-all duration-300 shimmer-card"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 border border-sky-100">
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-extrabold text-slate-900">{a.name}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            Cách {a.distance} (~{a.estimatedDuration}) · Phương tiện: <strong>{a.transportMode}</strong>
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-extrabold text-sky-700">
@@ -539,7 +550,7 @@ export default function HotelDetail() {
                               fee: a.price,
                             })
                           }
-                          className="rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-sky-700 cursor-pointer"
+                          className="rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-sky-700 cursor-pointer active:scale-95 transition-all shadow-xs"
                         >
                           Yêu cầu hỗ trợ xe
                         </button>
@@ -723,131 +734,192 @@ export default function HotelDetail() {
           </section>
         </div>
 
-        {/* Right column: Sticky Summary (with price listed!) + Policies + Q&A */}
-        <aside className="lg:col-span-2 space-y-6">
+        {/* Right column: STICKY SUMMARY (Cố định không cuộn mất màn hình + Chiều rộng nhỏ gọn vừa vặn) */}
+        <aside className="w-full lg:w-[320px] xl:w-[335px] space-y-4 self-start sticky top-20 z-20 max-h-[calc(100vh-5.5rem)] overflow-y-auto custom-scrollbar pr-1">
           {/* 1. Tóm tắt đặt phòng & Bảng Giá Chi Tiết */}
-          <div className="sticky top-20 rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-slate-400">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-4.5 shadow-md space-y-3.5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
                 Tóm tắt lưu trú
               </span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
                 Xác nhận tức thì
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <HotelImage src={hotel.imageUrl} alt={hotel.name} className="h-16 w-16 rounded-2xl object-cover shadow-xs" />
+              <HotelImage src={hotel.imageUrl} alt={hotel.name} className="h-14 w-14 rounded-xl object-cover shadow-2xs" />
               <div className="min-w-0 flex-1">
-                <p className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-1">{hotel.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">📍 {hotel.city}</p>
+                <p className="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-1">{hotel.name}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                  <svg className="h-3 w-3 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="truncate">{hotel.city}</span>
+                </p>
                 <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600 font-bold">
                   <span>★ {avgRating}</span>
-                  <span className="text-[11px] text-slate-400 font-normal">({reviews.length} đánh giá)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">({reviews.length} đánh giá)</span>
                 </div>
               </div>
             </div>
 
             {/* BẢNG GIÁ LIỆT KÊ NỔI BẬT (PRICE LISTED IN SUMMARY PART) */}
-            <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50/50 to-white p-4 shadow-2xs">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-800">
-                Mức giá tốt nhất cho kỳ nghỉ
+            <div className="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 via-cyan-50/40 to-white p-3.5 shadow-2xs">
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-sky-800 flex items-center gap-1">
+                <svg className="h-3 w-3 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                Mức giá tốt nhất hôm nay
               </span>
               <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-sky-700">
+                <span className="text-xl sm:text-2xl font-black text-sky-700">
                   {formatVnd(hotel.minPrice || (rooms.length > 0 ? Math.min(...rooms.map((r) => r.pricePerNight)) : 550000))}
                 </span>
-                <span className="text-xs font-bold text-slate-500">/ đêm</span>
+                <span className="text-[11px] font-bold text-slate-500">/ đêm</span>
               </div>
 
               {!dateError && nights > 0 ? (
-                <div className="mt-2.5 pt-2.5 border-t border-sky-100 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-600">Tạm tính ({nights} đêm):</span>
-                  <span className="text-base font-black text-slate-900">
+                <div className="mt-2 pt-2 border-t border-sky-100 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-600 text-[11px]">Tạm tính ({nights} đêm):</span>
+                  <span className="text-sm font-black text-slate-900">
                     {formatVnd((hotel.minPrice || (rooms.length > 0 ? Math.min(...rooms.map((r) => r.pricePerNight)) : 550000)) * nights)}
                   </span>
                 </div>
               ) : null}
 
-              <div className="mt-2.5 space-y-1 text-[11px] font-medium text-emerald-700">
-                <p>✓ Miễn phí hủy phòng trước 24 giờ</p>
-                <p>✓ Giá đã bao gồm thuế GTGT & phí dịch vụ</p>
-                <p>✓ Tặng voucher hoàn tiền 5% cho lần sau</p>
+              <div className="mt-2 space-y-1 text-[10px] font-medium text-emerald-700">
+                <p className="flex items-center gap-1">
+                  <svg className="h-3 w-3 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Miễn phí hủy phòng trước 24 giờ
+                </p>
+                <p className="flex items-center gap-1">
+                  <svg className="h-3 w-3 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Đã bao gồm thuế GTGT & phí dịch vụ
+                </p>
+                <p className="flex items-center gap-1">
+                  <svg className="h-3 w-3 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Tặng voucher hoàn tiền 5% cho lần sau
+                </p>
               </div>
             </div>
 
             {/* Thông tin ngày nhận / trả */}
-            <div className="space-y-2 border-t border-slate-100 pt-3 text-sm">
-              <div className="flex justify-between text-slate-600 text-xs">
-                <span>Nhận phòng</span>
+            <div className="space-y-1.5 border-t border-slate-100 pt-2.5 text-xs">
+              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                <span className="flex items-center gap-1">
+                  <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                  </svg>
+                  Nhận phòng
+                </span>
                 <span className="font-bold text-slate-900">{checkIn ? formatDateVi(checkIn) : '—'}</span>
               </div>
-              <div className="flex justify-between text-slate-600 text-xs">
-                <span>Trả phòng</span>
+              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                <span className="flex items-center gap-1">
+                  <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                  </svg>
+                  Trả phòng
+                </span>
                 <span className="font-bold text-slate-900">{checkOut ? formatDateVi(checkOut) : '—'}</span>
               </div>
-              <div className="flex justify-between text-slate-600 text-xs">
-                <span>Thời gian lưu trú</span>
+              <div className="flex justify-between items-center text-slate-600 text-[11px]">
+                <span className="flex items-center gap-1">
+                  <svg className="h-3.5 w-3.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                  Thời gian lưu trú
+                </span>
                 <span className="font-extrabold text-sky-700">{!dateError && nights > 0 ? `${nights} đêm` : '—'}</span>
               </div>
             </div>
 
             {extras && (
-              <div className="space-y-1.5 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wide">Dịch vụ đi kèm có sẵn:</p>
-                <p className="flex items-center gap-1.5"><span>✈️</span> Đón tiễn {extras.airportName}</p>
-                <p className="flex items-center gap-1.5"><span>🍽️</span> {extras.diningOptions.length} lựa chọn ẩm thực & buffet sáng</p>
-                <p className="flex items-center gap-1.5"><span>🗺️</span> Hỗ trợ xe tới {extras.attractionTransports.length} điểm tham quan</p>
+              <div className="space-y-1 border-t border-slate-100 pt-2.5 text-[11px] text-slate-600">
+                <p className="font-bold text-slate-800 text-[10px] uppercase tracking-wide">Dịch vụ đi kèm có sẵn:</p>
+                <p className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Đón tiễn {extras.airportName}
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  {extras.diningOptions.length} ẩm thực & buffet sáng
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  Hỗ trợ xe {extras.attractionTransports.length} điểm tham quan
+                </p>
               </div>
             )}
 
             {!user && (
               <Link
                 to="/login"
-                className="block w-full rounded-2xl bg-sky-600 py-3 text-center text-sm font-bold text-white hover:bg-sky-700 transition-colors shadow-sm"
+                className="block w-full rounded-xl bg-sky-600 py-2.5 text-center text-xs font-bold text-white hover:bg-sky-700 transition-colors shadow-sm"
               >
                 Đăng nhập để đặt phòng
               </Link>
             )}
           </div>
 
-          {/* 2. CHÍNH SÁCH LƯU TRÚ (ĐƯỢC CHUYỂN SANG BÊN PHẢI, DƯỚI PHẦN TÓM TẮT) */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm space-y-3.5">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-700 text-sm">
+          {/* 2. CHÍNH SÁCH LƯU TRÚ (ĐƯỢC THU NHỎ CHIỀU RỘNG VỪA VẶN) */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100 text-sky-700 text-xs font-bold">
                 📋
               </span>
               <div>
-                <h3 className="font-black text-slate-900 text-sm">Chính sách & Quy định lưu trú</h3>
-                <p className="text-[11px] text-slate-400">Áp dụng trực tiếp tại {hotel.name}</p>
+                <h3 className="font-black text-slate-900 text-xs">Chính sách lưu trú</h3>
+                <p className="text-[10px] text-slate-400">Áp dụng tại {hotel.name}</p>
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {(extras?.policies || [
-                { title: 'Nhận phòng & Trả phòng', detail: 'Nhận phòng từ 14:00 · Trả phòng trước 12:00. Hỗ trợ giữ hành lý miễn phí 24/7.' },
-                { title: 'Chính sách hủy & Hoàn tiền', detail: 'Miễn phí hủy phòng trước 24 giờ. Đơn trực tuyến sẽ được hoàn tiền tự động.' },
-                { title: 'Trẻ em & Giường phụ', detail: 'Miễn phí tối đa 1 trẻ em dưới 6 tuổi ngủ chung giường với bố mẹ.' },
-                { title: 'Thanh toán & Đặt cọc', detail: 'Chấp nhận VietQR, thẻ Visa/Mastercard, ví MoMo và thanh toán tại quầy.' },
-                { title: 'Quy định lưu trú', detail: 'Vui lòng xuất trình CCCD/Hộ chiếu hợp lệ khi nhận phòng. Không hút thuốc trong phòng kín.' },
+                { title: 'Nhận & Trả phòng', detail: 'Từ 14:00 · Trả phòng trước 12:00. Hỗ trợ giữ hành lý 24/7.' },
+                { title: 'Hủy phòng', detail: 'Miễn phí hủy phòng trước 24 giờ. Tự động hoàn tiền.' },
+                { title: 'Trẻ em', detail: 'Miễn phí tối đa 1 trẻ em dưới 6 tuổi ngủ chung với bố mẹ.' },
+                { title: 'Thanh toán', detail: 'Chấp nhận VietQR, thẻ Visa/Mastercard, ví MoMo.' },
+                { title: 'Quy định', detail: 'Xuất trình CCCD/Hộ chiếu hợp lệ. Không hút thuốc trong phòng kín.' },
               ]).map((p) => (
-                <div key={p.title} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3 text-xs">
-                  <p className="font-bold text-slate-900 text-xs mb-1">{p.title}</p>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">{p.detail}</p>
+                <div key={p.title} className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-[11px]">
+                  <p className="font-bold text-slate-900 text-[11px] mb-0.5">{p.title}</p>
+                  <p className="text-slate-600 text-[10px] leading-relaxed">{p.detail}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* 3. PHẦN HỎI & ĐÁP (Q&A) (ĐƯỢC CHUYỂN SANG BÊN PHẢI, DƯỚI CHÍNH SÁCH LƯU TRÚ) */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 text-sm">
+          {/* 3. PHẦN HỎI & ĐÁP (Q&A) (ĐƯỢC THU NHỎ CHIỀU RỘNG VỪA VẶN) */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold">
                 💬
               </span>
               <div>
-                <h3 className="font-black text-slate-900 text-sm">Hỏi & Đáp trực tiếp (Q&A)</h3>
-                <p className="text-[11px] text-slate-400">Ban quản lý phản hồi nhanh</p>
+                <h3 className="font-black text-slate-900 text-xs">Hỏi & Đáp (Q&A)</h3>
+                <p className="text-[10px] text-slate-400">Ban quản lý phản hồi nhanh</p>
               </div>
             </div>
 

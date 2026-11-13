@@ -361,7 +361,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0 bg-gradient-to-t from-[#04121d] via-transparent to-[#04121d]/40" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:gap-12">
             {/* Cột trái: Tiêu đề + Thanh tìm kiếm nâng cao */}
             <div>
               <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
@@ -674,12 +674,12 @@ export default function Home() {
               </form>
             </div>
 
-            {/* Cột phải: KHUNG ẢNH NỔI BẬT LỚN GẤP RƯỠI (Bigger Hero Image Display) */}
+            {/* Cột phải: KHUNG ẢNH NỔI BẬT (Ảnh thu nhỏ vừa vặn, thanh lịch) */}
             <div className="relative hidden lg:block w-full">
-              <div className="relative mx-auto max-w-xl pb-8">
-                {/* Khung ảnh động chính - Phóng to và nổi bật */}
-                <div className="animate-float-slow relative overflow-hidden rounded-[32px] border-2 border-white/25 bg-slate-900/60 p-3.5 shadow-2xl backdrop-blur-md animate-glow-pulse">
-                  <div className="relative h-[440px] sm:h-[480px] overflow-hidden rounded-2xl">
+              <div className="relative mx-auto max-w-lg pb-2">
+                {/* Khung ảnh động chính với hiệu ứng Presentation */}
+                <div className="animate-presentation-float relative overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
+                  <div className="relative h-[340px] sm:h-[370px] overflow-hidden rounded-2xl">
                     <img
                       key={currentSlide.url}
                       src={currentSlide.url}
@@ -689,7 +689,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
                     {/* Badge góc trái trên: Đánh giá */}
-                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/75 px-3.5 py-1.5 text-xs font-bold text-cyan-300 backdrop-blur-md shadow-md border border-white/15">
+                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-cyan-300 backdrop-blur-md shadow-md border border-white/15">
                       <span className="text-amber-400">★ {currentSlide.rating}</span>
                       <span>·</span>
                       <span className="text-slate-200">Tuyệt hảo</span>
@@ -697,7 +697,8 @@ export default function Home() {
 
                     {/* Badge góc phải trên: Độc quyền */}
                     <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-rose-600/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-md shadow-md">
-                      <span>🔥 Được đặt nhiều nhất</span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                      <span>Được đặt nhiều nhất</span>
                     </div>
 
                     {/* Khối thông tin góc dưới ảnh */}
@@ -706,36 +707,17 @@ export default function Home() {
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300 tracking-wide uppercase">
                           📍 {currentSlide.city}
                         </span>
-                        <p className="text-xl sm:text-2xl font-black text-white drop-shadow-md leading-snug">
+                        <p className="text-lg sm:text-xl font-black text-white drop-shadow-md leading-snug">
                           {currentSlide.title}
                         </p>
                         <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{currentSlide.subtitle}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <span className="block text-[11px] text-slate-400">Giá phòng từ</span>
-                        <span className="inline-block rounded-xl bg-white px-3.5 py-1.5 text-sm font-extrabold text-slate-900 shadow-lg">
+                        <span className="inline-block rounded-xl bg-white px-3 py-1 text-sm font-extrabold text-slate-900 shadow-lg">
                           {currentSlide.price}
                         </span>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Thẻ phụ nổi bật góc trái dưới */}
-                <div className="animate-float-reverse absolute -bottom-3 -left-6 flex items-center gap-3.5 rounded-2xl border border-white/20 bg-slate-950/85 p-3.5 pr-6 shadow-2xl backdrop-blur-xl">
-                  <img
-                    src={currentSlide.thumb}
-                    alt="Preview"
-                    className="h-16 w-16 rounded-xl object-cover ring-2 ring-white/20"
-                  />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                      <p className="text-xs font-black text-white">Ưu Đãi Đặc Quyền</p>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-300">Giảm thêm 20% khi nhập mã QUICKSTAY20</p>
-                    <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
-                      <span>✓ Đưa đón sân bay & Buffet sáng</span>
                     </div>
                   </div>
                 </div>
@@ -745,54 +727,62 @@ export default function Home() {
         </div>
       </section>
 
-      {/* KHAY KHUYẾN MÃI & FLASH SALE (BOOKING SALES TRAY) - NẰM NGAY BÊN DƯỚI BỘ LỌC TÌM KIẾM */}
+      {/* KHAY KHUYẾN MÃI & FLASH SALE (BOOKING SALES TRAY) - NỀN ĐEN GLASSMORPHISM CÙNG STYLE ĐẶC QUYỀN */}
       <section className="relative z-20 mx-auto -mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xl">
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="rounded-3xl border border-white/20 bg-slate-950/90 py-3.5 px-4 sm:px-6 shadow-2xl backdrop-blur-xl text-white">
+          <div className="mb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 text-base font-bold shadow-xs">
+              <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 text-rose-400 text-sm font-bold border border-rose-500/30">
                 🔥
               </span>
               <div>
-                <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
-                  Ưu Đãi & Khuyến Mãi Đặt Phòng Hot Nhất Hôm Nay
-                </h2>
-                <p className="text-xs text-slate-500">Mã voucher giảm giá độc quyền áp dụng tức thì khi đặt phòng</p>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <h2 className="text-sm sm:text-base font-black tracking-tight text-white">
+                    Ưu Đãi Đặc Quyền & Voucher Giờ Chót
+                  </h2>
+                  <span className="hidden sm:inline-flex rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                    Tiết kiệm tới 30%
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">Nhập mã ưu đãi độc quyền khi đặt phòng · Áp dụng tức thì</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Cập nhật 5 phút trước</span>
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>✓ Đưa đón sân bay & Buffet sáng</span>
             </div>
           </div>
 
           {/* Dải Khay Ưu Đãi Kéo Ngang (Horizontal Scroll Tray) */}
-          <div className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+          <div className="flex gap-3 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
             {PROMO_DEALS.map((deal) => (
               <div
                 key={deal.id}
-                className={`flex-none w-72 sm:w-80 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br ${deal.bg} ${deal.border}`}
+                className="flex-none w-64 sm:w-72 rounded-2xl border border-white/15 bg-white/[0.07] hover:bg-white/[0.14] p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-cyan-400/40 backdrop-blur-md flex flex-col justify-between shimmer-card"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-black text-slate-700 tracking-wider">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300">
                     {deal.tag}
                   </span>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${deal.badgeColor}`}>
+                  <span className="rounded-full bg-emerald-400/20 border border-emerald-400/30 px-2 py-0.5 text-[9px] font-bold text-emerald-300">
                     {deal.badge}
                   </span>
                 </div>
 
-                <div className="mt-2.5">
-                  <span className="text-xl font-black text-rose-600 tracking-tight">{deal.discount}</span>
-                  <h3 className="mt-0.5 text-sm font-extrabold text-slate-900 leading-snug">{deal.title}</h3>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed line-clamp-2">{deal.desc}</p>
+                <div className="my-1.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-lg font-black text-rose-400 tracking-tight">{deal.discount}</span>
+                    <h3 className="text-xs font-bold text-white line-clamp-1">{deal.title}</h3>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-slate-300 line-clamp-1 leading-snug">{deal.desc}</p>
                 </div>
 
-                <div className="mt-3.5 flex items-center justify-between border-t border-slate-200/70 pt-2.5">
+                <div className="flex items-center justify-between border-t border-white/10 pt-2 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Mã:</span>
-                    <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-xs font-bold text-cyan-300">
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase">Mã:</span>
+                    <span className="rounded-lg bg-black/70 px-2 py-0.5 font-mono text-[11px] font-black text-cyan-300 border border-cyan-400/30 shadow-inner">
                       {deal.code}
                     </span>
                   </div>
@@ -800,10 +790,12 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => copyCoupon(deal.code)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:border-sky-500 hover:text-sky-600 transition-colors cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1 rounded-lg bg-white/15 hover:bg-white/25 px-2.5 py-1 text-[11px] font-bold text-white transition-all cursor-pointer border border-white/20 active:scale-95 shadow-2xs"
                   >
                     {copiedCoupon === deal.code ? (
-                      <span className="text-emerald-600 font-bold">✓ Đã sao chép</span>
+                      <span className="text-emerald-300 font-bold flex items-center gap-1">
+                        ✓ Đã chép
+                      </span>
                     ) : (
                       <span>Sao chép mã</span>
                     )}
@@ -815,13 +807,66 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ĐIỂM ĐẾN YÊU THÍCH (CHỈ HIỂN THỊ 1 HÀNG + NÚT XEM THÊM ĐIỂM ĐẾN) */}
+      {/* DẢI TIỆN ÍCH PRESENTATION EYE-CANDY VỚI CÁC ICON WEB CHUYÊN NGHIỆP */}
+      <section className="mx-auto mt-7 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4.5">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Xác nhận tức thì</p>
+              <p className="text-[10px] text-slate-500">Giữ phòng trong 30 giây</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Cam kết giá tốt</p>
+              <p className="text-[10px] text-slate-500">Hoàn tiền chênh lệch 100%</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-sm">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Hỗ trợ 24/7</p>
+              <p className="text-[10px] text-slate-500">Đội ngũ CSKH chuyên nghiệp</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3.5 backdrop-blur-sm shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md shimmer-card">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-400 to-indigo-500 text-white shadow-sm">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V4a2 2 0 10-2 2h2zm0 13a2 2 0 100-4 2 2 0 000 4zm0 0a2 2 0 110-4 2 2 0 010 4z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Đặc quyền QuickStay</p>
+              <p className="text-[10px] text-slate-500">Tích điểm & Ưu đãi xe đưa đón</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ĐIỂM ĐẾN YÊU THÍCH (CÓ KHOẢNG CÁCH RÕ RÀNG GIỮA CÁC Ô ĐIỂM ĐẾN, KHÔNG DÍNH NHAU) */}
       {!isFiltering && (
-        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
-          <div className="mb-7 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+        <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0284c7]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#0284c7]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0284c7] animate-pulse" />
                 Khám phá Việt Nam
               </span>
               <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
@@ -833,21 +878,21 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Grid điểm đến: 1 hàng duy nhất (4 cột) khi chưa mở rộng */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5">
+          {/* Grid điểm đến: KHOẢNG CÁCH RỘNG RÃI (gap-6 sm:gap-7 lg:gap-8) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7 lg:gap-8">
             {(showAllCities ? POPULAR_CITIES : POPULAR_CITIES.slice(0, 4)).map((dest) => (
               <button
                 key={dest.name}
                 type="button"
                 onClick={() => selectQuickCity(dest.name)}
-                className="group relative h-60 overflow-hidden rounded-3xl text-left shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl cursor-pointer"
+                className="group relative h-64 overflow-hidden rounded-3xl text-left shadow-md transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl cursor-pointer shimmer-card"
               >
                 <img
                   src={dest.image}
                   alt={dest.name}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
 
                 <div className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-[#0284c7]">
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -856,7 +901,7 @@ export default function Home() {
                 </div>
 
                 <div className="absolute bottom-4 left-4 right-4">
-                  <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold text-white mb-1">
+                  <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white mb-1.5 border border-white/20">
                     {dest.hotelsCount}
                   </span>
                   <p className="text-xs font-medium text-sky-200 line-clamp-1">{dest.tagline}</p>

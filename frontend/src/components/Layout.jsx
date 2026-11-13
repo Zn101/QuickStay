@@ -77,11 +77,59 @@ export default function Layout() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
-            <NavLink to="/" className={linkClass} end>Trang chủ</NavLink>
-            <NavLink to="/policies" className={linkClass}>Chính sách & Q&A</NavLink>
-            {user && <NavLink to="/my-bookings" className={linkClass}>Đặt phòng của tôi</NavLink>}
-            {user && <NavLink to="/profile" className={linkClass}>Cài đặt</NavLink>}
-            {user?.role === 'ADMIN' && <NavLink to="/admin" className={linkClass}>Quản trị</NavLink>}
+            <NavLink to="/" className={linkClass} end>
+              <span className="inline-flex items-center gap-1.5">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                Trang chủ
+              </span>
+            </NavLink>
+            <NavLink to="/policies" className={linkClass}>
+              <span className="inline-flex items-center gap-1.5">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Chính sách & Q&A
+              </span>
+            </NavLink>
+            {user && (
+              <NavLink to="/my-bookings" className={linkClass}>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                  </svg>
+                  Đặt phòng của tôi
+                </span>
+              </NavLink>
+            )}
+            {user && (
+              <NavLink to="/profile" className={linkClass}>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Cài đặt
+                </span>
+              </NavLink>
+            )}
+            {user?.role === 'ADMIN' && (
+              <NavLink to="/admin" className={linkClass}>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect width="7" height="9" x="3" y="3" rx="1" />
+                    <rect width="7" height="5" x="14" y="3" rx="1" />
+                    <rect width="7" height="9" x="14" y="12" rx="1" />
+                    <rect width="7" height="5" x="3" y="16" rx="1" />
+                  </svg>
+                  Quản trị
+                </span>
+              </NavLink>
+            )}
           </nav>
 
           {/* Auth buttons */}
