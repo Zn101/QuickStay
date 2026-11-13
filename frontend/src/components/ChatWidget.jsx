@@ -69,7 +69,7 @@ export default function ChatWidget() {
     <div className="fixed bottom-5 right-5 z-40">
       {/* Cửa sổ chat */}
       {open && (
-        <div className="mb-3 flex h-[500px] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl transition-all animate-in fade-in slide-in-from-bottom-4">
+        <div className="mb-3 flex h-[460px] sm:h-[500px] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl transition-all animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
           <div className="flex items-center justify-between bg-gradient-to-r from-sky-600 to-sky-700 px-4 py-3 text-white shadow-sm">
             <div className="flex items-center gap-2.5">
@@ -202,19 +202,22 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Floating button */}
+      {/* Floating button (2x size: 104px, eye-catching, modern) */}
       <button
         type="button"
-        className="group relative flex h-13 w-13 items-center justify-center rounded-full bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-lg hover:shadow-xl hover:from-sky-500 hover:to-sky-600 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        className="group relative flex h-24 w-24 sm:h-[104px] sm:w-[104px] flex-col items-center justify-center rounded-full bg-gradient-to-tr from-sky-600 via-sky-600 to-cyan-500 text-white shadow-2xl hover:shadow-sky-500/50 hover:from-sky-500 hover:to-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white/40"
         aria-label={open ? 'Đóng chat' : 'Mở chat'}
         onClick={() => setOpen((o) => !o)}
       >
         {open ? (
-          <span className="text-xl font-bold leading-none">✕</span>
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-3xl font-black leading-none drop-shadow">✕</span>
+            <span className="mt-1 text-[11px] font-semibold tracking-wide text-white/90 uppercase drop-shadow-xs">Đóng</span>
+          </div>
         ) : (
           <>
             <svg
-              className="h-6 w-6 transition-transform group-hover:scale-110"
+              className="h-10 w-10 sm:h-11 sm:w-11 transition-transform duration-200 group-hover:scale-110 drop-shadow"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -226,9 +229,12 @@ export default function ChatWidget() {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 border-2 border-white" />
+            <span className="mt-0.5 text-[11px] sm:text-xs font-bold tracking-tight text-white drop-shadow-sm">
+              Chat Hỗ Trợ
+            </span>
+            <span className="absolute top-1 right-1 flex h-4 w-4">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+              <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
             </span>
           </>
         )}

@@ -238,12 +238,17 @@ public class HotelExtrasService {
     private static List<PhotoItem> buildPhotos(Hotel h) {
         List<PhotoItem> list = new ArrayList<>();
         if (h.getImageUrl() != null && !h.getImageUrl().isBlank()) {
-            list.add(new PhotoItem(h.getImageUrl(), "Toàn cảnh " + h.getName()));
+            list.add(new PhotoItem(h.getImageUrl(), "Mặt tiền & Toàn cảnh khuôn viên " + h.getName()));
         }
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1000&q=80", "Phòng ngủ cao cấp ngập tràn ánh sáng"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80", "Không gian Suite & Ban công thư giãn"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1000&q=80", "Nhà hàng & Khu vực ẩm thực"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1000&q=80", "Khu vực hồ bơi & sảnh đón tiếp"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80", "Phòng ngủ Master King Bed cao cấp ngập tràn ánh sáng"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80", "Không gian phòng khách Suite rộng rãi & Ban công ngắm cảnh"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80", "Phòng tắm đá cẩm thạch sang trọng với bồn tắm ngâm thảo mộc"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80", "Hồ bơi vô cực ngoài trời với ghế tắm nắng & view toàn cảnh"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80", "Nhà hàng buffet Á - Âu & Không gian ẩm thực thượng lưu"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80", "Khuôn viên vườn nhiệt đới & Lối dạo bộ thư thái"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80", "Khu trị liệu Spa chăm sóc sức khỏe & Phòng xông hơi khô"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80", "Trung tâm thể hình Gym & Yoga trang thiết bị hiện đại"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80", "Đại sảnh đón tiếp sang trọng & Quầy lễ tân phục vụ 24/7"));
         return list;
     }
 
@@ -254,6 +259,7 @@ public class HotelExtrasService {
         if (city.contains("phú quốc")) return "Sân bay Quốc tế Phú Quốc (PQC)";
         if (city.contains("nha trang")) return "Sân bay Quốc tế Cam Ranh (CXR)";
         if (city.contains("đà lạt")) return "Sân bay Liên Khương (DLI)";
+        if (city.contains("huế")) return "Sân bay Quốc tế Phú Bài (HUI)";
         return "Sân bay nội địa / Quốc tế gần nhất";
     }
 
@@ -301,6 +307,38 @@ public class HotelExtrasService {
                     new AttractionItem("Rừng dừa Bảy Mẫu (Thúng chai)", "4.5 km", "Xe điện / Xe máy / Taxi", "12 phút", BigDecimal.valueOf(120_000)),
                     new AttractionItem("Biển An Bàng", "4.8 km", "Xe đạp hoặc Shuttle miễn phí", "15 phút", BigDecimal.ZERO),
                     new AttractionItem("Thánh địa Mỹ Sơn", "40 km", "Xe riêng khứ hồi đón tại sảnh", "60 phút", BigDecimal.valueOf(600_000))
+            );
+        }
+        if (city.contains("phú quốc")) {
+            return List.of(
+                    new AttractionItem("Cáp treo Hòn Thơm & Thị trấn Hoàng Hôn", "12 km", "Xe riêng 4-7 chỗ", "20 phút", BigDecimal.valueOf(280_000)),
+                    new AttractionItem("Grand World & Thành phố không ngủ", "28 km", "Shuttle bus hoặc Xe riêng", "35 phút", BigDecimal.valueOf(350_000)),
+                    new AttractionItem("VinWonders & Vinpearl Safari Phú Quốc", "30 km", "Xe riêng khứ hồi", "40 phút", BigDecimal.valueOf(450_000)),
+                    new AttractionItem("Bãi Sao & Làng chài Hàm Ninh thưởng thức hải sản", "18 km", "Xe riêng đón tại sảnh", "25 phút", BigDecimal.valueOf(300_000))
+            );
+        }
+        if (city.contains("nha trang")) {
+            return List.of(
+                    new AttractionItem("VinWonders Nha Trang & Cáp treo vượt biển", "6 km", "Taxi / Xe riêng đón tại sảnh", "12 phút", BigDecimal.valueOf(120_000)),
+                    new AttractionItem("Tháp Bà Ponagar & Khu tắm bùn khoáng I-Resort", "4.5 km", "Xe điện du lịch / Taxi", "10 phút", BigDecimal.valueOf(80_000)),
+                    new AttractionItem("Viện Hải dương học & Cảng Cầu Đá", "7 km", "Taxi / Xe đưa đón", "15 phút", BigDecimal.valueOf(90_000)),
+                    new AttractionItem("Tour 4 đảo vịnh Nha Trang lặn ngắm san hô", "Khởi hành tại cảng", "Xe đưa đón ra bến tàu", "20 phút", BigDecimal.valueOf(450_000))
+            );
+        }
+        if (city.contains("đà lạt")) {
+            return List.of(
+                    new AttractionItem("Quảng trường Lâm Viên & Hồ Xuân Hương", "1.8 km", "Đi bộ hoặc Xe máy ngắm cảnh", "5 phút", BigDecimal.ZERO),
+                    new AttractionItem("Thung lũng Tình Yêu & Đồi Mộng Mơ", "6 km", "Taxi / Xe máy thuê", "15 phút", BigDecimal.valueOf(100_000)),
+                    new AttractionItem("Đỉnh Langbiang (Xe jeep chinh phục đỉnh)", "14 km", "Xe riêng 4-7 chỗ", "25 phút", BigDecimal.valueOf(280_000)),
+                    new AttractionItem("Ga xe lửa cổ Đà Lạt & Chùa Ve Chai Linh Phước", "7 km", "Xe taxi hoặc Tàu hỏa du lịch", "15 phút", BigDecimal.valueOf(110_000))
+            );
+        }
+        if (city.contains("huế")) {
+            return List.of(
+                    new AttractionItem("Đại Nội Huế (Hoàng thành triều Nguyễn)", "1.2 km", "Đi bộ hoặc Xích lô ngắm cảnh", "5 phút", BigDecimal.valueOf(50_000)),
+                    new AttractionItem("Chùa Thiên Mụ & Thuyền rồng Ca Huế sông Hương", "4.5 km", "Thuyền rồng đón tại bến khách sạn", "15 phút", BigDecimal.valueOf(150_000)),
+                    new AttractionItem("Lăng Khải Định & Lăng Tự Đức", "9 km", "Xe riêng tham quan các lăng tẩm", "20 phút", BigDecimal.valueOf(320_000)),
+                    new AttractionItem("Chợ Đông Ba & Phố đêm Hoàng Thành", "1.5 km", "Đi bộ hoặc Xích lô", "5 phút", BigDecimal.valueOf(40_000))
             );
         }
         return List.of(
