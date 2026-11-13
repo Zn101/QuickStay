@@ -4,6 +4,7 @@ import { useSettings } from '../store/settingsStore'
 import { useState, useEffect } from 'react'
 import { ConfirmModal } from './ui'
 import EmailInboxModal from './EmailInboxModal'
+import ChatWidget from './ChatWidget'
 import { api } from '../lib/api'
 
 export default function Layout() {
@@ -206,6 +207,7 @@ export default function Layout() {
       </footer>
 
       <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      <ChatWidget />
 
       {/* Modal xác nhận Đăng xuất */}
       <ConfirmModal

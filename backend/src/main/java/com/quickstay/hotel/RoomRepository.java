@@ -16,6 +16,12 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     /** Sap theo gia tang dan; cung gia thi theo id de thu tu on dinh. */
     List<Room> findByHotelIdOrderByPricePerNightAscIdAsc(Long hotelId);
 
+    List<Room> findByHotelId(Long hotelId);
+
+    default List<Room> findByHotelIdOrderByPricePerNight(Long hotelId) {
+        return findByHotelIdOrderByPricePerNightAscIdAsc(hotelId);
+    }
+
     /**
      * Doc loai phong va khoa dong do (SELECT ... FOR UPDATE) toi het transaction (T100):
      * hai yeu cau dat cung loai phong phai xep hang, yeu cau sau chi dem don sau khi yeu cau truoc da ghi xong.
