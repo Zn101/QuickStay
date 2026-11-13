@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/authStore'
+import { api } from '../../lib/api'
 import { ConfirmModal } from '../../components/ui'
 
 export default function AdminLayout() {
@@ -8,6 +9,31 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [currentTime, setCurrentTime] = useState('')
+
+  useEffect(() => {
+    function updateClock() {
+      const now = new Date()
+      setCurrentTime(
+        now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      )
+    }
+    updateClock()
+    const timer = setInterval(updateClock, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    api('/admin/bookings')
+      .then((res) => {
+        if (Array.isArray(res)) {
+          const count = res.filter((b) => b.status === 'PENDING').length
+          setPendingCount(count)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   function openLogoutModal() {
     setMobileMenuOpen(false)
@@ -119,7 +145,12 @@ export default function AdminLayout() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(isActive)}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" />
                   </svg>
-                  Đặt phòng
+                  <span className="flex-1">Đặt phòng</span>
+                  {pendingCount > 0 && (
+                    <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs animate-pulse">
+                      {pendingCount}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -129,7 +160,7 @@ export default function AdminLayout() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(isActive)}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  Nhật ký Email
+                  <span>Nhật ký Email</span>
                 </>
               )}
             </NavLink>
@@ -147,7 +178,8 @@ export default function AdminLayout() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline strokeLinecap="round" strokeLinejoin="round" points="9 22 9 12 15 12 15 22" />
               </svg>
-              Về trang khách
+              <span>Về trang khách</span>
+              <span className="ml-auto text-[10px] font-bold uppercase rounded bg-sky-50 text-sky-600 px-1.5 py-0.5">Live</span>
             </NavLink>
             <button
               type="button"
@@ -157,7 +189,7 @@ export default function AdminLayout() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-600">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
-              Đăng xuất
+              <span>Đăng xuất</span>
             </button>
           </div>
 
@@ -168,7 +200,7 @@ export default function AdminLayout() {
             </span>
             <div className="flex min-w-0 flex-col">
               <p className="truncate text-sm font-bold text-slate-900">{user?.fullName || 'Admin User'}</p>
-              <p className="truncate text-[11px] font-medium text-slate-500">{user?.email || 'admin@hotel.com'}</p>
+              <p className="truncate text-[11px] font-medium text-slate-500">{user?.email || 'admin@quickstay.io.vn'}</p>
             </div>
           </div>
         </div>
@@ -176,8 +208,40 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Top Desktop Bar */}
+        <header className="hidden md:flex h-14 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-6 backdrop-blur-md z-10">
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5 font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 rounded-full px-2.5 py-0.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Hệ thống vận hành (Live)
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="font-mono font-medium text-slate-500">
+              Hà Nội (GMT+7) {currentTime}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <NavLink
+              to="/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:border-sky-300 hover:text-sky-600 hover:bg-sky-50 transition-all cursor-pointer"
+            >
+              <span>🌐 Mở Trang Khách Hàng (QuickStay)</span>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </NavLink>
+            <div className="h-4 w-px bg-slate-200" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200/60 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
+              👑 Quản trị viên
+            </span>
+          </div>
+        </header>
+
         {/* Top Mobile Bar */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-xs">
               QS

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatMoney, todayIso, formatDateVi } from '../lib/format'
 import { useSettings } from '../store/settingsStore'
+import { useAuth } from '../store/authStore'
 import { HotelImage, Spinner, ErrorBox } from '../components/ui'
 
 const HERO_SLIDES = [
@@ -98,6 +99,8 @@ const POPULAR_CITIES = [
 const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'Hồ Chí Minh']
 
 export default function Home() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const { currencyDisplay } = useSettings()
   const [hotels, setHotels] = useState([])
   const [roomTypes, setRoomTypes] = useState(['Standard', 'Deluxe', 'Family Suite'])
@@ -114,6 +117,68 @@ export default function Home() {
   // States bổ sung cho UI mới
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false)
   const [showAllCities, setShowAllCities] = useState(false)
+
+  // 1. Đồng bộ các thành phố thực tế từ danh sách khách sạn CSDL (Admin CRUD)
+  const availableCities = useMemo(() => {
+    return Array.from(new Set(hotels.map((h) => h.city?.trim()).filter(Boolean)))
+  }, [hotels])
+
+  const quickCitiesList = useMemo(() => {
+    return availableCities.length > 0 ? availableCities : QUICK_CITIES
+  }, [availableCities])
+
+  // 2. Thống kê số lượng khách sạn & giá thấp nhất thực tế theo từng thành phố
+  const cityStats = useMemo(() => {
+    const counts = {}
+    const minPrices = {}
+
+    hotels.forEach((h) => {
+      if (h.city) {
+        const c = h.city.trim()
+        counts[c] = (counts[c] || 0) + 1
+        const p = Number(h.minPrice) || 0
+        if (!minPrices[c] || (p > 0 && p < minPrices[c])) {
+          minPrices[c] = p
+        }
+      }
+    })
+
+    return { counts, minPrices }
+  }, [hotels])
+
+  // 3. Đồng bộ danh mục Điểm đến: Hiển thị đúng số cơ sở lưu trú và giá từ CSDL Admin CRUD
+  const dynamicDestinations = useMemo(() => {
+    const knownNames = new Set(POPULAR_CITIES.map((c) => c.name.toLowerCase()))
+
+    const baseList = POPULAR_CITIES.map((c) => {
+      const realCount = cityStats.counts[c.name] || 0
+      const realMinPrice = cityStats.minPrices[c.name]
+      return {
+        ...c,
+        hotelsCount: realCount > 0 ? `${realCount} khách sạn có sẵn` : 'Sắp khai trương cơ sở',
+        priceHint: realMinPrice ? `Từ ${formatMoney(realMinPrice, currencyDisplay)}` : null,
+      }
+    })
+
+    // Nếu Admin thêm khách sạn ở các thành phố mới (Quy Nhơn, Vũng Tàu, Sapa,...)
+    availableCities.forEach((cityItem) => {
+      if (!knownNames.has(cityItem.toLowerCase())) {
+        const count = cityStats.counts[cityItem] || 1
+        const price = cityStats.minPrices[cityItem]
+        baseList.push({
+          name: cityItem,
+          tagline: 'Điểm đến mới được kết nối hệ thống',
+          image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+          hotelsCount: `${count} khách sạn có sẵn`,
+          priceHint: price ? `Từ ${formatMoney(price, currencyDisplay)}` : null,
+        })
+      }
+    })
+
+    return baseList
+  }, [cityStats, availableCities, currencyDisplay])
+
+  const currentSlide = HERO_SLIDES[activeSlide]
 
   function applyDatePreset(daysAhead, stayNights = 1) {
     const today = new Date()
@@ -220,7 +285,6 @@ export default function Home() {
     setSearchParams({})
   }
 
-  const currentSlide = HERO_SLIDES[activeSlide]
   const isFiltering = Boolean(
     searchParams.get('q') ||
       searchParams.get('city') ||
@@ -230,6 +294,33 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f4f9fd]">
+      {/* Thanh Thông Báo Quyền Quản Trị Viên (Admin Mode Sync) */}
+      {user?.role === 'ADMIN' && (
+        <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white px-4 py-2.5 text-xs font-semibold flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-indigo-500/30 shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-amber-300">👑 Quyền Quản trị viên (Admin Mode)</span>
+            <span className="text-slate-300 hidden md:inline">
+              — Mọi thao tác CRUD khách sạn & phòng tại Admin sẽ đồng bộ hiển thị tức thì trên giao diện này
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin"
+              className="rounded-lg bg-sky-600 hover:bg-sky-500 px-3 py-1 text-xs font-bold text-white shadow-xs transition-colors"
+            >
+              Mở Dashboard Admin →
+            </Link>
+            <Link
+              to="/admin/hotels"
+              className="rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1 text-xs font-bold text-white transition-colors"
+            >
+              + Thêm Khách sạn mới
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* CSS Keyframes cho hiệu ứng chuyển động sống động */}
       <style>{`
         @keyframes floatSlow {
@@ -569,7 +660,7 @@ export default function Home() {
                 {/* Các nút chọn nhanh thành phố */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 px-1 pt-2 border-t border-white/10">
                   <span className="text-xs font-medium text-slate-300">Điểm đến phổ biến:</span>
-                  {QUICK_CITIES.map((item) => {
+                  {quickCitiesList.map((item) => {
                     const active = city.toLowerCase() === item.toLowerCase()
                     return (
                       <button
@@ -595,12 +686,22 @@ export default function Home() {
               <div className="relative mx-auto max-w-lg pb-2">
                 {/* Khung ảnh động chính với hiệu ứng Presentation */}
                 <div className="animate-presentation-float relative overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
-                  <div className="relative h-[340px] sm:h-[370px] overflow-hidden rounded-2xl">
+                  <div
+                    onClick={() => {
+                      if (currentSlide.id) {
+                        navigate(`/hotels/${currentSlide.id}`)
+                      } else if (currentSlide.city) {
+                        selectQuickCity(currentSlide.city)
+                      }
+                    }}
+                    className="group relative h-[340px] sm:h-[370px] overflow-hidden rounded-2xl cursor-pointer"
+                    title="Bấm để xem chi tiết khách sạn này"
+                  >
                     <img
                       key={currentSlide.url}
                       src={currentSlide.url}
                       alt={currentSlide.title}
-                      className="h-full w-full object-cover transition-all duration-700 hover:scale-105"
+                      className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
@@ -623,14 +724,14 @@ export default function Home() {
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300 tracking-wide uppercase">
                           📍 {currentSlide.city}
                         </span>
-                        <p className="text-lg sm:text-xl font-black text-white drop-shadow-md leading-snug">
+                        <p className="text-lg sm:text-xl font-black text-white drop-shadow-md leading-snug group-hover:text-cyan-300 transition-colors">
                           {currentSlide.title}
                         </p>
                         <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{currentSlide.subtitle}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <span className="block text-[11px] text-slate-400">Giá phòng từ</span>
-                        <span className="inline-block rounded-xl bg-white px-3 py-1 text-sm font-extrabold text-slate-900 shadow-lg">
+                        <span className="inline-block rounded-xl bg-white px-3 py-1 text-sm font-extrabold text-slate-900 shadow-lg group-hover:bg-cyan-300 group-hover:text-slate-950 transition-colors">
                           {currentSlide.price}
                         </span>
                       </div>
@@ -663,7 +764,7 @@ export default function Home() {
 
           {/* Grid điểm đến: KHOẢNG CÁCH RỘNG RÃI (gap-6 sm:gap-7 lg:gap-8) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7 lg:gap-8">
-            {(showAllCities ? POPULAR_CITIES : POPULAR_CITIES.slice(0, 4)).map((dest) => (
+            {(showAllCities ? dynamicDestinations : dynamicDestinations.slice(0, 4)).map((dest) => (
               <button
                 key={dest.name}
                 type="button"
@@ -684,9 +785,16 @@ export default function Home() {
                 </div>
 
                 <div className="absolute bottom-4 left-4 right-4">
-                  <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white mb-1.5 border border-white/20">
-                    {dest.hotelsCount}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                    <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white border border-white/20">
+                      {dest.hotelsCount}
+                    </span>
+                    {dest.priceHint && (
+                      <span className="inline-block rounded-md bg-emerald-500/80 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold text-white border border-emerald-400/30">
+                        {dest.priceHint}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs font-medium text-sky-200 line-clamp-1">{dest.tagline}</p>
                   <h3 className="text-xl font-extrabold text-white">{dest.name}</h3>
                 </div>
@@ -695,19 +803,21 @@ export default function Home() {
           </div>
 
           {/* Nút Xem Thêm / Thu Gọn Điểm Đến */}
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setShowAllCities((v) => !v)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-white px-6 py-2.5 text-xs sm:text-sm font-bold text-sky-700 shadow-sm hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer active:scale-95"
-            >
-              <span>
-                {showAllCities
-                  ? 'Thu gọn điểm đến ↑'
-                  : 'Xem thêm 4 điểm đến hấp dẫn khác (Hà Nội, TP.HCM, Hội An, Huế) ↓'}
-              </span>
-            </button>
-          </div>
+          {dynamicDestinations.length > 4 && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAllCities((v) => !v)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-white px-6 py-2.5 text-xs sm:text-sm font-bold text-sky-700 shadow-sm hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer active:scale-95"
+              >
+                <span>
+                  {showAllCities
+                    ? 'Thu gọn điểm đến ↑'
+                    : `Xem thêm ${dynamicDestinations.length - 4} điểm đến hấp dẫn khác (Hà Nội, TP.HCM,...) ↓`}
+                </span>
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -805,6 +915,7 @@ export default function Home() {
                   checkIn={searchParams.get('checkIn')}
                   checkOut={searchParams.get('checkOut')}
                   currency={currencyDisplay}
+                  isAdmin={user?.role === 'ADMIN'}
                 />
               ))}
             </div>
@@ -815,7 +926,7 @@ export default function Home() {
   )
 }
 
-function HotelCard({ hotel, checkIn, checkOut, currency }) {
+function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
   const amenityList = hotel.amenities
     ? hotel.amenities
       .split(',')
@@ -832,7 +943,7 @@ function HotelCard({ hotel, checkIn, checkOut, currency }) {
   return (
     <Link
       to={detailUrl}
-      className="group flex flex-col overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_30px_-15px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-200 hover:shadow-[0_22px_50px_-15px_rgba(2,132,199,0.18)]"
+      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_30px_-15px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-200 hover:shadow-[0_22px_50px_-15px_rgba(2,132,199,0.18)]"
     >
       {/* Khung ảnh khách sạn với hiệu ứng zoom mượt */}
       <div className="relative h-52 overflow-hidden bg-slate-100">
@@ -842,6 +953,20 @@ function HotelCard({ hotel, checkIn, checkOut, currency }) {
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-slate-950/20" />
+
+        {/* Nút thao tác nhanh cho Admin (Đồng bộ CRUD Admin) */}
+        {isAdmin && (
+          <div className="absolute left-3 top-3 z-10">
+            <Link
+              to="/admin/hotels"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-full bg-slate-950/80 hover:bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-amber-300 shadow-md backdrop-blur-md border border-amber-300/30 transition-all hover:scale-105"
+              title="Đi tới quản lý sửa/xóa khách sạn trong Admin"
+            >
+              <span>⚙️ Sửa trong Admin</span>
+            </Link>
+          </div>
+        )}
 
         {/* Huy hiệu Thành phố */}
         <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-md">
