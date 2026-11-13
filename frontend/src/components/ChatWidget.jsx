@@ -66,10 +66,10 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end pointer-events-none">
       {/* Cửa sổ chat */}
       {open && (
-        <div className="mb-3 flex h-[460px] sm:h-[500px] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl transition-all animate-in fade-in slide-in-from-bottom-4">
+        <div className="pointer-events-auto mb-3 flex h-[460px] sm:h-[500px] w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl transition-all animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
           <div className="flex items-center justify-between bg-gradient-to-r from-sky-600 to-sky-700 px-4 py-3 text-white shadow-sm">
             <div className="flex items-center gap-2.5">
@@ -202,10 +202,10 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Floating button (2x size: 104px, eye-catching, modern) */}
+      {/* Floating button (2x size: 104px, eye-catching, modern, stays pinned at bottom-right) */}
       <button
         type="button"
-        className="group relative flex h-24 w-24 sm:h-[104px] sm:w-[104px] flex-col items-center justify-center rounded-full bg-gradient-to-tr from-sky-600 via-sky-600 to-cyan-500 text-white shadow-2xl hover:shadow-sky-500/50 hover:from-sky-500 hover:to-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white/40"
+        className="pointer-events-auto self-end group relative flex h-24 w-24 sm:h-[104px] sm:w-[104px] flex-col items-center justify-center rounded-full bg-gradient-to-tr from-sky-600 via-sky-600 to-cyan-500 text-white shadow-2xl hover:shadow-sky-500/50 hover:from-sky-500 hover:to-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white/40"
         aria-label={open ? 'Đóng chat' : 'Mở chat'}
         onClick={() => setOpen((o) => !o)}
       >

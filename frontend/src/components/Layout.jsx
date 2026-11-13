@@ -69,9 +69,9 @@ export default function Layout() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <Link to="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900">
+            <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-slate-900">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-600 text-white text-sm">Q</span>
-              Quick<span className="text-sky-600">Stay</span>
+              <span className="tracking-tighter inline-flex items-center">Quick<span className="text-sky-600 font-black -ml-0.5">Stay</span></span>
             </Link>
           </div>
 
@@ -259,7 +259,7 @@ export default function Layout() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-600 text-white text-sm shadow-md">
                   Q
                 </span>
-                Quick<span className="text-sky-400">Stay</span>
+                <span className="tracking-tighter inline-flex items-center">Quick<span className="text-sky-400 font-black -ml-0.5">Stay</span></span>
               </Link>
               <p className="mt-3 text-xs leading-relaxed text-slate-400">
                 Hệ thống đặt phòng khách sạn và khu nghỉ dưỡng hàng đầu Việt Nam. Mang đến kỳ nghỉ trọn vẹn với giá tốt nhất, xác nhận tức thì và dịch vụ chăm sóc 24/7.

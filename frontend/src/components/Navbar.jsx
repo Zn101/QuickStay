@@ -15,7 +15,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 border-b bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link to="/" className="text-xl font-bold text-brand-600" onClick={close}>
-          Quick<span className="text-slate-800">Stay</span>
+          <span className="tracking-tighter inline-flex items-center">Quick<span className="text-slate-800 font-black -ml-0.5">Stay</span></span>
         </Link>
         <button
           className="rounded-md border px-3 py-1 text-sm md:hidden"

@@ -49,41 +49,140 @@ const POPULAR_CITIES = [
     name: 'Đà Nẵng',
     tagline: 'Thành phố biển đáng sống',
     image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80',
-    span: 'sm:col-span-2 lg:col-span-2',
+    hotelsCount: '120+ khách sạn',
   },
   {
     name: 'Phú Quốc',
-    tagline: 'Thiên đường đảo ngọc',
+    tagline: 'Thiên đường đảo ngọc & biển xanh',
     image: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80',
-    span: 'sm:col-span-1 lg:col-span-1',
+    hotelsCount: '85+ resort biển',
   },
   {
     name: 'Nha Trang',
-    tagline: 'Vịnh biển xanh quyến rũ',
+    tagline: 'Vịnh biển quyến rũ & rạn san hô',
     image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
-    span: 'sm:col-span-1 lg:col-span-1',
+    hotelsCount: '95+ khách sạn mặt biển',
   },
   {
     name: 'Đà Lạt',
-    tagline: 'Sương mờ & rừng thông',
+    tagline: 'Sương mờ, đồi thông & biệt thự',
     image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    span: 'sm:col-span-1 lg:col-span-1',
+    hotelsCount: '110+ villa & homestay',
   },
   {
     name: 'Hà Nội',
     tagline: 'Nét đẹp ngàn năm văn hiến',
     image: 'https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?auto=format&fit=crop&w=800&q=80',
-    span: 'sm:col-span-1 lg:col-span-1',
+    hotelsCount: '140+ khách sạn phố cổ',
+  },
+  {
+    name: 'Hồ Chí Minh',
+    tagline: 'Đô thị sầm uất & nhộn nhịp 24/7',
+    image: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=800&q=80',
+    hotelsCount: '180+ khách sạn trung tâm',
   },
   {
     name: 'Hội An',
-    tagline: 'Phố cổ lung linh đèn lồng',
+    tagline: 'Phố cổ lung linh hoa đăng ven sông',
     image: 'https://images.unsplash.com/photo-1558005530-a7958896ec60?auto=format&fit=crop&w=900&q=80',
-    span: 'sm:col-span-2 lg:col-span-2',
+    hotelsCount: '70+ boutique & homestay',
+  },
+  {
+    name: 'Huế',
+    tagline: 'Cố đô di sản & sông Hương thơ mộng',
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80',
+    hotelsCount: '60+ khách sạn cung đình',
   },
 ]
 
-const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'TP. Hồ Chí Minh']
+const PROMO_DEALS = [
+  {
+    id: 1,
+    tag: '⚡ FLASH SALE 24H',
+    title: 'Giảm 35% Resort Phú Quốc & Nha Trang',
+    desc: 'Áp dụng cho phòng Deluxe view biển & Villa riêng tư.',
+    code: 'BEACH35',
+    discount: '-35%',
+    badge: 'Còn 05:42:19',
+    badgeColor: 'bg-rose-500 text-white animate-pulse',
+    border: 'border-rose-200/90 hover:border-rose-400',
+    bg: 'from-rose-500/10 via-amber-500/5 to-white',
+  },
+  {
+    id: 2,
+    tag: '🎁 THÀNH VIÊN MỚI',
+    title: 'Voucher 20% cho lần đặt đầu tiên',
+    desc: 'Áp dụng ngay cho mọi khách sạn trên toàn quốc.',
+    code: 'QUICKSTAY20',
+    discount: '-20%',
+    badge: 'Đặc quyền',
+    badgeColor: 'bg-emerald-600 text-white',
+    border: 'border-emerald-200/90 hover:border-emerald-400',
+    bg: 'from-emerald-500/10 via-teal-500/5 to-white',
+  },
+  {
+    id: 3,
+    tag: '🌅 ĐẶT PHÒNG SỚM',
+    title: 'Tặng Buffet sáng & Đón sân bay miễn phí',
+    desc: 'Đặt trước 15 ngày tại Đà Nẵng, Phú Quốc, Hà Nội.',
+    code: 'EARLYBIRD',
+    discount: 'FREE 100%',
+    badge: 'Bao gồm xe đưa đón',
+    badgeColor: 'bg-sky-600 text-white',
+    border: 'border-sky-200/90 hover:border-sky-400',
+    bg: 'from-sky-500/10 via-blue-500/5 to-white',
+  },
+  {
+    id: 4,
+    tag: '🌲 WEEKEND ĐÀ LẠT',
+    title: 'Giảm 25% các Villa view đồi thông',
+    desc: 'Tận hưởng khí hậu se lạnh và tiệc BBQ ấm cúng.',
+    code: 'DALAT25',
+    discount: '-25%',
+    badge: 'Cuối tuần T6-CN',
+    badgeColor: 'bg-purple-600 text-white',
+    border: 'border-purple-200/90 hover:border-purple-400',
+    bg: 'from-purple-500/10 via-indigo-500/5 to-white',
+  },
+  {
+    id: 5,
+    tag: '💼 CÔNG TÁC & DOANH NGHIỆP',
+    title: 'Giảm 18% + Xuất VAT điện tử tức thì',
+    desc: 'Dành cho khách công tác tại trung tâm Quận 1 & Hoàn Kiếm.',
+    code: 'BIZSTAY',
+    discount: '-18%',
+    badge: 'Hóa đơn trong ngày',
+    badgeColor: 'bg-slate-800 text-white',
+    border: 'border-slate-300 hover:border-slate-500',
+    bg: 'from-slate-500/10 via-slate-600/5 to-white',
+  },
+  {
+    id: 6,
+    tag: '⏳ GIỜ CHÓT HÔM NAY',
+    title: 'Giảm thêm 15% khi nhận phòng hôm nay',
+    desc: 'Dành cho chuyến đi ngẫu hứng, xác nhận phòng tức thì.',
+    code: 'LAST15',
+    discount: '-15%',
+    badge: 'Xác nhận ngay',
+    badgeColor: 'bg-orange-500 text-white',
+    border: 'border-orange-200/90 hover:border-orange-400',
+    bg: 'from-orange-500/10 via-amber-500/5 to-white',
+  },
+]
+
+const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'Hồ Chí Minh']
+
+function formatDateVi(isoDate) {
+  if (!isoDate) return ''
+  try {
+    const [y, m, d] = isoDate.split('-').map(Number)
+    const date = new Date(y, m - 1, d)
+    const days = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7']
+    return `${days[date.getDay()]}, ${d} thg ${m}`
+  } catch {
+    return isoDate
+  }
+}
 
 export default function Home() {
   const { currencyDisplay } = useSettings()
@@ -98,6 +197,31 @@ export default function Home() {
   const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') || '')
   const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || '')
   const [activeSlide, setActiveSlide] = useState(0)
+
+  // States bổ sung cho UI mới
+  const [roomDropdownOpen, setRoomDropdownOpen] = useState(false)
+  const [showAllCities, setShowAllCities] = useState(false)
+  const [copiedCoupon, setCopiedCoupon] = useState('')
+
+  function copyCoupon(code) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).catch(() => {})
+    }
+    setCopiedCoupon(code)
+    setTimeout(() => setCopiedCoupon(''), 3000)
+  }
+
+  function applyDatePreset(daysAhead, stayNights = 1) {
+    const today = new Date()
+    const inD = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysAhead)
+    const outD = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysAhead + stayNights)
+    const pad = (n) => String(n).padStart(2, '0')
+    const inIso = `${inD.getFullYear()}-${pad(inD.getMonth() + 1)}-${pad(inD.getDate())}`
+    const outIso = `${outD.getFullYear()}-${pad(outD.getMonth() + 1)}-${pad(outD.getDate())}`
+    setCheckIn(inIso)
+    setCheckOut(outIso)
+    setError('')
+  }
 
   useEffect(() => {
     api('/hotels/room-types')
@@ -202,55 +326,62 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f4f9fd]">
-      {/* CSS Keyframes cho các thẻ ảnh nổi chuyển động */}
+      {/* CSS Keyframes cho hiệu ứng chuyển động sống động */}
       <style>{`
         @keyframes floatSlow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-12px) rotate(0.4deg); }
         }
         @keyframes floatReverse {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(8px); }
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(10px) rotate(-0.4deg); }
         }
-        .animate-float-slow { animation: floatSlow 6s ease-in-out infinite; }
-        .animate-float-reverse { animation: floatReverse 5.5s ease-in-out 1s infinite; }
+        @keyframes glowPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.25); }
+          50% { box-shadow: 0 0 35px rgba(6, 182, 212, 0.5); }
+        }
+        .animate-float-slow { animation: floatSlow 7s ease-in-out infinite; }
+        .animate-float-reverse { animation: floatReverse 6s ease-in-out 1s infinite; }
+        .animate-glow-pulse { animation: glowPulse 4s ease-in-out infinite; }
       `}</style>
 
       {/* HERO SECTION VỚI SLIDESHOW CHUYỂN ĐỘNG & FLOATING CARDS */}
-      <section className="relative overflow-hidden bg-[#061826] px-4 py-16 text-white sm:px-6 lg:py-24">
+      <section className="relative overflow-hidden bg-[#061826] px-4 py-16 text-white sm:px-6 lg:py-20">
         {/* Background Slideshow với hiệu ứng Ken Burns Zoom */}
         {HERO_SLIDES.map((slide, index) => {
           const isActive = index === activeSlide
           return (
             <div
               key={slide.url}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive ? 'z-0 opacity-100' : '-z-10 opacity-0'
-                }`}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                isActive ? 'z-0 opacity-100' : '-z-10 opacity-0'
+              }`}
             >
               <img
                 src={slide.url}
                 alt={slide.title}
-                className={`h-full w-full object-cover transition-transform duration-[9000ms] ease-out ${isActive ? 'scale-110' : 'scale-100'
-                  }`}
+                className={`h-full w-full object-cover transition-transform duration-[9000ms] ease-out ${
+                  isActive ? 'scale-110' : 'scale-100'
+                }`}
               />
             </div>
           )
         })}
 
         {/* Lớp phủ Gradient xanh biển sâu */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#04121d]/95 via-[#072134]/85 to-[#061826]/70" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#04121d]/95 via-[#072134]/85 to-[#061826]/75" />
         <div className="absolute inset-0 z-0 bg-gradient-to-t from-[#04121d] via-transparent to-[#04121d]/40" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-            {/* Cột trái: Tiêu đề + Thanh tìm kiếm */}
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+            {/* Cột trái: Tiêu đề + Thanh tìm kiếm nâng cao */}
             <div>
-              <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-slate-900/50 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-100 backdrop-blur-md">
+              <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
-                Hàng trăm khách sạn & resort trên khắp Việt Nam
+                Hơn 500+ khách sạn & khu nghỉ dưỡng cao cấp khắp Việt Nam
               </div>
 
-              <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[56px]">
+              <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[54px]">
                 Mỗi chuyến đi,
                 <br />
                 <span className="bg-gradient-to-r from-sky-200 via-cyan-300 to-sky-400 bg-clip-text text-transparent">
@@ -259,17 +390,17 @@ export default function Home() {
                 đáng nhớ.
               </h1>
 
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-200/90 sm:text-lg">
-                Khám phá nơi lưu trú phù hợp, đặt phòng nhanh chóng với mức giá ưu đãi nhất và tận hưởng hành trình theo cách riêng của bạn.
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-200/90 sm:text-base">
+                Khám phá nơi lưu trú phù hợp, đặt phòng nhanh chóng với mức giá ưu đãi nhất và tận hưởng hành trình trọn vẹn theo cách của bạn.
               </p>
 
-              {/* Thanh Tìm Kiếm Glassmorphism */}
+              {/* Thanh Tìm Kiếm Glassmorphism với Custom UI */}
               <form
                 onSubmit={handleSearch}
-                className="mt-8 rounded-2xl border border-white/20 bg-white/10 p-2.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-3"
+                className="mt-7 rounded-2xl border border-white/25 bg-white/10 p-3 sm:p-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-xl"
               >
+                {/* Hàng 1: Từ khóa tìm kiếm & Tên thành phố */}
                 <div className="flex flex-col gap-2.5 sm:flex-row">
-                  {/* Ô nhập tên khách sạn */}
                   <div className="relative flex-1">
                     <svg
                       className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
@@ -283,14 +414,13 @@ export default function Home() {
                     </svg>
                     <input
                       type="text"
-                      placeholder="Tên khách sạn, khu nghỉ dưỡng..."
+                      placeholder="Tên khách sạn, resort, biệt thự..."
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
+                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
                     />
                   </div>
 
-                  {/* Ô nhập thành phố */}
                   <div className="relative sm:w-56">
                     <svg
                       className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
@@ -304,17 +434,16 @@ export default function Home() {
                     </svg>
                     <input
                       type="text"
-                      placeholder="Thành phố..."
+                      placeholder="Thành phố / Điểm đến..."
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
+                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
                     />
                   </div>
 
-                  {/* Nút Tìm kiếm */}
                   <button
                     type="submit"
-                    className="group flex items-center justify-center gap-2 rounded-xl bg-[#0284c7] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/30 transition-all hover:bg-[#0369a1] active:scale-[0.99]"
+                    className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/40 transition-all hover:from-sky-400 hover:to-sky-500 active:scale-[0.99] cursor-pointer"
                   >
                     <span>Tìm kiếm</span>
                     <svg
@@ -329,55 +458,213 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Bộ lọc nâng cao: Ngày nhận/trả & Loại phòng */}
-                <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
-                    <label htmlFor="home-checkin" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Ngày nhận phòng
-                    </label>
-                    <input
-                      id="home-checkin"
-                      type="date"
-                      min={todayIso()}
-                      value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
-                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
-                    />
-                  </div>
-                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
-                    <label htmlFor="home-checkout" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Ngày trả phòng
-                    </label>
-                    <input
-                      id="home-checkout"
-                      type="date"
-                      min={checkIn || todayIso()}
-                      value={checkOut}
-                      onChange={(e) => setCheckOut(e.target.value)}
-                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
-                    />
-                  </div>
-                  <div className="rounded-xl bg-white/95 px-3 py-2 text-slate-900">
-                    <label htmlFor="home-roomtype" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Loại phòng
-                    </label>
-                    <select
-                      id="home-roomtype"
-                      value={roomType}
-                      onChange={(e) => setRoomType(e.target.value)}
-                      className="w-full bg-transparent text-xs font-semibold text-slate-800 outline-none"
+                {/* Hàng 2: Bộ chọn Ngày & Hạng phòng với Giao diện Custom UI độc quyền */}
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-12">
+                  {/* Custom Date Pickers: Ngày nhận & Ngày trả phòng */}
+                  <div className="sm:col-span-8 flex flex-col sm:flex-row items-center gap-2 rounded-xl bg-white p-2 text-slate-900 shadow-sm border border-slate-100">
+                    {/* Thẻ Chọn Ngày Nhận */}
+                    <div
+                      onClick={() => {
+                        const el = document.getElementById('home-checkin')
+                        if (el) {
+                          if (typeof el.showPicker === 'function') el.showPicker()
+                          else el.focus()
+                        }
+                      }}
+                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-lg p-2 hover:bg-sky-50/70 transition-colors cursor-pointer group"
                     >
-                      <option value="">Tất cả loại phòng</option>
-                      {roomTypes.map((rt) => (
-                        <option key={rt} value={rt}>{rt}</option>
-                      ))}
-                    </select>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Ngày nhận phòng
+                        </span>
+                        <span className="block text-xs font-bold text-slate-900 truncate">
+                          {checkIn ? formatDateVi(checkIn) : 'Chọn ngày nhận'}
+                        </span>
+                      </div>
+                      <input
+                        id="home-checkin"
+                        type="date"
+                        min={todayIso()}
+                        value={checkIn}
+                        onChange={(e) => setCheckIn(e.target.value)}
+                        className="sr-only"
+                        aria-label="Ngày nhận phòng"
+                      />
+                    </div>
+
+                    {/* Mũi tên ngăn cách / Số đêm */}
+                    <div className="hidden sm:flex items-center justify-center px-1 text-slate-300">
+                      <span className="text-xs">→</span>
+                    </div>
+
+                    {/* Thẻ Chọn Ngày Trả */}
+                    <div
+                      onClick={() => {
+                        const el = document.getElementById('home-checkout')
+                        if (el) {
+                          if (typeof el.showPicker === 'function') el.showPicker()
+                          else el.focus()
+                        }
+                      }}
+                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-lg p-2 hover:bg-sky-50/70 transition-colors cursor-pointer group"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Ngày trả phòng
+                        </span>
+                        <span className="block text-xs font-bold text-slate-900 truncate">
+                          {checkOut ? formatDateVi(checkOut) : 'Chọn ngày trả'}
+                        </span>
+                      </div>
+                      <input
+                        id="home-checkout"
+                        type="date"
+                        min={checkIn || todayIso()}
+                        value={checkOut}
+                        onChange={(e) => setCheckOut(e.target.value)}
+                        className="sr-only"
+                        aria-label="Ngày trả phòng"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Custom Room Type Selector (Thay thế hoàn toàn thẻ select cơ bản) */}
+                  <div className="relative sm:col-span-4">
+                    <button
+                      type="button"
+                      onClick={() => setRoomDropdownOpen((v) => !v)}
+                      className="w-full flex items-center justify-between rounded-xl bg-white p-2.5 px-3 text-left shadow-sm border border-slate-100 hover:border-sky-300 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-bold text-sm">
+                          🛏️
+                        </span>
+                        <div className="truncate">
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Loại phòng
+                          </span>
+                          <span className="block text-xs font-bold text-slate-900 truncate">
+                            {roomType || 'Tất cả loại phòng'}
+                          </span>
+                        </div>
+                      </div>
+                      <svg
+                        className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                          roomDropdownOpen ? 'rotate-180 text-sky-600' : ''
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Menu Popover Custom cho Hạng phòng */}
+                    {roomDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-2">
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Chọn hạng phòng phù hợp:
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRoomType('')
+                            setRoomDropdownOpen(false)
+                          }}
+                          className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                            !roomType ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>🏢</span>
+                            <span>Tất cả loại phòng</span>
+                          </span>
+                          {!roomType && <span className="text-sky-600 font-bold">✓</span>}
+                        </button>
+
+                        {roomTypes.map((rt) => {
+                          const isSel = roomType === rt
+                          const icon =
+                            rt.toLowerCase().includes('suite')
+                              ? '👨‍👩‍👧‍👦'
+                              : rt.toLowerCase().includes('deluxe')
+                              ? '✨'
+                              : rt.toLowerCase().includes('villa')
+                              ? '🏖️'
+                              : '🛏️'
+                          return (
+                            <button
+                              key={rt}
+                              type="button"
+                              onClick={() => {
+                                setRoomType(rt)
+                                setRoomDropdownOpen(false)
+                              }}
+                              className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                                isSel ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span>{icon}</span>
+                                <span>{rt}</span>
+                              </span>
+                              {isSel && <span className="text-sky-600 font-bold">✓</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
+                {/* Các nút chọn ngày nhanh tiện ích */}
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 px-1">
+                  <span className="text-[11px] font-medium text-slate-300">Chọn nhanh ngày:</span>
+                  <button
+                    type="button"
+                    onClick={() => applyDatePreset(0, 1)}
+                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
+                  >
+                    Hôm nay (1 đêm)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyDatePreset(1, 1)}
+                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
+                  >
+                    Ngày mai (1 đêm)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyDatePreset(2, 2)}
+                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
+                  >
+                    Cuối tuần này (2 đêm)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyDatePreset(0, 3)}
+                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
+                  >
+                    Kỳ nghỉ 3 đêm
+                  </button>
+                </div>
+
                 {/* Các nút chọn nhanh thành phố */}
-                <div className="mt-3 flex flex-wrap items-center gap-2 px-1">
-                  <span className="text-xs font-medium text-slate-300">Phổ biến:</span>
+                <div className="mt-3 flex flex-wrap items-center gap-2 px-1 pt-2 border-t border-white/10">
+                  <span className="text-xs font-medium text-slate-300">Điểm đến phổ biến:</span>
                   {QUICK_CITIES.map((item) => {
                     const active = city.toLowerCase() === item.toLowerCase()
                     return (
@@ -385,10 +672,11 @@ export default function Home() {
                         key={item}
                         type="button"
                         onClick={() => selectQuickCity(active ? '' : item)}
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${active
+                        className={`rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
+                          active
                             ? 'bg-cyan-400 text-slate-950 font-bold shadow-sm'
                             : 'bg-white/10 text-slate-200 hover:bg-white/20'
-                          }`}
+                        }`}
                       >
                         {item}
                       </button>
@@ -398,46 +686,68 @@ export default function Home() {
               </form>
             </div>
 
-            {/* Cột phải: Cụm thẻ ảnh chuyển động lơ lửng (Đã bỏ thanh bar đen bên dưới) */}
-            <div className="relative hidden lg:block">
-              <div className="relative mx-auto max-w-md pb-6">
-                {/* Khung ảnh động chính */}
-                <div className="animate-float-slow relative overflow-hidden rounded-[28px] border border-white/20 bg-slate-900/50 p-3 shadow-2xl backdrop-blur-md">
-                  <div className="relative h-80 overflow-hidden rounded-2xl">
+            {/* Cột phải: KHUNG ẢNH NỔI BẬT LỚN GẤP RƯỠI (Bigger Hero Image Display) */}
+            <div className="relative hidden lg:block w-full">
+              <div className="relative mx-auto max-w-xl pb-8">
+                {/* Khung ảnh động chính - Phóng to và nổi bật */}
+                <div className="animate-float-slow relative overflow-hidden rounded-[32px] border-2 border-white/25 bg-slate-900/60 p-3.5 shadow-2xl backdrop-blur-md animate-glow-pulse">
+                  <div className="relative h-[440px] sm:h-[480px] overflow-hidden rounded-2xl">
                     <img
                       key={currentSlide.url}
                       src={currentSlide.url}
                       alt={currentSlide.title}
                       className="h-full w-full object-cover transition-all duration-700 hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                    <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-slate-950/65 px-3 py-1 text-xs font-semibold text-cyan-300 backdrop-blur-md">
-                      ★ {currentSlide.rating} Tuyệt hảo
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+
+                    {/* Badge góc trái trên: Đánh giá */}
+                    <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/75 px-3.5 py-1.5 text-xs font-bold text-cyan-300 backdrop-blur-md shadow-md border border-white/15">
+                      <span className="text-amber-400">★ {currentSlide.rating}</span>
+                      <span>·</span>
+                      <span className="text-slate-200">Tuyệt hảo</span>
                     </div>
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+
+                    {/* Badge góc phải trên: Độc quyền */}
+                    <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-rose-600/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-md shadow-md">
+                      <span>🔥 Được đặt nhiều nhất</span>
+                    </div>
+
+                    {/* Khối thông tin góc dưới ảnh */}
+                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-xs font-medium text-sky-300">{currentSlide.city}</p>
-                        <p className="text-base font-bold text-white">{currentSlide.title}</p>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300 tracking-wide uppercase">
+                          📍 {currentSlide.city}
+                        </span>
+                        <p className="text-xl sm:text-2xl font-black text-white drop-shadow-md leading-snug">
+                          {currentSlide.title}
+                        </p>
+                        <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{currentSlide.subtitle}</p>
                       </div>
-                      <span className="rounded-xl bg-white/95 px-3 py-1.5 text-xs font-extrabold text-slate-900 shadow">
-                        {currentSlide.price}
-                      </span>
+                      <div className="shrink-0 text-right">
+                        <span className="block text-[11px] text-slate-400">Giá phòng từ</span>
+                        <span className="inline-block rounded-xl bg-white px-3.5 py-1.5 text-sm font-extrabold text-slate-900 shadow-lg">
+                          {currentSlide.price}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Thẻ ảnh phụ nổi góc trái dưới */}
-                <div className="animate-float-reverse absolute -bottom-2 -left-8 flex items-center gap-3.5 rounded-2xl border border-white/20 bg-slate-950/80 p-3 pr-5 shadow-2xl backdrop-blur-xl">
+                {/* Thẻ phụ nổi bật góc trái dưới */}
+                <div className="animate-float-reverse absolute -bottom-3 -left-6 flex items-center gap-3.5 rounded-2xl border border-white/20 bg-slate-950/85 p-3.5 pr-6 shadow-2xl backdrop-blur-xl">
                   <img
                     src={currentSlide.thumb}
                     alt="Preview"
-                    className="h-14 w-14 rounded-xl object-cover ring-1 ring-white/20"
+                    className="h-16 w-16 rounded-xl object-cover ring-2 ring-white/20"
                   />
                   <div>
-                    <p className="text-xs font-bold text-white">Ưu đãi thành viên</p>
-                    <p className="mt-0.5 text-[11px] text-slate-300">Giảm tới 25% khi đặt hôm nay</p>
-                    <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
-                      <span>● Xác nhận đặt phòng tức thì</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                      <p className="text-xs font-black text-white">Ưu Đãi Đặc Quyền</p>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-300">Giảm thêm 20% khi nhập mã QUICKSTAY20</p>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
+                      <span>✓ Đưa đón sân bay & Buffet sáng</span>
                     </div>
                   </div>
                 </div>
@@ -447,49 +757,140 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ĐIỂM ĐẾN YÊU THÍCH (BENTO GRID ẢNH CHUYỂN ĐỘNG HOVER) */}
+      {/* KHAY KHUYẾN MÃI & FLASH SALE (BOOKING SALES TRAY) - NẰM NGAY BÊN DƯỚI BỘ LỌC TÌM KIẾM */}
+      <section className="relative z-20 mx-auto -mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xl">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 text-base font-bold shadow-xs">
+                🔥
+              </span>
+              <div>
+                <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+                  Ưu Đãi & Khuyến Mãi Đặt Phòng Hot Nhất Hôm Nay
+                </h2>
+                <p className="text-xs text-slate-500">Mã voucher giảm giá độc quyền áp dụng tức thì khi đặt phòng</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Cập nhật 5 phút trước</span>
+            </div>
+          </div>
+
+          {/* Dải Khay Ưu Đãi Kéo Ngang (Horizontal Scroll Tray) */}
+          <div className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+            {PROMO_DEALS.map((deal) => (
+              <div
+                key={deal.id}
+                className={`flex-none w-72 sm:w-80 rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br ${deal.bg} ${deal.border}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black text-slate-700 tracking-wider">
+                    {deal.tag}
+                  </span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${deal.badgeColor}`}>
+                    {deal.badge}
+                  </span>
+                </div>
+
+                <div className="mt-2.5">
+                  <span className="text-xl font-black text-rose-600 tracking-tight">{deal.discount}</span>
+                  <h3 className="mt-0.5 text-sm font-extrabold text-slate-900 leading-snug">{deal.title}</h3>
+                  <p className="mt-1 text-xs text-slate-600 leading-relaxed line-clamp-2">{deal.desc}</p>
+                </div>
+
+                <div className="mt-3.5 flex items-center justify-between border-t border-slate-200/70 pt-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Mã:</span>
+                    <span className="rounded-lg bg-slate-900 px-2 py-0.5 font-mono text-xs font-bold text-cyan-300">
+                      {deal.code}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => copyCoupon(deal.code)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:border-sky-500 hover:text-sky-600 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    {copiedCoupon === deal.code ? (
+                      <span className="text-emerald-600 font-bold">✓ Đã sao chép</span>
+                    ) : (
+                      <span>Sao chép mã</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ĐIỂM ĐẾN YÊU THÍCH (CHỈ HIỂN THỊ 1 HÀNG + NÚT XEM THÊM ĐIỂM ĐẾN) */}
       {!isFiltering && (
-        <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
           <div className="mb-7 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0284c7]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#0284c7]" />
                 Khám phá Việt Nam
               </span>
-              <h2 className="mt-2.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 Điểm đến được yêu thích nhất
               </h2>
             </div>
             <p className="text-xs text-slate-500 sm:text-sm">
-              Chạm vào điểm đến bất kỳ để lọc khách sạn ngay lập tức
+              Chọn điểm đến để xem các khách sạn và ưu đãi tốt nhất ngay lập tức
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {POPULAR_CITIES.map((dest) => (
+          {/* Grid điểm đến: 1 hàng duy nhất (4 cột) khi chưa mở rộng */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5">
+            {(showAllCities ? POPULAR_CITIES : POPULAR_CITIES.slice(0, 4)).map((dest) => (
               <button
                 key={dest.name}
                 type="button"
                 onClick={() => selectQuickCity(dest.name)}
-                className={`group relative h-52 overflow-hidden rounded-3xl text-left shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${dest.span}`}
+                className="group relative h-60 overflow-hidden rounded-3xl text-left shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl cursor-pointer"
               >
                 <img
                   src={dest.image}
                   alt={dest.name}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
-                <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/15 text-white backdrop-blur-md transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-[#0284c7]">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
+
+                <div className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-[#0284c7]">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M7 17 17 7M7 7h10v10" />
                   </svg>
                 </div>
-                <div className="absolute bottom-4 left-5 right-5">
-                  <p className="text-xs font-medium text-sky-300">{dest.tagline}</p>
-                  <h3 className="mt-0.5 text-xl font-extrabold text-white">{dest.name}</h3>
+
+                <div className="absolute bottom-4 left-4 right-4">
+                  <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold text-white mb-1">
+                    {dest.hotelsCount}
+                  </span>
+                  <p className="text-xs font-medium text-sky-200 line-clamp-1">{dest.tagline}</p>
+                  <h3 className="text-xl font-extrabold text-white">{dest.name}</h3>
                 </div>
               </button>
             ))}
+          </div>
+
+          {/* Nút Xem Thêm / Thu Gọn Điểm Đến */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAllCities((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-white px-6 py-2.5 text-xs sm:text-sm font-bold text-sky-700 shadow-sm hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer active:scale-95"
+            >
+              <span>
+                {showAllCities
+                  ? 'Thu gọn điểm đến ↑'
+                  : 'Xem thêm 4 điểm đến hấp dẫn khác (Hà Nội, TP.HCM, Hội An, Huế) ↓'}
+              </span>
+            </button>
           </div>
         </section>
       )}
