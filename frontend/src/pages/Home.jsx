@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatMoney, todayIso } from '../lib/format'
+import { formatMoney, todayIso, formatDateVi } from '../lib/format'
 import { useSettings } from '../store/settingsStore'
 import { HotelImage, Spinner, ErrorBox } from '../components/ui'
 
@@ -171,18 +171,6 @@ const PROMO_DEALS = [
 ]
 
 const QUICK_CITIES = ['Đà Nẵng', 'Phú Quốc', 'Nha Trang', 'Đà Lạt', 'Hà Nội', 'Hồ Chí Minh']
-
-function formatDateVi(isoDate) {
-  if (!isoDate) return ''
-  try {
-    const [y, m, d] = isoDate.split('-').map(Number)
-    const date = new Date(y, m - 1, d)
-    const days = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7']
-    return `${days[date.getDay()]}, ${d} thg ${m}`
-  } catch {
-    return isoDate
-  }
-}
 
 export default function Home() {
   const { currencyDisplay } = useSettings()

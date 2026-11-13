@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatVnd, todayIso, nightsBetween } from '../lib/format'
+import { formatVnd, todayIso, nightsBetween, formatDateVi } from '../lib/format'
 import { HotelImage, Spinner, ErrorBox, FieldError } from '../components/ui'
 import ConciergeModal from '../components/ConciergeModal'
 import { useAuth } from '../store/authStore'

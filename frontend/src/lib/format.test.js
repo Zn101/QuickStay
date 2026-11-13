@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NEXT_STATUS, formatDate, formatVnd, nightsBetween } from './format'
+import { NEXT_STATUS, formatDate, formatDateVi, formatVnd, nightsBetween } from './format'
 
 describe('format helpers', () => {
   it('formats VND with thousands separators', () => {
@@ -13,6 +13,13 @@ describe('format helpers', () => {
     expect(formatDate('2026-10-23')).toBe('23/10/2026')
     expect(formatDate('')).toBe('')
     expect(formatDate(null)).toBe('')
+  })
+
+  it('formats ISO date with Vietnamese weekday and day/month', () => {
+    // 2026-11-13 is Friday (Th 6)
+    expect(formatDateVi('2026-11-13')).toBe('Th 6, 13 thg 11')
+    expect(formatDateVi('')).toBe('')
+    expect(formatDateVi(null)).toBe('')
   })
 
   it('counts nights between two dates', () => {

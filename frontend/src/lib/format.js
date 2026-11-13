@@ -18,6 +18,20 @@ export const formatDate = (iso) => {
   return `${d}/${m}/${y}`
 }
 
+export const formatDateVi = (isoDate) => {
+  if (!isoDate) return ''
+  try {
+    const parts = String(isoDate).split('-').map(Number)
+    if (parts.length !== 3 || parts.some(isNaN)) return String(isoDate)
+    const [y, m, d] = parts
+    const date = new Date(y, m - 1, d)
+    const days = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7']
+    return `${days[date.getDay()]}, ${d} thg ${m}`
+  } catch {
+    return String(isoDate)
+  }
+}
+
 export const todayIso = (offsetDays = 0) => {
   const d = new Date()
   d.setDate(d.getDate() + offsetDays)
