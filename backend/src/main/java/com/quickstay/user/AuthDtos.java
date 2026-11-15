@@ -1,6 +1,5 @@
 package com.quickstay.user;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -52,12 +51,9 @@ public final class AuthDtos {
         }
     }
 
-    public record EmailPreview(String recipient, String subject, String bodyHtml) {}
-
-    public record ForgotPasswordResponse(
-            String message,
-            boolean demoMode,
-            @JsonInclude(JsonInclude.Include.NON_NULL) EmailPreview demoEmail) {}
+    // T193-G2.2-A R-09: EmailPreview va demoEmail da bi xoa.
+    // ForgotPasswordResponse chi tra "message" – khong bao gio tiet lo reset token hay HTML email.
+    public record ForgotPasswordResponse(String message) {}
 
     public record MessageResponse(String message) {}
 

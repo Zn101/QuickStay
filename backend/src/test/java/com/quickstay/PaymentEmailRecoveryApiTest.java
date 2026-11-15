@@ -92,20 +92,21 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
         String email = newCustomerEmail();
         registerCustomer(email);
 
-        MvcResult forgotRes = mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
+        // T193-G2.2-A R-09: forgot-password chi tra "message", khong con demoMode hay demoEmail.
+        // Token lay truc tiep tu DB de test luong reset-password.
+        mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.demoMode").value(true))
-                .andExpect(jsonPath("$.demoEmail.recipient").value(email))
-                .andReturn();
+                .andExpect(jsonPath("$.message").isNotEmpty())
+                .andExpect(jsonPath("$.demoMode").doesNotExist())
+                .andExpect(jsonPath("$.demoEmail").doesNotExist());
 
-        JsonNode body = read(forgotRes);
         String resetToken = users.findByEmail(email).orElseThrow().getResetToken();
-        assertNotNull(resetToken);
-        assertTrue(body.get("demoEmail").get("bodyHtml").asText().contains(resetToken));
+        assertNotNull(resetToken, "Reset token phai duoc luu vao DB sau khi goi forgot-password");
 
-        // Khong bao gio lo token admin qua API forgot-password
+        // Admin cung chi tra message, khong bao gio lo token
         mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", ADMIN_EMAIL)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty())
                 .andExpect(jsonPath("$.demoEmail").doesNotExist());
 
         // Dat lai mat khau moi

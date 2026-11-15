@@ -39,13 +39,23 @@ services:
       MAIL_FROM: ${MAIL_FROM:-no-reply@quickstay.io.vn}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      # T195 BUG-07: them healthcheck cho backend dev compose
+      # wget co san trong Alpine BusyBox
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   frontend:
     image: ghcr.io/zn101/quickstay-frontend:latest
     build: ./frontend
     depends_on:
-      - backend
+      # T195 BUG-07: cho backend healthy truoc khi start frontend
+      backend:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-8081}:80"
     restart: unless-stopped

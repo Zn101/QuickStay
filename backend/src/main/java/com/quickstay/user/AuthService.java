@@ -1,7 +1,6 @@
 package com.quickstay.user;
 
 import com.quickstay.config.ApiException;
-import com.quickstay.email.EmailLog;
 import com.quickstay.email.EmailService;
 import com.quickstay.security.JwtService;
 import com.quickstay.user.AuthDtos.*;
@@ -106,11 +105,10 @@ public class AuthService {
         return new MessageResponse("Neu email ton tai va chua xac thuc, chung toi da gui lai lien ket xac thuc.");
     }
 
+    // T193-G2.2-A R-09: Luon tra cung mot message de khong tiet lo email co ton tai khong.
+    // Khong bao gio tra reset token hay HTML email trong response, bat ke SMTP co duoc cau hinh hay khong.
     @Transactional
     public ForgotPasswordResponse forgotPassword(String email) {
-        boolean demoMode = emails == null || !emails.smtpEnabled();
-        EmailPreview preview = null;
-
         var opt = users.findByEmail(email);
         if (opt.isPresent()) {
             User u = opt.get();
@@ -119,19 +117,18 @@ public class AuthService {
             u.setResetTokenExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
             users.save(u);
             if (emails != null) {
-                EmailLog sent = emails.sendPasswordResetEmail(u.getEmail(), u.getFullName(), token);
-                // Chi tra xem truoc email trong che do mo phong cho tai khoan CUSTOMER (khong bao gio lo token ADMIN)
-                if (demoMode && u.getRole() == Role.CUSTOMER) {
-                    preview = new EmailPreview(sent.getRecipient(), sent.getSubject(), sent.getBodyHtml());
+                try {
+                    emails.sendPasswordResetEmail(u.getEmail(), u.getFullName(), token);
+                } catch (Exception ex) {
+                    log.warn("Khong the gui email khoi phuc mat khau cho user id={}: {}", u.getId(), ex.getMessage());
+                    // SMTP that bai: token van duoc luu; email khong duoc gui.
+                    // Khong tiet lo loi SMTP trong response.
                 }
             }
             log.info("Tao yeu cau khoi phuc mat khau cho user id={}", u.getId());
         }
-
         return new ForgotPasswordResponse(
-                "Neu email ton tai trong he thong, chung toi da gui huong dan dat lai mat khau.",
-                demoMode,
-                preview);
+                "Neu email ton tai trong he thong, chung toi da gui huong dan dat lai mat khau.");
     }
 
     @Transactional
