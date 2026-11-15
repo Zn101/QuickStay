@@ -121,6 +121,11 @@ public class RoomAdminService {
         Hotel hotel = hotelRepository.findById(req.hotelId())
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay khach san voi id=" + req.hotelId()));
 
+        // Doi khach san khi da co don se am tham chuyen cac don cu sang khach san khac (T186)
+        if (!hotel.getId().equals(room.getHotel().getId()) && bookingRepository.existsByRoomId(id)) {
+            throw ApiException.conflict("Khong the chuyen loai phong da co don dat phong sang khach san khac");
+        }
+
         applyRequest(room, hotel, req);
         roomRepository.save(room);
         log.info("Admin cap nhat loai phong id={} type=\"{}\" hotelId={}",

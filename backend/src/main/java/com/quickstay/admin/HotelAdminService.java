@@ -43,8 +43,9 @@ public class HotelAdminService {
      */
     @Transactional(readOnly = true)
     public List<HotelResponse> list() {
-        return hotelRepository.findAll().stream()
-                .map(HotelResponse::of)
+        // Cung truy van voi GET /hotels (khong loc) de co minPrice, mot cau SQL cho ca danh sach
+        return hotelRepository.search(null, null, null, null, null, false).stream()
+                .map(HotelResponse::from)
                 .toList();
     }
 
@@ -78,7 +79,7 @@ public class HotelAdminService {
         applyRequest(hotel, req);
         hotelRepository.save(hotel);
         log.info("Admin cap nhat khach san id={} name=\"{}\"", hotel.getId(), hotel.getName());
-        return HotelResponse.of(hotel);
+        return hotelRepository.findSummary(id).map(HotelResponse::from).orElseGet(() -> HotelResponse.of(hotel));
     }
 
     /**

@@ -1,8 +1,11 @@
 package com.quickstay.admin;
 
 import com.quickstay.hotel.Hotel;
+import com.quickstay.hotel.HotelSummary;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
 
 /**
  * Request/Response DTO cho cac API quan ly khach san cua Admin (T082).
@@ -59,7 +62,9 @@ public final class HotelAdminDtos {
             String address,
             String description,
             String imageUrl,
-            String amenities
+            String amenities,
+            // Gia thap nhat mot dem nhu GET /hotels (T186); null neu khach san chua co phong
+            BigDecimal minPrice
     ) {
         public static HotelResponse of(Hotel h) {
             return new HotelResponse(
@@ -69,8 +74,14 @@ public final class HotelAdminDtos {
                     h.getAddress(),
                     h.getDescription(),
                     h.getImageUrl(),
-                    h.getAmenities()
+                    h.getAmenities(),
+                    null
             );
+        }
+
+        public static HotelResponse from(HotelSummary s) {
+            return new HotelResponse(s.id(), s.name(), s.city(), s.address(), s.description(),
+                    s.imageUrl(), s.amenities(), s.minPrice());
         }
     }
 }
