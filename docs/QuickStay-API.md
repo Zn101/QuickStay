@@ -245,7 +245,7 @@ Không có body. **200 OK** trả về đơn với `status: "CANCELLED"`. Lỗi:
 | city | có |
 | address, description, imageUrl, amenities | không |
 
-`GET /admin/hotels` trả mảng khách sạn như `/hotels`. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204 No Content**. `DELETE` trả 409 `Khach san da co dat phong, khong the xoa` nếu một phòng của khách sạn đã có đơn.
+`GET /admin/hotels` trả mảng khách sạn như `/hotels` (kèm `minPrice`); `PUT` trả khách sạn kèm `minPrice`, `POST` trả `minPrice` = `null` vì chưa có phòng. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204 No Content**. `DELETE` trả 409 `Khach san da co dat phong, khong the xoa` nếu một phòng của khách sạn đã có đơn.
 
 ### Loại phòng
 
@@ -260,7 +260,7 @@ Không có body. **200 OK** trả về đơn với `status: "CANCELLED"`. Lỗi:
 | quantity | có | ≥ 1 |
 | description | không | |
 
-`GET /admin/rooms?hotelId=1` trả mảng phòng (`available` luôn `null`); bỏ `hotelId` để lấy tất cả. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204**; xóa loại phòng đã có đơn trả 409 `Khong the xoa loai phong da co don dat phong`. Không tìm thấy: 404 `Khong tim thay loai phong voi id=...`.
+`GET /admin/rooms?hotelId=1` trả mảng phòng (`available` luôn `null`); bỏ `hotelId` để lấy tất cả. `POST` trả **201**, `PUT` trả **200**, `DELETE` trả **204**; xóa loại phòng đã có đơn trả 409 `Khong the xoa loai phong da co don dat phong`. Không tìm thấy: 404 `Khong tim thay loai phong voi id=...`. Sửa loại phòng đã có đơn sang khách sạn khác (đổi `hotelId`): 409 `Khong the chuyen loai phong da co don dat phong sang khach san khac`.
 
 ### Đơn đặt phòng
 
