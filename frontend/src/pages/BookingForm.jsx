@@ -20,6 +20,13 @@ function isValidPhone(phone) {
   return /^(0|\+84)\d{9}$/.test(clean)
 }
 
+const PROMO_CODES = {
+  QUICKSTAY20: { percent: 20, desc: 'Giảm 20% ưu đãi đặc quyền QuickStay' },
+  SUMMER10: { percent: 10, desc: 'Giảm 10% mùa hè rực rỡ' },
+  WELCOME: { vnd: 100000, desc: 'Giảm 100.000 ₫ chào mừng thành viên mới' },
+  TRAVEL50: { vnd: 50000, desc: 'Giảm 50.000 ₫ đặt phòng trực tuyến' },
+}
+
 export default function BookingForm() {
   const { hotelId, roomId } = useParams()
   const { state } = useLocation()
@@ -44,6 +51,34 @@ export default function BookingForm() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Promo code state
+  const [promoInput, setPromoInput] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState(null)
+  const [promoMsg, setPromoMsg] = useState({ type: '', text: '' })
+
+  function handleApplyPromo(e) {
+    e?.preventDefault()
+    setPromoMsg({ type: '', text: '' })
+    const code = promoInput.trim().toUpperCase()
+    if (!code) {
+      setPromoMsg({ type: 'error', text: 'Vui lòng nhập mã ưu đãi.' })
+      return
+    }
+    const found = PROMO_CODES[code]
+    if (!found) {
+      setPromoMsg({ type: 'error', text: 'Mã giảm giá không hợp lệ hoặc đã hết hạn.' })
+      return
+    }
+    setAppliedPromo({ code, ...found })
+    setPromoMsg({ type: 'success', text: `Áp dụng thành công: ${found.desc}` })
+  }
+
+  function handleRemovePromo() {
+    setAppliedPromo(null)
+    setPromoInput('')
+    setPromoMsg({ type: '', text: '' })
+  }
 
   // Cập nhật thông tin người dùng nếu tải lại hoặc thay đổi auth
   useEffect(() => {
@@ -86,6 +121,16 @@ export default function BookingForm() {
 
   const nights = nightsBetween(checkIn, checkOut)
   const total = room && nights > 0 ? room.pricePerNight * nights : 0
+
+  let discountAmount = 0
+  if (appliedPromo && total > 0) {
+    if (appliedPromo.percent) {
+      discountAmount = Math.round((total * appliedPromo.percent) / 100)
+    } else if (appliedPromo.vnd) {
+      discountAmount = Math.min(appliedPromo.vnd, total)
+    }
+  }
+  const finalTotal = Math.max(0, total - discountAmount)
 
   function validateField(name, value) {
     const today = todayIso()
@@ -210,6 +255,9 @@ export default function BookingForm() {
     setBusy(true)
     try {
       const cleanPhone = form.guestPhone.replace(/[\s.-]/g, '')
+      const promoText = appliedPromo
+        ? ` [Khuyến mãi: ${appliedPromo.code} - Giảm ${formatVnd(discountAmount)}]`
+        : ''
       const booking = await api('/bookings', {
         method: 'POST',
         body: {
@@ -219,7 +267,7 @@ export default function BookingForm() {
           guests: Number(form.guests),
           guestName: form.guestName.trim(),
           guestPhone: cleanPhone,
-          note: form.note ? form.note.trim() : '',
+          note: (form.note ? form.note.trim() : '') + promoText,
           paymentMethod: form.paymentMethod,
         },
       })
@@ -531,10 +579,72 @@ export default function BookingForm() {
                 </span>
               </div>
 
-              <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-extrabold text-sky-700">
-                <span>Tổng tiền</span>
-                <span>{nights > 0 && room.pricePerNight ? formatVnd(total) : '—'}</span>
+              {appliedPromo && discountAmount > 0 ? (
+                <>
+                  <div className="flex justify-between text-slate-600 text-xs">
+                    <span>Tạm tính</span>
+                    <span className="font-medium line-through">{formatVnd(total)}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-600 text-xs font-bold">
+                    <span>Mã ưu đãi ({appliedPromo.code})</span>
+                    <span>-{formatVnd(discountAmount)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-extrabold text-sky-700">
+                    <span>Tổng tiền</span>
+                    <span>{formatVnd(finalTotal)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-extrabold text-sky-700">
+                  <span>Tổng tiền</span>
+                  <span>{nights > 0 && room.pricePerNight ? formatVnd(total) : '—'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Promo code input field */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-2">
+              <label htmlFor="promo-code-input" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Mã ưu đãi / Voucher giảm giá
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="promo-code-input"
+                  type="text"
+                  placeholder="QUICKSTAY20, SUMMER10..."
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                  disabled={!!appliedPromo}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 uppercase placeholder:font-normal placeholder:text-slate-400 outline-none focus:border-sky-500"
+                />
+                {appliedPromo ? (
+                  <button
+                    type="button"
+                    onClick={handleRemovePromo}
+                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                  >
+                    Bỏ mã
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleApplyPromo}
+                    className="btn-liquid-glass rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm hover:shadow transition-all cursor-pointer"
+                  >
+                    Áp dụng
+                  </button>
+                )}
               </div>
+              {promoMsg.text && (
+                <p className={`text-[11px] font-semibold ${promoMsg.type === 'error' ? 'text-red-500' : 'text-emerald-600'}`}>
+                  {promoMsg.type === 'success' ? '✓ ' : '✕ '} {promoMsg.text}
+                </p>
+              )}
+              {!appliedPromo && !promoMsg.text && (
+                <p className="text-[10px] text-slate-400">
+                  Gợi ý: Thử mã <code className="font-bold text-sky-600">QUICKSTAY20</code> để giảm 20%
+                </p>
+              )}
             </div>
 
             <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">

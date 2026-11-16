@@ -36,9 +36,9 @@ const SLIDES = [
 ]
 
 const inputClass = (hasError) =>
-  `w-full rounded-2xl border bg-white pl-11 pr-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400 focus:ring-4 ${hasError
+  `w-full rounded-2xl border bg-white dark:bg-slate-800 pl-11 pr-4 py-3.5 text-sm font-medium text-slate-900 dark:text-white shadow-sm outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400 focus:ring-4 ${hasError
     ? 'border-red-400 bg-red-50/10 focus:border-red-500 focus:ring-red-500/15'
-    : 'border-slate-200/90 hover:border-slate-300 focus:border-sky-600 focus:ring-sky-500/15'
+    : 'border-slate-200/90 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus:border-sky-600 focus:ring-sky-500/15'
   }`
 
 export default function Login() {
@@ -134,7 +134,7 @@ export default function Login() {
   const activeSlide = SLIDES[currentSlide]
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden  border border-slate-200/80 bg-[#f8fafc] text-slate-900 shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
+    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-white shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
       {/* CỘT TRÁI: Cinematic Auto-Carousel Showcase (7/12 cột) */}
       <div className="relative hidden min-h-[700px] flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:col-span-6 lg:flex xl:col-span-7 xl:p-16">
         {/* Danh sách ảnh nền tự động chuyển động với hiệu ứng Ken Burns */}
@@ -316,16 +316,16 @@ export default function Login() {
           </div>
 
           {/* Card Form chính */}
-          <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-7 shadow-[0_15px_50px_-12px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-9">
+          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-7 shadow-[0_15px_50px_-12px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-9">
             <div className="mb-8">
-              <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-sky-200/80 bg-sky-50 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-sky-700">
+              <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-sky-200/80 dark:border-sky-800/80 bg-sky-50 dark:bg-sky-950/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-sky-600" />
                 Chào mừng trở lại
               </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
                 Đăng nhập tài khoản
               </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Nhập thông tin của bạn để tiếp tục cùng QuickStay.
               </p>
             </div>
@@ -430,15 +430,15 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-7 border-t border-slate-100 pt-6 text-center text-sm text-slate-500">
+            <div className="mt-7 border-t border-slate-100 dark:border-slate-800 pt-6 text-center text-sm text-slate-500 dark:text-slate-400">
               Chưa có tài khoản?{' '}
-              <Link to="/register" className="font-bold text-sky-700 transition hover:text-sky-900 hover:underline">
+              <Link to="/register" className="font-bold text-sky-700 dark:text-sky-400 transition hover:text-sky-900 dark:hover:text-sky-300 hover:underline">
                 Đăng ký ngay
               </Link>
             </div>
           </div>
 
-          <p className="mt-7 text-center text-xs font-medium text-slate-400">
+          <p className="mt-7 text-center text-xs font-medium text-slate-400 dark:text-slate-500">
             Đăng nhập an toàn · Trải nghiệm tiện lợi
           </p>
         </div>

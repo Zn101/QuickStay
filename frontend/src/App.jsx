@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import HotelDetail from './pages/HotelDetail'
+import RoomDetail from './pages/RoomDetail'
 import BookingForm from './pages/BookingForm'
 import MyBookings from './pages/MyBookings'
 import Profile from './pages/Profile'
@@ -24,6 +25,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/hotels/:id" element={<HotelDetail />} />
+        <Route path="/hotels/:hotelId/rooms/:roomId" element={<RoomDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

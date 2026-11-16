@@ -11,7 +11,7 @@ export function StatusBadge({ status }) {
 export function PaymentBadge({ status }) {
   const s = status || 'UNPAID'
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PAYMENT_STATUS_STYLE[s] || 'bg-slate-100 text-slate-600'}`}>
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${PAYMENT_STATUS_STYLE[s] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
       {PAYMENT_STATUS_LABEL[s] || s}
     </span>
   )
@@ -22,7 +22,7 @@ export function ErrorBox({ message }) {
   return (
     <div
       role="alert"
-      className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700 shadow-sm"
+      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50/95 px-4 py-3.5 text-sm font-medium text-red-700 shadow-sm dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300 animate-popup-in"
     >
       <svg
         className="mt-0.5 h-5 w-5 shrink-0 text-red-500"
@@ -50,7 +50,7 @@ export function FieldError({ id, message }) {
     <p
       id={id}
       role="alert"
-      className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600"
+      className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400"
     >
       <svg
         className="h-3.5 w-3.5 shrink-0 text-red-500"
@@ -70,7 +70,19 @@ export function FieldError({ id, message }) {
 }
 
 export function Spinner({ text = 'Đang tải...' }) {
-  return <p className="py-10 text-center text-sm text-slate-500">{text}</p>
+  return (
+    <div className="py-12 flex flex-col items-center justify-center gap-3 animate-popup-in">
+      <div className="relative flex h-12 w-12 items-center justify-center">
+        {/* Outer glowing pulsing ring */}
+        <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-75" />
+        {/* Rotating gradient loader */}
+        <div className="h-10 w-10 animate-spin rounded-full border-3 border-blue-600/25 border-t-blue-600 dark:border-blue-400/20 dark:border-t-blue-400" />
+        {/* Inner center dot */}
+        <div className="absolute h-3 w-3 rounded-full bg-blue-600 dark:bg-blue-400 shadow-sm" />
+      </div>
+      <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 tracking-wide">{text}</p>
+    </div>
+  )
 }
 
 export const FALLBACK_IMG =
@@ -109,9 +121,9 @@ export function ConfirmModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm animate-fadeIn">
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 transition-all sm:my-8"
+        className="animate-popup-in relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-100 dark:bg-slate-900 dark:border-slate-800 transition-all sm:my-8"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-headline"
@@ -119,7 +131,9 @@ export function ConfirmModal({
         <div className="flex items-start gap-4">
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-              danger ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+              danger
+                ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400'
+                : 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
             }`}
           >
             {danger ? (
@@ -141,10 +155,10 @@ export function ConfirmModal({
             )}
           </div>
           <div className="flex-1">
-            <h3 id="modal-headline" className="text-lg font-bold text-slate-900 leading-6">
+            <h3 id="modal-headline" className="text-lg font-bold text-slate-900 dark:text-white leading-6">
               {title}
             </h3>
-            <p className="mt-2 text-sm leading-5 text-slate-500">
+            <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
               {message}
             </p>
             {error && (
@@ -160,7 +174,7 @@ export function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="w-full sm:w-auto rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {cancelText}
           </button>
@@ -168,10 +182,10 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50 ${
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50 cursor-pointer ${
               danger
-                ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20'
-                : 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20'
+                ? 'bg-red-600 hover:bg-red-700 shadow-red-600/25'
+                : 'btn-liquid-glass'
             }`}
           >
             {loading ? (
@@ -206,14 +220,14 @@ export function SuccessModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm animate-fadeIn">
       <div
-        className="relative w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-2xl border border-slate-100 transition-all"
+        className="animate-popup-in relative w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-7 text-center shadow-2xl border border-slate-100 dark:border-slate-800 transition-all"
         role="dialog"
         aria-modal="true"
         aria-labelledby="success-modal-headline"
       >
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/60">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 ring-8 ring-emerald-50/60 dark:ring-emerald-900/30">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -221,10 +235,10 @@ export function SuccessModal({
           </div>
         </div>
 
-        <h3 id="success-modal-headline" className="mt-5 text-xl font-extrabold text-slate-900">
+        <h3 id="success-modal-headline" className="mt-5 text-xl font-extrabold text-slate-900 dark:text-white">
           {title}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
           {message}
         </p>
 

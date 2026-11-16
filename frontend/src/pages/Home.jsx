@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatMoney, todayIso, formatDateVi } from '../lib/format'
 import { useSettings } from '../store/settingsStore'
 import { useAuth } from '../store/authStore'
+import { useTranslation } from '../lib/i18n'
 import { HotelImage, Spinner, ErrorBox } from '../components/ui'
 
 const HERO_SLIDES = [
@@ -102,6 +103,7 @@ export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { currencyDisplay } = useSettings()
+  const { t } = useTranslation()
   const [hotels, setHotels] = useState([])
   const [roomTypes, setRoomTypes] = useState(['Standard', 'Deluxe', 'Family Suite'])
   const [loading, setLoading] = useState(true)
@@ -114,9 +116,11 @@ export default function Home() {
   const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || '')
   const [activeSlide, setActiveSlide] = useState(0)
 
-  // States bổ sung cho UI mới
+  // States bổ sung cho UI
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false)
   const [showAllCities, setShowAllCities] = useState(false)
+  const sliderRef = useRef(null)
+  const [isSliderPaused, setIsSliderPaused] = useState(false)
 
   // 1. Đồng bộ các thành phố thực tế từ danh sách khách sạn CSDL (Admin CRUD)
   const availableCities = useMemo(() => {
@@ -146,17 +150,19 @@ export default function Home() {
     return { counts, minPrices }
   }, [hotels])
 
-  // 3. Đồng bộ danh mục Điểm đến: Hiển thị đúng số cơ sở lưu trú và giá từ CSDL Admin CRUD
+  // 3. Đồng bộ danh mục Điểm đến: Luôn hiển thị khách sạn thực tế có trong hệ thống
   const dynamicDestinations = useMemo(() => {
     const knownNames = new Set(POPULAR_CITIES.map((c) => c.name.toLowerCase()))
 
     const baseList = POPULAR_CITIES.map((c) => {
       const realCount = cityStats.counts[c.name] || 0
-      const realMinPrice = cityStats.minPrices[c.name]
+      const realHotel = hotels.find((h) => h.city?.toLowerCase() === c.name.toLowerCase())
       return {
         ...c,
+        realHotelName: realHotel?.name || `${c.name} Luxury Hotel`,
+        realHotelAddress: realHotel?.address || c.name,
+        realHotelId: realHotel?.id,
         hotelsCount: realCount > 0 ? `${realCount} khách sạn có sẵn` : 'Sắp khai trương cơ sở',
-        priceHint: realMinPrice ? `Từ ${formatMoney(realMinPrice, currencyDisplay)}` : null,
       }
     })
 
@@ -164,21 +170,55 @@ export default function Home() {
     availableCities.forEach((cityItem) => {
       if (!knownNames.has(cityItem.toLowerCase())) {
         const count = cityStats.counts[cityItem] || 1
-        const price = cityStats.minPrices[cityItem]
+        const realHotel = hotels.find((h) => h.city?.toLowerCase() === cityItem.toLowerCase())
         baseList.push({
           name: cityItem,
+          realHotelName: realHotel?.name || `${cityItem} Central Hotel`,
+          realHotelAddress: realHotel?.address || cityItem,
+          realHotelId: realHotel?.id,
           tagline: 'Điểm đến mới được kết nối hệ thống',
           image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
           hotelsCount: `${count} khách sạn có sẵn`,
-          priceHint: price ? `Từ ${formatMoney(price, currencyDisplay)}` : null,
         })
       }
     })
 
     return baseList
-  }, [cityStats, availableCities, currencyDisplay])
+  }, [cityStats, availableCities, hotels])
 
   const currentSlide = HERO_SLIDES[activeSlide]
+
+  // Slowly auto-scrolling slider for popular destinations
+  useEffect(() => {
+    if (showAllCities || isSliderPaused) return
+    const el = sliderRef.current
+    if (!el) return
+
+    const interval = setInterval(() => {
+      if (!el) return
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 6) {
+        if (typeof el.scrollTo === 'function') {
+          el.scrollTo({ left: 0, behavior: 'smooth' })
+        } else {
+          el.scrollLeft = 0
+        }
+      } else {
+        el.scrollLeft += 1
+      }
+    }, 35)
+
+    return () => clearInterval(interval)
+  }, [showAllCities, isSliderPaused])
+
+  const scrollSlider = (direction) => {
+    if (!sliderRef.current) return
+    const el = sliderRef.current
+    if (typeof el.scrollBy === 'function') {
+      el.scrollBy({ left: direction * 320, behavior: 'smooth' })
+    } else {
+      el.scrollLeft += direction * 320
+    }
+  }
 
   function applyDatePreset(daysAhead, stayNights = 1) {
     const today = new Date()
@@ -293,10 +333,10 @@ export default function Home() {
   )
 
   return (
-    <div className="min-h-screen bg-[#f4f9fd]">
+    <div className="min-h-screen bg-[var(--color-bg-page)] transition-colors duration-200">
       {/* Thanh Thông Báo Quyền Quản Trị Viên (Admin Mode Sync) */}
       {user?.role === 'ADMIN' && (
-        <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white px-4 py-2.5 text-xs font-semibold flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-indigo-500/30 shadow-md">
+        <div className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 text-white px-4 py-2.5 text-xs font-semibold flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-blue-500/30 shadow-md">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-amber-300">👑 Quyền Quản trị viên (Admin Mode)</span>
@@ -307,7 +347,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Link
               to="/admin"
-              className="rounded-lg bg-sky-600 hover:bg-sky-500 px-3 py-1 text-xs font-bold text-white shadow-xs transition-colors"
+              className="btn-liquid-glass rounded-lg px-3 py-1 text-xs font-bold text-white shadow-xs"
             >
               Mở Dashboard Admin →
             </Link>
@@ -321,27 +361,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* CSS Keyframes cho hiệu ứng chuyển động sống động */}
-      <style>{`
-        @keyframes floatSlow {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(0.4deg); }
-        }
-        @keyframes floatReverse {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(10px) rotate(-0.4deg); }
-        }
-        @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.25); }
-          50% { box-shadow: 0 0 35px rgba(6, 182, 212, 0.5); }
-        }
-        .animate-float-slow { animation: floatSlow 7s ease-in-out infinite; }
-        .animate-float-reverse { animation: floatReverse 6s ease-in-out 1s infinite; }
-        .animate-glow-pulse { animation: glowPulse 4s ease-in-out infinite; }
-      `}</style>
-
       {/* HERO SECTION VỚI SLIDESHOW CHUYỂN ĐỘNG & FLOATING CARDS */}
-      <section className="relative overflow-hidden bg-[#061826] px-4 py-16 text-white sm:px-6 lg:py-20">
+      <section className="relative overflow-hidden bg-slate-950 px-4 py-16 text-white sm:px-6 lg:py-20">
         {/* Background Slideshow với hiệu ứng Ken Burns Zoom */}
         {HERO_SLIDES.map((slide, index) => {
           const isActive = index === activeSlide
@@ -364,8 +385,11 @@ export default function Home() {
         })}
 
         {/* Lớp phủ Gradient xanh biển sâu */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-r from-[#04121d]/95 via-[#072134]/85 to-[#061826]/75" />
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-[#04121d] via-transparent to-[#04121d]/40" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-slate-950/95 via-blue-950/85 to-slate-950/75" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
+
+        {/* Gradient mờ chuyển tiếp êm ái sang nền phía dưới, không bị gắt cạnh */}
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)]/50 to-transparent z-10" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
           <div className="grid items-center gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:gap-12">
@@ -373,26 +397,26 @@ export default function Home() {
             <div>
               <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
-                Hơn 500+ khách sạn & khu nghỉ dưỡng cao cấp khắp Việt Nam
+                {t('hero_badge')}
               </div>
 
               <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[54px]">
                 Mỗi chuyến đi,
                 <br />
-                <span className="bg-gradient-to-r from-sky-200 via-cyan-300 to-sky-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-blue-200 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
                   một trải nghiệm
                 </span>{' '}
                 đáng nhớ.
               </h1>
 
-              <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-200/90 sm:text-base">
-                Khám phá nơi lưu trú phù hợp, đặt phòng nhanh chóng với mức giá ưu đãi nhất và tận hưởng hành trình trọn vẹn theo cách của bạn.
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200/90">
+                {t('hero_subtitle')}
               </p>
 
               {/* Thanh Tìm Kiếm Glassmorphism với Custom UI */}
               <form
                 onSubmit={handleSearch}
-                className="mt-7 rounded-2xl border border-white/25 bg-white/10 p-3 sm:p-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+                className="mt-7 rounded-3xl border border-white/20 bg-slate-900/60 p-4 sm:p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] backdrop-blur-xl"
               >
                 {/* Hàng 1: Từ khóa tìm kiếm & Tên thành phố */}
                 <div className="flex flex-col gap-2.5 sm:flex-row">
@@ -409,10 +433,10 @@ export default function Home() {
                     </svg>
                     <input
                       type="text"
-                      placeholder="Tên khách sạn, resort, biệt thự..."
+                      placeholder={t('search_keyword_placeholder')}
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
+                      className="w-full rounded-2xl bg-white dark:bg-slate-800 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 shadow-sm"
                     />
                   </div>
 
@@ -429,18 +453,18 @@ export default function Home() {
                     </svg>
                     <input
                       type="text"
-                      placeholder="Thành phố / Điểm đến..."
+                      placeholder={t('search_city_placeholder')}
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full rounded-xl bg-white py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-sky-400"
+                      className="w-full rounded-2xl bg-white dark:bg-slate-800 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 shadow-sm"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/40 transition-all hover:from-sky-400 hover:to-sky-500 active:scale-[0.99] cursor-pointer"
+                    className="btn-liquid-glass group flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/40 transition-all active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Tìm kiếm</span>
+                    <span>{t('search_btn')}</span>
                     <svg
                       className="h-4 w-4 transition-transform group-hover:translate-x-1"
                       viewBox="0 0 24 24"
@@ -453,10 +477,10 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Hàng 2: Bộ chọn Ngày & Hạng phòng với Giao diện Custom UI độc quyền */}
+                {/* Hàng 2: Bộ chọn Ngày & Hạng phòng */}
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:items-stretch">
-                  {/* Custom Date Pickers: Ngày nhận & Ngày trả phòng */}
-                  <div className="sm:col-span-8 flex flex-col sm:flex-row items-center gap-2 rounded-xl bg-white p-2 text-slate-900 shadow-sm border border-slate-100">
+                  {/* Custom Date Pickers */}
+                  <div className="sm:col-span-8 flex flex-col sm:flex-row items-center gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 text-slate-900 dark:text-white shadow-sm border border-slate-100 dark:border-slate-700">
                     {/* Thẻ Chọn Ngày Nhận */}
                     <div
                       onClick={() => {
@@ -466,18 +490,18 @@ export default function Home() {
                           else el.focus()
                         }
                       }}
-                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-lg p-2 hover:bg-sky-50/70 transition-colors cursor-pointer group"
+                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-xl p-2 hover:bg-blue-50/70 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 text-left">
                         <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Ngày nhận phòng
+                          {t('search_checkin_label')}
                         </span>
-                        <span className="block text-xs font-bold text-slate-900 truncate">
+                        <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
                           {checkIn ? formatDateVi(checkIn) : 'Chọn ngày nhận'}
                         </span>
                       </div>
@@ -488,12 +512,11 @@ export default function Home() {
                         value={checkIn}
                         onChange={(e) => setCheckIn(e.target.value)}
                         className="sr-only"
-                        aria-label="Ngày nhận phòng"
+                        aria-label="Ngày nhận"
                       />
                     </div>
 
-                    {/* Mũi tên ngăn cách / Số đêm */}
-                    <div className="hidden sm:flex items-center justify-center px-1 text-slate-300">
+                    <div className="hidden sm:flex items-center justify-center px-1 text-slate-400">
                       <span className="text-xs">→</span>
                     </div>
 
@@ -506,18 +529,18 @@ export default function Home() {
                           else el.focus()
                         }
                       }}
-                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-lg p-2 hover:bg-sky-50/70 transition-colors cursor-pointer group"
+                      className="w-full sm:w-1/2 flex items-center gap-3 rounded-xl p-2 hover:bg-blue-50/70 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
                       <div className="flex-1 text-left">
                         <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Ngày trả phòng
+                          {t('search_checkout_label')}
                         </span>
-                        <span className="block text-xs font-bold text-slate-900 truncate">
+                        <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
                           {checkOut ? formatDateVi(checkOut) : 'Chọn ngày trả'}
                         </span>
                       </div>
@@ -528,34 +551,34 @@ export default function Home() {
                         value={checkOut}
                         onChange={(e) => setCheckOut(e.target.value)}
                         className="sr-only"
-                        aria-label="Ngày trả phòng"
+                        aria-label="Ngày trả"
                       />
                     </div>
                   </div>
 
-                  {/* Custom Room Type Selector (Cùng chiều cao hoàn hảo với bộ chọn ngày) */}
+                  {/* Custom Room Type Selector */}
                   <div className="relative sm:col-span-4 flex">
                     <button
                       type="button"
                       onClick={() => setRoomDropdownOpen((v) => !v)}
-                      className="w-full h-full flex items-center justify-between rounded-xl bg-white p-2 px-3 text-left shadow-sm border border-slate-100 hover:border-sky-300 transition-colors cursor-pointer"
+                      className="w-full h-full flex items-center justify-between rounded-2xl bg-white dark:bg-slate-800 p-2.5 px-3.5 text-left shadow-sm border border-slate-100 dark:border-slate-700 hover:border-blue-400 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 overflow-hidden">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-bold text-sm">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-sm">
                           🛏️
                         </span>
                         <div className="truncate">
                           <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Loại phòng
+                            {t('search_room_type_label')}
                           </span>
-                          <span className="block text-xs font-bold text-slate-900 truncate">
-                            {roomType || 'Tất cả loại phòng'}
+                          <span className="block text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {roomType || t('search_room_type_all')}
                           </span>
                         </div>
                       </div>
                       <svg
                         className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-                          roomDropdownOpen ? 'rotate-180 text-sky-600' : ''
+                          roomDropdownOpen ? 'rotate-180 text-blue-500' : ''
                         }`}
                         fill="none"
                         viewBox="0 0 24 24"
@@ -568,7 +591,7 @@ export default function Home() {
 
                     {/* Menu Popover Custom cho Hạng phòng */}
                     {roomDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 shadow-2xl animate-popup-in">
                         <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                           Chọn hạng phòng phù hợp:
                         </div>
@@ -579,26 +602,18 @@ export default function Home() {
                             setRoomDropdownOpen(false)
                           }}
                           className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                            !roomType ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                            !roomType ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                           }`}
                         >
                           <span className="flex items-center gap-2">
                             <span>🏢</span>
-                            <span>Tất cả loại phòng</span>
+                            <span>{t('search_room_type_all')}</span>
                           </span>
-                          {!roomType && <span className="text-sky-600 font-bold">✓</span>}
+                          {!roomType && <span className="text-blue-600 font-bold">✓</span>}
                         </button>
 
                         {roomTypes.map((rt) => {
                           const isSel = roomType === rt
-                          const icon =
-                            rt.toLowerCase().includes('suite')
-                              ? '👨‍👩‍👧‍👦'
-                              : rt.toLowerCase().includes('deluxe')
-                              ? '✨'
-                              : rt.toLowerCase().includes('villa')
-                              ? '🏖️'
-                              : '🛏️'
                           return (
                             <button
                               key={rt}
@@ -608,14 +623,14 @@ export default function Home() {
                                 setRoomDropdownOpen(false)
                               }}
                               className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                                isSel ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                                isSel ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                               }`}
                             >
                               <span className="flex items-center gap-2">
-                                <span>{icon}</span>
+                                <span>✨</span>
                                 <span>{rt}</span>
                               </span>
-                              {isSel && <span className="text-sky-600 font-bold">✓</span>}
+                              {isSel && <span className="text-blue-600 font-bold">✓</span>}
                             </button>
                           )
                         })}
@@ -624,42 +639,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Các nút chọn ngày nhanh tiện ích */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5 px-1">
-                  <span className="text-[11px] font-medium text-slate-300">Chọn nhanh ngày:</span>
-                  <button
-                    type="button"
-                    onClick={() => applyDatePreset(0, 1)}
-                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
-                  >
-                    Hôm nay (1 đêm)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyDatePreset(1, 1)}
-                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
-                  >
-                    Ngày mai (1 đêm)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyDatePreset(2, 2)}
-                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
-                  >
-                    Cuối tuần này (2 đêm)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyDatePreset(0, 3)}
-                    className="rounded-lg bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:bg-white/20 transition-colors"
-                  >
-                    Kỳ nghỉ 3 đêm
-                  </button>
-                </div>
-
-                {/* Các nút chọn nhanh thành phố */}
-                <div className="mt-3 flex flex-wrap items-center gap-2 px-1 pt-2 border-t border-white/10">
-                  <span className="text-xs font-medium text-slate-300">Điểm đến phổ biến:</span>
+                {/* Các nút chọn nhanh thành phố: CHỈ 1 HÀNG DUY NHẤT (Single row, horizontal scroll) */}
+                <div className="mt-3.5 flex items-center gap-2 px-1 pt-2.5 border-t border-white/10 overflow-x-auto no-scrollbar whitespace-nowrap">
+                  <span className="text-xs font-semibold text-slate-300 shrink-0">{t('quick_destinations')}</span>
                   {quickCitiesList.map((item) => {
                     const active = city.toLowerCase() === item.toLowerCase()
                     return (
@@ -667,9 +649,9 @@ export default function Home() {
                         key={item}
                         type="button"
                         onClick={() => selectQuickCity(active ? '' : item)}
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 cursor-pointer ${
                           active
-                            ? 'bg-cyan-400 text-slate-950 font-bold shadow-sm'
+                            ? 'bg-blue-600 text-white font-bold shadow-md ring-2 ring-white/30'
                             : 'bg-white/10 text-slate-200 hover:bg-white/20'
                         }`}
                       >
@@ -681,21 +663,18 @@ export default function Home() {
               </form>
             </div>
 
-            {/* Cột phải: KHUNG ẢNH NỔI BẬT (Ảnh thu nhỏ vừa vặn, thanh lịch) */}
+            {/* Cột phải: KHUNG ẢNH NỔI BẬT */}
             <div className="relative hidden lg:block w-full">
               <div className="relative mx-auto max-w-lg pb-2">
-                {/* Khung ảnh động chính với hiệu ứng Presentation */}
                 <div className="animate-presentation-float relative overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
                   <div
                     onClick={() => {
-                      if (currentSlide.id) {
-                        navigate(`/hotels/${currentSlide.id}`)
-                      } else if (currentSlide.city) {
+                      if (currentSlide.city) {
                         selectQuickCity(currentSlide.city)
                       }
                     }}
                     className="group relative h-[340px] sm:h-[370px] overflow-hidden rounded-2xl cursor-pointer"
-                    title="Bấm để xem chi tiết khách sạn này"
+                    title="Bấm để xem điểm đến này"
                   >
                     <img
                       key={currentSlide.url}
@@ -705,15 +684,15 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
 
-                    {/* Badge góc trái trên: Đánh giá */}
+                    {/* Badge Đánh giá */}
                     <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-cyan-300 backdrop-blur-md shadow-md border border-white/15">
                       <span className="text-amber-400">★ {currentSlide.rating}</span>
                       <span>·</span>
                       <span className="text-slate-200">Tuyệt hảo</span>
                     </div>
 
-                    {/* Badge góc phải trên: Độc quyền */}
-                    <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-rose-600/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-md shadow-md">
+                    {/* Badge Độc quyền */}
+                    <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-md shadow-md">
                       <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                       <span>Được đặt nhiều nhất</span>
                     </div>
@@ -744,98 +723,159 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ĐIỂM ĐẾN YÊU THÍCH (CÓ KHOẢNG CÁCH RÕ RÀNG GIỮA CÁC Ô ĐIỂM ĐẾN, KHÔNG DÍNH NHAU) */}
+      {/* ĐIỂM ĐẾN YÊU THÍCH (GỌN GÀNG, AUTO-SCROLL SLIDER & GRID XEM THÊM) */}
       {!isFiltering && (
-        <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
+          <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0284c7]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#0284c7] animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/90 dark:bg-blue-950/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
                 Khám phá Việt Nam
               </span>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                Điểm đến được yêu thích nhất
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                {t('section_destinations')}
               </h2>
             </div>
-            <p className="text-xs text-slate-500 sm:text-sm">
-              Chọn điểm đến để xem các khách sạn và ưu đãi tốt nhất ngay lập tức
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                {t('section_destinations_desc')}
+              </p>
+              {!showAllCities && (
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider(-1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    aria-label="Cuộn sang trái"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollSlider(1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    aria-label="Cuộn sang phải"
+                  >
+                    →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Grid điểm đến: KHOẢNG CÁCH RỘNG RÃI (gap-6 sm:gap-7 lg:gap-8) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7 lg:gap-8">
-            {(showAllCities ? dynamicDestinations : dynamicDestinations.slice(0, 4)).map((dest) => (
-              <button
-                key={dest.name}
-                type="button"
-                onClick={() => selectQuickCity(dest.name)}
-                className="group relative h-64 overflow-hidden rounded-3xl text-left shadow-md transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl cursor-pointer shimmer-card"
-              >
-                <img
-                  src={dest.image}
-                  alt={dest.name}
-                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
+          {/* Khi !showAllCities: Auto-scrolling Slider; Khi showAllCities: Full Grid gốc */}
+          {!showAllCities ? (
+            <div
+              ref={sliderRef}
+              onMouseEnter={() => setIsSliderPaused(true)}
+              onMouseLeave={() => setIsSliderPaused(false)}
+              className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth py-2 px-1 cursor-grab"
+            >
+              {dynamicDestinations.map((dest) => (
+                <div
+                  key={dest.name}
+                  onClick={() => selectQuickCity(dest.name)}
+                  className="group relative h-64 w-72 sm:w-80 shrink-0 overflow-hidden rounded-2xl text-left shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shimmer-card border border-slate-200/60 dark:border-slate-800"
+                >
+                  <img
+                    src={dest.image}
+                    alt={dest.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+                  {/* Blue gradient overlay instead of black */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-blue-950/30 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
 
-                <div className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:bg-[#0284c7]">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M7 17 17 7M7 7h10v10" />
-                  </svg>
-                </div>
-
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                    <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white border border-white/20">
-                      {dest.hotelsCount}
-                    </span>
-                    {dest.priceHint && (
-                      <span className="inline-block rounded-md bg-emerald-500/80 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold text-white border border-emerald-400/30">
-                        {dest.priceHint}
-                      </span>
-                    )}
+                  <div className="absolute right-3.5 top-3.5 flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:bg-blue-600">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M7 17 17 7M7 7h10v10" />
+                    </svg>
                   </div>
-                  <p className="text-xs font-medium text-sky-200 line-clamp-1">{dest.tagline}</p>
-                  <h3 className="text-xl font-extrabold text-white">{dest.name}</h3>
-                </div>
-              </button>
-            ))}
-          </div>
 
-          {/* Nút Xem Thêm / Thu Gọn Điểm Đến */}
-          {dynamicDestinations.length > 4 && (
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => setShowAllCities((v) => !v)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-white px-6 py-2.5 text-xs sm:text-sm font-bold text-sky-700 shadow-sm hover:border-sky-400 hover:bg-sky-50 transition-all cursor-pointer active:scale-95"
-              >
-                <span>
-                  {showAllCities
-                    ? 'Thu gọn điểm đến ↑'
-                    : `Xem thêm ${dynamicDestinations.length - 4} điểm đến hấp dẫn khác (Hà Nội, TP.HCM,...) ↓`}
-                </span>
-              </button>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white border border-white/20">
+                        {dest.hotelsCount}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-cyan-200 line-clamp-1 mb-0.5">
+                      🏨 {dest.realHotelName}
+                    </p>
+                    <h3 className="text-xl font-extrabold text-white">{dest.name}</h3>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-popup-in">
+              {dynamicDestinations.map((dest) => (
+                <div
+                  key={dest.name}
+                  onClick={() => selectQuickCity(dest.name)}
+                  className="group relative h-64 overflow-hidden rounded-2xl text-left shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shimmer-card border border-slate-200/60 dark:border-slate-800"
+                >
+                  <img
+                    src={dest.image}
+                    alt={dest.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-blue-950/30 to-transparent transition-opacity duration-300 group-hover:opacity-95" />
+
+                  <div className="absolute right-3.5 top-3.5 flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-white/20 text-white backdrop-blur-md transition-all duration-300 group-hover:bg-blue-600">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M7 17 17 7M7 7h10v10" />
+                    </svg>
+                  </div>
+
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                      <span className="inline-block rounded-md bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white border border-white/20">
+                        {dest.hotelsCount}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-semibold text-cyan-200 line-clamp-1 mb-0.5">
+                      🏨 {dest.realHotelName}
+                    </p>
+                    <h3 className="text-xl font-extrabold text-white">{dest.name}</h3>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+
+          {/* Nút Xem Thêm / Thu Gọn Điểm Đến */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAllCities((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-white dark:bg-slate-800 px-6 py-2.5 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-300 shadow-sm hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition-all cursor-pointer active:scale-95"
+            >
+              <span>
+                {showAllCities
+                  ? t('section_see_less_destinations')
+                  : t('section_see_more_destinations')}
+              </span>
+            </button>
+          </div>
         </section>
       )}
 
       {/* DANH SÁCH KHÁCH SẠN */}
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         {isFiltering && (
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm">
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 shadow-sm animate-popup-in">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-[#0284c7]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.35-4.35" />
                 </svg>
               </span>
               <div>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
                   Kết quả tìm kiếm cho{' '}
-                  <span className="font-bold text-slate-900">
+                  <span className="font-bold text-slate-900 dark:text-white">
                     "
                     {[
                       searchParams.get('q'),
@@ -855,9 +895,9 @@ export default function Home() {
             </div>
             <button
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-600"
             >
-              <span>✕ Xóa bộ lọc</span>
+              <span>✕ {t('search_clear')}</span>
             </button>
           </div>
         )}
@@ -866,21 +906,21 @@ export default function Home() {
         {error && <ErrorBox message={error} />}
 
         {!loading && !error && hotels.length === 0 && (
-          <div className="rounded-3xl border border-slate-100 bg-white py-20 text-center shadow-sm">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-50 text-[#0284c7]">
+          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 py-20 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950 text-blue-600">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8">
                 <path d="M3 10.5 12 3l9 7.5V21H3V10.5Z" />
                 <path d="M9 21v-7h6v7" />
               </svg>
             </div>
-            <p className="text-lg font-extrabold text-slate-800">Không tìm thấy khách sạn phù hợp</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-lg font-extrabold text-slate-800 dark:text-white">Không tìm thấy khách sạn phù hợp</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Thử thay đổi từ khóa hoặc khám phá các thành phố khác xem sao nhé.
             </p>
             {isFiltering && (
               <button
                 onClick={clearFilters}
-                className="mt-5 rounded-xl bg-[#0284c7] px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-[#0369a1]"
+                className="btn-liquid-glass mt-5 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm"
               >
                 Xem tất cả khách sạn
               </button>
@@ -893,22 +933,18 @@ export default function Home() {
             {!isFiltering && (
               <div className="mb-8 flex items-end justify-between">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0284c7]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#0284c7]" />
-                    Được đề xuất cho bạn
-                  </span>
-                  <h2 className="mt-2.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                    Khách sạn & Resort nổi bật
+                  <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                    {t('section_featured_hotels')}
                   </h2>
                 </div>
                 <span className="hidden text-xs font-semibold text-slate-400 sm:inline">
-                  Hiển thị {hotels.length} chỗ nghỉ
+                  {t('section_featured_hotels_count', { count: hotels.length })}
                 </span>
               </div>
             )}
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {hotels.map((hotel) => (
+              {hotels.map((hotel, idx) => (
                 <HotelCard
                   key={hotel.id}
                   hotel={hotel}
@@ -916,6 +952,7 @@ export default function Home() {
                   checkOut={searchParams.get('checkOut')}
                   currency={currencyDisplay}
                   isAdmin={user?.role === 'ADMIN'}
+                  index={idx}
                 />
               ))}
             </div>
@@ -926,7 +963,7 @@ export default function Home() {
   )
 }
 
-function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
+function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin, index = 0 }) {
   const amenityList = hotel.amenities
     ? hotel.amenities
       .split(',')
@@ -943,16 +980,18 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
   return (
     <Link
       to={detailUrl}
-      className="group relative flex flex-col overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_30px_-15px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-200 hover:shadow-[0_22px_50px_-15px_rgba(2,132,199,0.18)]"
+      style={{ animationDelay: `${(index % 8) * 75}ms` }}
+      className="reveal-card group relative flex flex-col overflow-hidden rounded-[20px] border border-slate-200/80 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-2 hover:border-blue-400"
     >
       {/* Khung ảnh khách sạn với hiệu ứng zoom mượt */}
-      <div className="relative h-52 overflow-hidden bg-slate-100">
+      <div className="relative h-52 overflow-hidden bg-slate-100 dark:bg-slate-800">
         <HotelImage
           src={hotel.imageUrl}
           alt={hotel.name}
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-slate-950/20" />
+        {/* Blue gradient overlay instead of harsh black */}
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-950/85 via-blue-950/20 to-transparent" />
 
         {/* Nút thao tác nhanh cho Admin (Đồng bộ CRUD Admin) */}
         {isAdmin && (
@@ -960,7 +999,7 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
             <Link
               to="/admin/hotels"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-950/80 hover:bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-amber-300 shadow-md backdrop-blur-md border border-amber-300/30 transition-all hover:scale-105"
+              className="inline-flex items-center gap-1 rounded-full bg-slate-950/85 hover:bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-amber-300 shadow-md backdrop-blur-md border border-amber-300/30 transition-all hover:scale-105"
               title="Đi tới quản lý sửa/xóa khách sạn trong Admin"
             >
               <span>⚙️ Sửa trong Admin</span>
@@ -969,8 +1008,8 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
         )}
 
         {/* Huy hiệu Thành phố */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-md">
-          <svg className="h-3.5 w-3.5 text-[#0284c7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/95 dark:bg-slate-900/90 px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 shadow-sm backdrop-blur-md border border-white/20">
+          <svg className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z" />
             <circle cx="12" cy="9" r="2.5" />
           </svg>
@@ -986,11 +1025,11 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
 
       {/* Nội dung thông tin khách sạn */}
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 transition-colors group-hover:text-[#0284c7]">
+        <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
           {hotel.name}
         </h3>
 
-        <p className="mt-1 line-clamp-1 text-xs text-slate-500">{hotel.address}</p>
+        <p className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{hotel.address}</p>
 
         {/* Tiện ích dạng Tag nhỏ */}
         {amenityList.length > 0 && (
@@ -998,7 +1037,7 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
             {amenityList.map((item) => (
               <span
                 key={item}
-                className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300"
               >
                 {item}
               </span>
@@ -1007,14 +1046,14 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin }) {
         )}
 
         {/* Giá & Nút Xem chi tiết */}
-        <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-4">
+        <div className="mt-auto flex items-end justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
           <div>
             <p className="text-[11px] font-medium text-slate-400">Giá mỗi đêm từ</p>
-            <p className="text-lg font-extrabold text-[#0284c7]">
+            <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400">
               {formatMoney(hotel.minPrice, currency)}
             </p>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-xl bg-sky-50 px-3.5 py-2 text-xs font-bold text-[#0284c7] transition-all duration-200 group-hover:bg-[#0284c7] group-hover:text-white group-hover:shadow-md group-hover:shadow-sky-500/20">
+          <span className="inline-flex items-center gap-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 px-3.5 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 transition-all duration-200 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-md group-hover:shadow-blue-500/20">
             Xem phòng
             <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M5 12h14m-6-6 6 6-6 6" />

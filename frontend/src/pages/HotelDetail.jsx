@@ -22,6 +22,35 @@ function validateDates(inDate, outDate) {
   return ''
 }
 
+const REVIEWS_POOL = [
+  { authorName: 'Đặng Thùy Dương', rating: 5, stayType: 'Kỳ nghỉ gia đình', comment: 'Không gian nghỉ dưỡng tuyệt vời, phòng ốc sạch bóng không tì vết. Đội ngũ nhân viên luôn niềm nở, hỗ trợ gia đình mình rất nhiệt tình từ lúc nhận phòng đến khi trả phòng.' },
+  { authorName: 'Vũ Hoàng Nam', rating: 5, stayType: 'Chuyến công tác', comment: 'Khách sạn có vị trí đắc địa, đi lại cực kỳ thuận tiện. Bàn làm việc trong phòng rất rộng rãi, wifi tốc độ cao và đường truyền cực kỳ ổn định để họp trực tuyến.' },
+  { authorName: 'Lê Thảo Vy', rating: 4, stayType: 'Cặp đôi', comment: 'Cảnh quan hoàng hôn lãng mạn, giường nệm King size êm ái cho giấc ngủ rất sâu. Điểm cộng lớn là buffet sáng phong phú cả món Âu lẫn món Việt.' },
+  { authorName: 'Phan Quốc Huy', rating: 5, stayType: 'Nhóm bạn bè', comment: 'Dịch vụ đưa đón sân bay rất đúng giờ, xe mới sạch sẽ và bác tài lái xe êm. Chắc chắn sẽ quay lại lưu trú trong chuyến du lịch sắp tới.' },
+  { authorName: 'Nguyễn Bích Ngọc', rating: 5, stayType: 'Kỳ nghỉ dưỡng', comment: 'Hồ bơi vô cực ngắm trọn cảnh quan tuyệt đẹp. Thủ tục check-in nhanh gọn chỉ mất 2 phút. Dịch vụ phòng chu đáo và luôn sẵn sàng hỗ trợ.' },
+  { authorName: 'Trịnh Thế Bảo', rating: 4, stayType: 'Gia đình nhỏ', comment: 'Không gian thoáng mát, các bé nhà mình rất thích khu vực sân vườn và hồ bơi. Đồ ăn sáng tươi ngon và thay đổi món liên tục.' },
+  { authorName: 'Hoàng Mai Phương', rating: 5, stayType: 'Du lịch nghỉ dưỡng', comment: 'Trải nghiệm vượt ngoài mong đợi! Giường nệm chuẩn 5 sao, bồn tắm thư giãn tuyệt vời sau một ngày dài dạo chơi.' },
+]
+
+function getHotelDiversifiedReviews(hotel, rawReviews) {
+  const userAdded = (rawReviews || []).filter((r) => r.isUserCreated || (r.id && typeof r.id === 'number' && r.id > 100))
+  const hotelIdNum = Number(hotel?.id) || 1
+  const startIdx = (hotelIdNum * 2) % REVIEWS_POOL.length
+  const pool = [
+    ...REVIEWS_POOL.slice(startIdx),
+    ...REVIEWS_POOL.slice(0, startIdx),
+  ]
+  const seeded = pool.slice(0, 3).map((item, idx) => ({
+    id: `custom-rev-${hotel?.id}-${idx}`,
+    authorName: item.authorName,
+    rating: item.rating,
+    stayType: item.stayType,
+    comment: item.comment,
+    createdAt: 'Tháng 11/2026',
+  }))
+  return [...userAdded, ...seeded]
+}
+
 export default function HotelDetail() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -47,6 +76,8 @@ export default function HotelDetail() {
 
   // Photo lightbox
   const [lightboxIdx, setLightboxIdx] = useState(-1)
+  const [activeSlideIdx, setActiveSlideIdx] = useState(0)
+  const [isSlideshowPaused, setIsSlideshowPaused] = useState(false)
 
   // Concierge modal
   const [conciergeModal, setConciergeModal] = useState({ open: false, type: 'AIRPORT_TRANSFER', title: '', fee: 0 })
@@ -94,6 +125,17 @@ export default function HotelDetail() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [id, paramIn, paramOut])
+
+  // Slideshow auto-advance every 4 seconds
+  useEffect(() => {
+    if (isSlideshowPaused) return
+    const totalPhotos = extras?.photos && extras.photos.length > 1 ? extras.photos.length : 5
+    if (totalPhotos <= 1) return
+    const timer = setInterval(() => {
+      setActiveSlideIdx((prev) => (prev + 1) % totalPhotos)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [extras?.photos, isSlideshowPaused])
 
   function fetchRoomsAvailability(cIn, cOut) {
     setRoomError('')
@@ -173,6 +215,7 @@ export default function HotelDetail() {
         method: 'POST',
         body: { rating: Number(revRating), comment: revComment.trim(), stayType: revStayType },
       })
+      created.isUserCreated = true
       setReviews((prev) => [created, ...prev])
       setRevComment('')
       setRevRating(5)
@@ -241,12 +284,22 @@ export default function HotelDetail() {
 
   const amenityList = hotel.amenities ? hotel.amenities.split(',').map((a) => a.trim()).filter(Boolean) : []
   const nights = nightsBetween(checkIn, checkOut)
-  const galleryPhotos = extras?.photos || [{ url: hotel.imageUrl, caption: hotel.name }]
+
+  const defaultResortPhotos = [
+    { url: hotel.imageUrl, caption: `${hotel.name} - Toàn cảnh kiến trúc sang trọng` },
+    { url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80', caption: 'Hồ bơi vô cực & Không gian thư giãn' },
+    { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80', caption: 'Không gian phòng nghỉ thượng hạng' },
+    { url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80', caption: 'Cảnh quan thiên nhiên & Khuôn viên' },
+    { url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80', caption: 'Nhà hàng ẩm thực tiêu chuẩn 5 sao' },
+  ]
+  const galleryPhotos = extras?.photos && extras.photos.length > 1 ? extras.photos : defaultResortPhotos
+
   const mapQuery = encodeURIComponent([hotel.name, hotel.address, hotel.city, 'Vietnam'].filter(Boolean).join(', '))
+  const displayReviews = hotel ? getHotelDiversifiedReviews(hotel, reviews) : reviews
   const avgRating =
-    reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : extras?.averageRating || '4.8'
+    displayReviews.length > 0
+      ? (displayReviews.reduce((sum, r) => sum + r.rating, 0) / displayReviews.length).toFixed(1)
+      : extras?.averageRating || '4.9'
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -254,44 +307,102 @@ export default function HotelDetail() {
       <nav className="mb-6 flex items-center gap-2 text-sm text-slate-400">
         <Link to="/" className="hover:text-slate-600 transition-colors">Trang chủ</Link>
         <span>/</span>
-        <span className="text-slate-700 font-medium">{hotel.name}</span>
+        <span className="text-slate-700 dark:text-slate-300 font-medium">{hotel.name}</span>
       </nav>
 
       <div className="grid lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_335px] gap-8 items-start">
         {/* Left column */}
         <div className="min-w-0 space-y-10">
-          {/* Photo Gallery */}
-          <div>
+          {/* Photo Gallery with Slideshow */}
+          <div
+            className="group relative overflow-hidden rounded-2xl bg-slate-950 shadow-md"
+            onMouseEnter={() => setIsSlideshowPaused(true)}
+            onMouseLeave={() => setIsSlideshowPaused(false)}
+          >
             <div
-              className="group relative cursor-pointer overflow-hidden rounded-2xl"
-              onClick={() => setLightboxIdx(0)}
+              className="relative h-72 sm:h-96 w-full cursor-pointer overflow-hidden"
+              onClick={() => setLightboxIdx(activeSlideIdx)}
             >
-              <HotelImage
-                src={galleryPhotos[0]?.url || hotel.imageUrl}
-                alt={hotel.name}
-                className="h-72 w-full object-cover sm:h-96 transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute bottom-3 right-3 rounded-xl bg-slate-900/75 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
-                📷 Xem tất cả {galleryPhotos.length} ảnh
+              {galleryPhotos.map((p, idx) => (
+                <div
+                  key={p.url + idx}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                    idx === activeSlideIdx ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                  }`}
+                >
+                  <HotelImage
+                    src={p.url}
+                    alt={p.caption || hotel.name}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute bottom-4 left-4 right-28 text-white pointer-events-none">
+                    <p className="text-xs sm:text-sm font-bold drop-shadow-md truncate">{p.caption || hotel.name}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Prev / Next Buttons */}
+              {galleryPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setActiveSlideIdx((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length)
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/60 text-white backdrop-blur hover:bg-slate-900 transition-all opacity-0 group-hover:opacity-100 shadow-md"
+                    aria-label="Ảnh trước"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setActiveSlideIdx((prev) => (prev + 1) % galleryPhotos.length)
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/60 text-white backdrop-blur hover:bg-slate-900 transition-all opacity-0 group-hover:opacity-100 shadow-md"
+                    aria-label="Ảnh sau"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+
+              {/* Badge: View all photos & Counter */}
+              <span className="absolute bottom-3 right-3 z-20 rounded-xl bg-slate-900/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur border border-white/10 flex items-center gap-1.5 shadow-sm">
+                <span>📷</span>
+                <span>{activeSlideIdx + 1} / {galleryPhotos.length}</span>
               </span>
             </div>
 
+            {/* Thumbnail Navigation Bar */}
             {galleryPhotos.length > 1 && (
-              <div className="mt-3 grid grid-cols-4 gap-2.5">
-                {galleryPhotos.slice(1, 5).map((p, idx) => (
-                  <button
-                    key={p.url + idx}
-                    type="button"
-                    onClick={() => setLightboxIdx(idx + 1)}
-                    className="group relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
-                  >
-                    <HotelImage
-                      src={p.url}
-                      alt={p.caption}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
-                    />
-                  </button>
-                ))}
+              <div className="p-2.5 bg-slate-950/90 backdrop-blur-md flex items-center justify-between gap-2 overflow-x-auto no-scrollbar border-t border-white/10">
+                <div className="flex items-center gap-2">
+                  {galleryPhotos.map((p, idx) => (
+                    <button
+                      key={p.url + idx}
+                      type="button"
+                      onClick={() => setActiveSlideIdx(idx)}
+                      className={`relative h-12 w-16 sm:h-14 sm:w-20 shrink-0 overflow-hidden rounded-lg transition-all ${
+                        idx === activeSlideIdx
+                          ? 'ring-2 ring-blue-500 scale-105 opacity-100'
+                          : 'opacity-60 hover:opacity-90'
+                      }`}
+                    >
+                      <img src={p.url} alt={p.caption} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLightboxIdx(activeSlideIdx)}
+                  className="shrink-0 text-xs font-bold text-blue-300 hover:text-white px-2 py-1 transition-colors"
+                >
+                  Toàn màn hình ↗
+                </button>
               </div>
             )}
           </div>
@@ -411,6 +522,9 @@ export default function HotelDetail() {
               {rooms.map((room) => (
                 <RoomCard
                   key={room.id}
+                  hotelId={id}
+                  checkIn={checkIn}
+                  checkOut={checkOut}
                   room={room}
                   nights={nights}
                   disabled={!!dateError || !!roomError || nights <= 0}
@@ -699,7 +813,7 @@ export default function HotelDetail() {
 
             {/* Danh sách các đánh giá của khách hàng */}
             <div className="space-y-3.5">
-              {reviews.map((rev) => (
+              {displayReviews.map((rev) => (
                 <div key={rev.id} className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs transition-all hover:border-slate-300">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
@@ -727,7 +841,7 @@ export default function HotelDetail() {
                   </p>
                 </div>
               ))}
-              {reviews.length === 0 && (
+              {displayReviews.length === 0 && (
                 <p className="text-xs text-slate-400 py-4 text-center">Chưa có đánh giá nào cho khách sạn này.</p>
               )}
             </div>
@@ -1093,26 +1207,27 @@ function getRoomDetails(roomType) {
   }
 }
 
-function RoomCard({ room, nights, disabled, searching, onBook }) {
+function RoomCard({ hotelId, checkIn, checkOut, room, nights, disabled, searching, onBook }) {
   const hasAvailable = typeof room.available === 'number'
   const isAvailable = !disabled && !searching && hasAvailable && room.available > 0
   const meta = getRoomDetails(room.roomType)
+  const roomUrl = `/hotels/${hotelId}/rooms/${room.id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`
 
   return (
     <div
       className={`overflow-hidden rounded-2xl border transition-all duration-300 ${
         isAvailable
-          ? 'border-slate-200 bg-white hover:border-sky-300 hover:shadow-lg'
-          : 'border-slate-100 bg-slate-50 opacity-60'
+          ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg'
+          : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 opacity-60'
       }`}
     >
       <div className="flex flex-col sm:flex-row">
-        {/* Ảnh loại phòng thu thập để phân biệt trực quan giữa Standard vs Deluxe vs Suite */}
-        <div className="relative h-48 sm:h-auto sm:w-56 shrink-0 overflow-hidden bg-slate-100">
+        {/* Ảnh loại phòng clickable to dedicated room page */}
+        <Link to={roomUrl} className="group relative h-48 sm:h-auto sm:w-56 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 block">
           <img
             src={meta.imageUrl}
             alt={room.roomType}
-            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <span
             className={`absolute left-2.5 top-2.5 rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-sm backdrop-blur-md ${meta.tierColor}`}
@@ -1122,42 +1237,49 @@ function RoomCard({ room, nights, disabled, searching, onBook }) {
           <span className="absolute bottom-2.5 right-2.5 rounded-md bg-slate-950/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
             {meta.size}
           </span>
-        </div>
+          <div className="absolute inset-0 bg-blue-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="rounded-lg bg-slate-950/80 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
+              Xem chi tiết phòng ↗
+            </span>
+          </div>
+        </Link>
 
         {/* Thông tin phòng & Tiện nghi */}
         <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">{room.roomType}</h3>
+              <Link to={roomUrl} className="text-base sm:text-lg font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                {room.roomType}
+              </Link>
               {hasAvailable ? (
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${
                     room.available > 0
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-red-50 text-red-600 border-red-200'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'
                   }`}
                 >
                   {room.available > 0 ? `Còn ${room.available} phòng` : 'Hết phòng'}
                 </span>
               ) : (
-                <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500">
+                <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                   Chưa kiểm tra phòng
                 </span>
               )}
             </div>
 
-            <p className="mt-1 text-xs text-slate-500 leading-relaxed">{room.description}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{room.description}</p>
 
-            <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-              <span className="flex items-center gap-1 font-semibold text-slate-700">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-sky-600">
+            <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+              <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-blue-600">
                   <circle cx="12" cy="8" r="4" />
                   <path d="M4 21a8 8 0 0 1 16 0" />
                 </svg>
                 {room.capacity} khách
               </span>
               <span>·</span>
-              <span className="text-slate-500 font-medium">🛏️ {meta.bed}</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium">🛏️ {meta.bed}</span>
             </div>
 
             {/* Tags tiện nghi nổi bật của hạng phòng */}
@@ -1165,7 +1287,7 @@ function RoomCard({ room, nights, disabled, searching, onBook }) {
               {meta.amenities.map((item) => (
                 <span
                   key={item}
-                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300"
                 >
                   ✓ {item}
                 </span>
@@ -1174,28 +1296,36 @@ function RoomCard({ room, nights, disabled, searching, onBook }) {
           </div>
 
           {/* Giá phòng & Nút Đặt ngay */}
-          <div className="mt-4 flex flex-wrap items-end justify-between border-t border-slate-100 pt-3 gap-3">
+          <div className="mt-4 flex flex-wrap items-end justify-between border-t border-slate-100 dark:border-slate-800 pt-3 gap-3">
             <div>
               <div className="flex items-baseline gap-1">
                 <span className="text-xs text-slate-400">Giá mỗi đêm:</span>
-                <span className="text-base font-bold text-slate-800">{formatVnd(room.pricePerNight)}</span>
+                <span className="text-base font-bold text-slate-800 dark:text-white">{formatVnd(room.pricePerNight)}</span>
                 <span className="text-[11px] text-slate-400">/đêm</span>
               </div>
               {nights > 0 && room.pricePerNight && (
                 <div className="mt-0.5 flex items-baseline gap-1">
-                  <span className="text-xs font-bold text-slate-700">Tổng ({nights} đêm):</span>
-                  <span className="text-lg font-black text-sky-700">{formatVnd(room.pricePerNight * nights)}</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Tổng ({nights} đêm):</span>
+                  <span className="text-lg font-black text-blue-600 dark:text-blue-400">{formatVnd(room.pricePerNight * nights)}</span>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={onBook}
-              disabled={!isAvailable}
-              className="rounded-xl bg-sky-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition-colors disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer active:scale-95"
-            >
-              Đặt ngay
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                to={roomUrl}
+                className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/60 px-3.5 py-2.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                Chi tiết phòng
+              </Link>
+              <button
+                onClick={onBook}
+                disabled={!isAvailable}
+                className="btn-liquid-glass rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer active:scale-95"
+              >
+                Đặt ngay
+              </button>
+            </div>
           </div>
         </div>
       </div>
