@@ -88,11 +88,11 @@ public class AiService {
     @Transactional(readOnly = true)
     public String chat(String message) {
         String context = buildContext();
-        String system = "Ban la tro ly cua QuickStay, he thong dat phong khach san. Chi tra loi dua tren du lieu "
-                + "duoi day (khach san, phong, gia theo dem, tien nghi). Neu khong co thong tin, noi ro la chua co "
-                + "va goi y khach xem trang tim kiem. Tra loi ngan gon bang tieng Viet, khong dung markdown.\n\n"
-                + "DU LIEU:\n" + context;
-        String out = complete(system, message, 500);
+        String system = "Bạn là trợ lý ảo cao cấp của QuickStay - hệ thống đặt phòng khách sạn và dịch vụ du lịch hàng đầu Việt Nam. "
+                + "Hãy trả lời một cách nhiệt tình, lịch thiệp, chu đáo bằng tiếng Việt. Sử dụng emoji sinh động (🏨, 📍, 💰, 🌟, ✈️, 🍽️) "
+                + "và định dạng gạch đầu dòng rõ ràng, mạch lạc. Tư vấn chính xác về phòng, giá, tiện nghi, dịch vụ đưa đón, tour tham quan và nhà hàng ẩm thực.\n\n"
+                + "DỮ LIỆU HIỆN CÓ:\n" + context;
+        String out = complete(system, message, 600);
         return out != null ? out : fallbackChat(message);
     }
 
@@ -123,7 +123,85 @@ public class AiService {
         String stripped = stripAccents(raw);
         List<Hotel> all = hotels.findAll();
 
-        // 1. Uu tien tim khach san / thanh pho / tien nghi
+        // 1. Lời chào & Hỏi chung
+        boolean isGreeting = stripped.isEmpty()
+                || stripped.equals("xin chao") || stripped.startsWith("xin chao ")
+                || stripped.equals("chao") || stripped.startsWith("chao ")
+                || stripped.equals("hello") || stripped.startsWith("hello ")
+                || stripped.equals("hi") || stripped.startsWith("hi ")
+                || stripped.contains("tro giup") || stripped.contains("help");
+        if (isGreeting) {
+            return "Dạ xin chào quý khách! Em là trợ lý ảo QuickStay ✨\n"
+                    + "Em luôn sẵn sàng hỗ trợ quý khách:\n"
+                    + "🏨 Tra cứu khách sạn & resort tại Đà Nẵng, Phú Quốc, Nha Trang, Hà Nội, TP.HCM, Hội An, Huế, Đà Lạt\n"
+                    + "💰 Báo giá phòng tốt nhất hôm nay & phòng trống tức thì\n"
+                    + "✈️ Đặt xe đưa đón sân bay (Sedan 4 chỗ, SUV 7 chỗ, Limousine VIP)\n"
+                    + "🍽️ Đặt bàn nhà hàng & tour tham quan các điểm du lịch nổi tiếng\n"
+                    + "Quý khách đang có kế hoạch vi vu đến thành phố nào ạ?";
+        }
+
+        // 2. Hỏi về Tour du lịch / Điểm tham quan (Point of Interest)
+        if (stripped.contains("tour") || stripped.contains("tham quan") || stripped.contains("diem den") || stripped.contains("cau vang") || stripped.contains("ba na") || stripped.contains("trang an")) {
+            return "QuickStay hiện có các gói Tour tham quan điểm đến cực kỳ hấp dẫn:\n"
+                    + "• Tour Bà Nà Hills & Check-in Cầu Vàng (Đà Nẵng): từ 850.000 ₫/khách\n"
+                    + "• Tour Khám phá 4 đảo & Cáp treo Hòn Thơm (Phú Quốc): từ 1.050.000 ₫/khách\n"
+                    + "• Tour Vịnh San Hô & Lặn ngắm biển Nha Trang: từ 750.000 ₫/khách\n"
+                    + "• Tour Di sản Tràng An - Bái Đính từ Hà Nội: từ 950.000 ₫/khách\n"
+                    + "• Tour Săn mây Đồi chè Cầu Đất (Đà Lạt): từ 520.000 ₫/khách\n"
+                    + "👉 Quý khách có thể vào mục 'Tour & Điểm đến' trên thanh menu để chọn ngày và đặt xe riêng đón tận nơi nhé!";
+        }
+
+        // 3. Hỏi về Nhà hàng / Ẩm thực / Đặt bàn
+        if (stripped.contains("nha hang") || stripped.contains("an uong") || stripped.contains("am thuc") || stripped.contains("dat ban") || stripped.contains("hai san") || stripped.contains("buffet")) {
+            return "QuickStay kết nối chuỗi nhà hàng ẩm thực phong phú với dịch vụ giữ bàn ưu tiên:\n"
+                    + "🍽️ Sunrise Bistro Seafood & Grill (Đà Nẵng): Hải sản tươi sống bên bờ biển Mỹ Khê\n"
+                    + "🍽️ Emerald Bay Ocean Grill (Phú Quốc): Tiệc nướng BBQ ngắm hoàng hôn Bãi Khem\n"
+                    + "🍽️ Horizon Sky Dining & Lounge (Nha Trang): Rooftop tầng 28 ngắm trọn vịnh biển\n"
+                    + "🍽️ Old Quarter Gourmet (Hà Nội): Chả cá Lăng, bún chả que tre phố cổ\n"
+                    + "👉 Quý khách có thể bấm vào 'Nhà hàng & Ẩm thực' trên menu để đặt bàn giữ chỗ miễn phí 100% ạ!";
+        }
+
+        // 4. Hỏi về Đưa đón sân bay
+        if (stripped.contains("san bay") || stripped.contains("dua don") || stripped.contains("xe don")) {
+            return "QuickStay hỗ trợ dịch vụ xe đưa đón sân bay tận nơi 24/7:\n"
+                    + "🚗 Xe Sedan 4 chỗ (Vios/Mazda): 250.000 ₫ - Nhanh chóng & tiết kiệm\n"
+                    + "🚙 Xe SUV 7 chỗ (Fortuner/Innova): 380.000 ₫ - Rộng rãi cho gia đình\n"
+                    + "🚐 Limousine VIP DCar 9 chỗ: 650.000 ₫ - Đón bảng tên & ghế massage êm ái\n"
+                    + "Quý khách có thể chọn đặt xe kèm ngay trong trang chi tiết của từng khách sạn.";
+        }
+
+        // 5. Hỏi về Chính sách / Hủy phòng / Hoàn tiền
+        if (stripped.contains("chinh sach") || stripped.contains("huy phong") || stripped.contains("hoan tien") || stripped.contains("thanh toan") || stripped.contains("doi phong")) {
+            return "Chính sách đặt phòng tại QuickStay:\n"
+                    + "✓ Miễn phí hủy phòng trước 24 giờ so với giờ nhận phòng tiêu chuẩn\n"
+                    + "✓ Đơn thanh toán trực tuyến hủy hợp lệ sẽ được tự động hoàn tiền 100%\n"
+                    + "✓ Hỗ trợ nhận phòng sớm & giữ hành lý miễn phí tại quầy lễ tân\n"
+                    + "✓ Chấp nhận thanh toán qua VietQR, thẻ Visa/Mastercard và ví điện tử MoMo/VNPay.\n"
+                    + "Quý khách có thể bấm vào ảnh đại diện góc phải chọn 'Chính sách & Q&A' để xem chi tiết đầy đủ.";
+        }
+
+        // 6. Hỏi về Giá rẻ nhất / Tiết kiệm
+        if (stripped.contains("re nhat") || stripped.contains("thap nhat") || stripped.contains("gia re") || stripped.contains("tiet kiem")) {
+            if (all.isEmpty()) return "Dạ hiện tại hệ thống đang cập nhật danh sách khách sạn.";
+            Hotel cheapest = null;
+            BigDecimal lowest = null;
+            for (Hotel h : all) {
+                List<Room> rList = rooms.findByHotelIdOrderByPricePerNight(h.getId());
+                if (!rList.isEmpty()) {
+                    BigDecimal price = rList.get(0).getPricePerNight();
+                    if (lowest == null || price.compareTo(lowest) < 0) {
+                        lowest = price;
+                        cheapest = h;
+                    }
+                }
+            }
+            if (cheapest == null || lowest == null) return "Dạ hiện chưa có thông tin giá phòng trong hệ thống.";
+            return "Khách sạn có mức giá tiết kiệm nhất hiện tại là " + cheapest.getName() + " tại " + cheapest.getCity()
+                    + " với mức giá ưu đãi chỉ từ " + VND.format(lowest) + " VND/đêm.\n"
+                    + "Quý khách có thể xem chi tiết và đặt phòng ngay tại trang chủ QuickStay!";
+        }
+
+        // 7. Tìm kiếm theo tên khách sạn / thành phố / tiện nghi
         List<Hotel> matched = all.stream()
                 .filter(h -> {
                     String hName = stripAccents(h.getName());
@@ -137,66 +215,33 @@ public class AiService {
 
         if (!matched.isEmpty()) {
             StringBuilder sb = new StringBuilder();
+            sb.append("Dạ QuickStay gợi ý các khách sạn phù hợp với tìm kiếm của quý khách:\n\n");
             for (Hotel h : matched) {
-                sb.append(h.getName()).append(" (").append(h.getCity()).append(')');
+                sb.append("🏨 ").append(h.getName()).append(" - 📍 ").append(h.getCity()).append('\n');
                 if (h.getAmenities() != null && !h.getAmenities().isBlank()) {
-                    sb.append(" - tiện nghi: ").append(h.getAmenities());
+                    sb.append("   ✨ Tiện nghi: ").append(h.getAmenities()).append('\n');
                 }
                 List<Room> rList = rooms.findByHotelIdOrderByPricePerNight(h.getId());
                 if (!rList.isEmpty()) {
-                    sb.append(". Phòng: ");
-                    sb.append(String.join("; ", rList.stream()
-                            .map(r -> r.getRoomType() + " " + VND.format(r.getPricePerNight()) + " VND/đêm").toList()));
+                    sb.append("   🛏️ Giá phòng: ");
+                    List<String> roomStrs = rList.stream()
+                            .map(r -> r.getRoomType() + " (" + VND.format(r.getPricePerNight()) + " VND/đêm)")
+                            .toList();
+                    sb.append(String.join(", ", roomStrs)).append('\n');
                 }
-                sb.append(".\n");
+                sb.append('\n');
             }
+            sb.append("Quý khách hãy nhấp vào khách sạn mong muốn để chọn ngày nhận phòng và xem ảnh thực tế nhé!");
             return sb.toString().trim();
         }
 
-        // 2. Hoi ve gia re / thap nhat
-        if (stripped.contains("re nhat") || stripped.contains("thap nhat") || stripped.contains("gia re") || stripped.contains("tiet kiem")) {
-            if (all.isEmpty()) return "Hiện chưa có khách sạn nào trong hệ thống.";
-            Hotel cheapest = null;
-            BigDecimal lowest = null;
-            for (Hotel h : all) {
-                List<Room> rList = rooms.findByHotelIdOrderByPricePerNight(h.getId());
-                if (!rList.isEmpty()) {
-                    BigDecimal price = rList.get(0).getPricePerNight();
-                    if (lowest == null || price.compareTo(lowest) < 0) {
-                        lowest = price;
-                        cheapest = h;
-                    }
-                }
-            }
-            if (cheapest == null || lowest == null) return "Hiện chưa có thông tin giá phòng trong hệ thống.";
-            return "Khách sạn có mức giá tiết kiệm nhất hiện tại là " + cheapest.getName() + " tại " + cheapest.getCity()
-                    + " với giá chỉ từ " + VND.format(lowest) + " VND/đêm.";
-        }
-
-        // 3. Hoi ve chinh sach / huy phong
-        if (stripped.contains("chinh sach") || stripped.contains("huy phong") || stripped.contains("hoan tien") || stripped.contains("quy dinh")) {
-            return "QuickStay hỗ trợ miễn phí hủy phòng trước 24 giờ nhận phòng với đơn chờ xác nhận. Bạn có thể theo dõi chi tiết các điều khoản tại trang Chính sách & Q&A trên thanh menu.";
-        }
-
-        // 4. Hoi ve dua don san bay / concierge
-        if (stripped.contains("san bay") || stripped.contains("dua don") || stripped.contains("an uong") || stripped.contains("tham quan") || stripped.contains("dich vu")) {
-            return "QuickStay có các dịch vụ tiện ích bổ sung như đưa đón sân bay (xe Sedan 4 chỗ, SUV 7 chỗ, Limousine VIP), buffet ẩm thực và hỗ trợ xe đi các điểm tham quan. Bạn có thể đặt kèm ngay trong trang chi tiết khách sạn.";
-        }
-
-        // 5. Loi chao
-        boolean isGreeting = stripped.isEmpty()
-                || stripped.equals("xin chao") || stripped.startsWith("xin chao ")
-                || stripped.equals("chao") || stripped.startsWith("chao ")
-                || stripped.equals("hello") || stripped.startsWith("hello ")
-                || stripped.equals("hi") || stripped.startsWith("hi ")
-                || stripped.contains("tro giup") || stripped.contains("help");
-        if (isGreeting) {
-            return "Xin chào! Mình là trợ lý ảo QuickStay. Mình có thể hỗ trợ bạn tra cứu danh sách khách sạn, giá phòng, tiện nghi, dịch vụ đưa đón và chính sách đặt phòng. Bạn đang tìm phòng ở thành phố nào?";
-        }
-
-        if (all.isEmpty()) return "Hiện chưa có khách sạn nào trong hệ thống.";
-        return "Mình chưa hiểu rõ câu hỏi. Bạn có thể hỏi theo tên khách sạn hoặc thành phố, hiện có: "
-                + String.join(", ", all.stream().map(h -> h.getName() + " (" + h.getCity() + ")").toList()) + ".";
+        if (all.isEmpty()) return "Dạ hiện chưa có khách sạn nào trong hệ thống.";
+        return "Dạ em chưa nắm rõ yêu cầu của quý khách. Quý khách có thể thử hỏi theo tên thành phố hoặc khách sạn, ví dụ:\n"
+                + "• \"Khách sạn ở Đà Nẵng giá bao nhiêu?\"\n"
+                + "• \"Khách sạn nào giá rẻ nhất hiện tại?\"\n"
+                + "• \"Có tour tham quan Bà Nà Hills không?\"\n"
+                + "• \"Dịch vụ xe đưa đón sân bay thế nào?\"\n"
+                + "QuickStay luôn hân hạnh được đồng hành cùng quý khách! 😊";
     }
 
     // ---------- Goi Chat Model ----------

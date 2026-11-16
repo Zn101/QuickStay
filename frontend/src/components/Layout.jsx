@@ -23,6 +23,7 @@ export default function Layout() {
   const [resendNotice, setResendNotice] = useState('')
   const [newsletterEmail, setNewsletterEmail] = useState('')
   const [newsletterSuccess, setNewsletterSuccess] = useState(false)
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
 
   function handleSubscribeNewsletter(e) {
     e.preventDefault()
@@ -65,27 +66,27 @@ export default function Layout() {
   }
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-medium transition-colors ${
+    `text-sm font-semibold transition-colors ${
       isActive
-        ? 'text-blue-400 font-bold drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]'
-        : 'text-slate-300 hover:text-white'
+        ? 'text-sky-600 dark:text-sky-400 font-bold'
+        : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
     }`
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-page)] text-[var(--color-text-main)] flex flex-col font-sans transition-colors duration-200">
       <ScrollToTop />
 
-      {/* Inverted Navbar: Sleek Dark Background (#020617 / slate-950) */}
-      <header className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-colors">
+      {/* Clean Light Navbar with Dark Mode Support (Reverted nav bar color flip) */}
+      <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-white group">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white text-sm shadow-md transition-transform duration-200 group-hover:scale-105">
+            <Link to="/" className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white group">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-600 text-white text-sm shadow-md transition-transform duration-200 group-hover:scale-105 font-black">
                 Q
               </span>
-              <span className="tracking-tighter inline-flex items-center text-white">
-                Quick<span className="text-blue-400 font-black -ml-0.5">Stay</span>
+              <span className="tracking-tighter inline-flex items-center">
+                Quick<span className="text-sky-600 font-black -ml-0.5">Stay</span>
               </span>
             </Link>
           </div>
@@ -93,83 +94,52 @@ export default function Layout() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
             <NavLink to="/" className={linkClass} end>
-              <span className="inline-flex items-center gap-1.5">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                </svg>
-                {t('nav_home')}
-              </span>
+              {t('nav_home')}
             </NavLink>
-            <NavLink to="/policies" className={linkClass}>
-              <span className="inline-flex items-center gap-1.5">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+            <NavLink to="/tours" className={linkClass}>
+              Tour & Điểm đến
+            </NavLink>
+            <NavLink to="/restaurants" className={linkClass}>
+              Nhà hàng & Ẩm thực
+            </NavLink>
+            <NavLink to="/news" className={linkClass}>
+              Tin tức du lịch
+            </NavLink>
+            {!user && (
+              <NavLink to="/policies" className={linkClass}>
                 {t('nav_policies')}
-              </span>
-            </NavLink>
-            {user && (
-              <NavLink to="/my-bookings" className={linkClass}>
-                <span className="inline-flex items-center gap-1.5">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                    <line x1="16" x2="16" y1="2" y2="6" />
-                    <line x1="8" x2="8" y1="2" y2="6" />
-                    <line x1="3" x2="21" y1="10" y2="10" />
-                  </svg>
-                  {t('nav_my_bookings')}
-                </span>
-              </NavLink>
-            )}
-            {user && (
-              <NavLink to="/profile" className={linkClass}>
-                <span className="inline-flex items-center gap-1.5">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  {t('nav_settings')}
-                </span>
               </NavLink>
             )}
             {user?.role === 'ADMIN' && (
               <NavLink to="/admin" className={linkClass}>
-                <span className="inline-flex items-center gap-1.5">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <rect width="7" height="9" x="3" y="3" rx="1" />
-                    <rect width="7" height="5" x="14" y="3" rx="1" />
-                    <rect width="7" height="9" x="14" y="12" rx="1" />
-                    <rect width="7" height="5" x="3" y="16" rx="1" />
-                  </svg>
-                  {t('nav_admin')}
-                </span>
+                {t('nav_admin')}
               </NavLink>
             )}
           </nav>
 
           {/* Controls: Language + Dark Mode + Auth buttons */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Language Switcher Pill */}
-            <div className="flex items-center rounded-xl bg-slate-900 border border-slate-800 p-0.5 text-xs font-bold text-slate-400">
+            {/* Language Switcher Pill: VN / ENG only */}
+            <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setLanguage('vi')}
-                className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
-                  lang === 'vi' ? 'bg-blue-600 text-white shadow-xs' : 'hover:text-slate-200'
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  lang === 'vi' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Tiếng Việt"
               >
-                🇻🇳 VN
+                VN
               </button>
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
-                  lang === 'en' ? 'bg-blue-600 text-white shadow-xs' : 'hover:text-slate-200'
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  lang === 'en' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="English"
               >
-                🇬🇧 EN
+                ENG
               </button>
             </div>
 
@@ -177,57 +147,120 @@ export default function Layout() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-amber-300 hover:border-slate-700 transition-colors cursor-pointer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-amber-500 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
               aria-label={darkMode ? t('theme_light') : t('theme_dark')}
               title={darkMode ? t('theme_light') : t('theme_dark')}
             >
               {darkMode ? (
-                /* Sun Icon */
                 <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               ) : (
-                /* Moon Icon */
-                <svg className="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg className="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               )}
             </button>
 
-            {/* Auth actions */}
+            {/* Auth actions with Profile Popup Dropdown */}
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setShowInbox(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-950/60 px-2.5 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-900/60 transition-colors cursor-pointer"
-                  title="Xem email xác thực, đặt phòng & biên lai"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors cursor-pointer"
+                  title="Hòm thư xác thực & hóa đơn"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  {t('nav_inbox')}
+                  <span>{t('nav_inbox')}</span>
                 </button>
-                <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600/30 border border-blue-500/40 text-blue-300 font-bold text-sm">
-                    {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                  <span className="font-medium max-w-[120px] truncate">{user.fullName}</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={openLogoutModal}
-                  className="rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
-                >
-                  {t('nav_logout')}
-                </button>
+
+                {/* Profile Button with Dropdown Popup */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileDropdownOpen((v) => !v)}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    aria-label="Tài khoản cá nhân"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white font-bold text-xs shadow-xs">
+                      {user.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                    <span className="font-semibold max-w-[120px] truncate text-xs">{user.fullName || user.email}</span>
+                    <svg className={`h-3.5 w-3.5 text-slate-400 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Profile Popup Window: Policies Q&A, My Bookings, Settings */}
+                  {profileDropdownOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-64 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 shadow-2xl z-50 animate-popup-in"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                        <p className="font-bold text-slate-900 dark:text-white text-xs truncate">{user.fullName}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                          {user.role === 'ADMIN' ? '👑 Quản trị viên' : '✨ Khách hàng'}
+                        </span>
+                      </div>
+
+                      <div className="py-1 space-y-0.5 text-xs font-semibold">
+                        <Link
+                          to="/my-bookings"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 transition-colors"
+                        >
+                          <span>📋</span>
+                          <span>{t('nav_my_bookings')}</span>
+                        </Link>
+                        <Link
+                          to="/policies"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 transition-colors"
+                        >
+                          <span>📜</span>
+                          <span>Chính sách lưu trú & Q&A</span>
+                        </Link>
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 transition-colors"
+                        >
+                          <span>⚙️</span>
+                          <span>{t('nav_settings')}</span>
+                        </Link>
+                        {user.role === 'ADMIN' && (
+                          <Link
+                            to="/admin"
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors font-bold"
+                          >
+                            <span>👑</span>
+                            <span>Bảng điều khiển Admin</span>
+                          </Link>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
+                        <button
+                          type="button"
+                          onClick={openLogoutModal}
+                          className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <span>🚪</span>
+                          <span>{t('nav_logout')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-2 py-1.5">
+                <Link to="/login" className="text-sm font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors px-2.5 py-1.5">
                   {t('nav_login')}
                 </Link>
-                <Link to="/register" className="btn-liquid-glass rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm">
+                <Link to="/register" className="rounded-xl bg-sky-600 hover:bg-sky-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md cursor-pointer">
                   {t('nav_register')}
                 </Link>
               </>

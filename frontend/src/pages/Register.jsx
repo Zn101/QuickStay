@@ -35,7 +35,7 @@ const SLIDES = [
 ]
 
 const inputClass = (hasError) =>
-  `w-full rounded-2xl border bg-white dark:bg-slate-800/90 pl-11 pr-4 py-3 text-sm font-medium text-slate-900 dark:text-white shadow-sm outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400 focus:ring-4 ${
+  `w-full rounded-2xl border bg-white dark:bg-slate-800/90 pl-11 pr-4 py-3.5 text-sm font-medium text-slate-900 dark:text-white shadow-sm outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400 focus:ring-4 ${
     hasError
       ? 'border-red-400 bg-red-50/10 focus:border-red-500 focus:ring-red-500/15'
       : 'border-slate-200/90 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus:border-sky-600 focus:ring-sky-500/15'
@@ -165,7 +165,7 @@ export default function Register() {
   const activeSlide = SLIDES[currentSlide]
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-white shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
+    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-white lg:grid lg:grid-cols-12">
       {/* CỘT TRÁI: Cinematic Auto-Carousel Showcase (7/12 cột đồng bộ chuẩn mực với Login) */}
       <div className="relative hidden min-h-[700px] flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:col-span-6 lg:flex xl:col-span-7 xl:p-16">
         {/* Danh sách ảnh nền tự động chuyển động với hiệu ứng Ken Burns */}
@@ -296,7 +296,7 @@ export default function Register() {
       </div>
 
       {/* CỘT PHẢI: Form Đăng Ký (5/12 cột, bố cục và style đồng bộ với Login) */}
-      <div className="relative flex min-h-[700px] flex-col items-center justify-center px-5 py-12 sm:px-10 lg:col-span-6 lg:px-12 xl:col-span-5 xl:px-16">
+      <div className="relative flex min-h-[700px] flex-col items-center justify-center px-5 py-8 sm:px-10 lg:col-span-6 lg:px-12 xl:col-span-5 xl:px-16">
         {/* Quầng sáng trang trí */}
         <div className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-sky-100/70 dark:bg-sky-900/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-64 w-64 rounded-full bg-cyan-100/50 dark:bg-cyan-900/20 blur-3xl" />
@@ -341,7 +341,7 @@ export default function Register() {
 
           {/* Card Form chính */}
           <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-7 shadow-[0_15px_50px_-12px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-9">
-            <div className="mb-7">
+            <div className="mb-8">
               <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-sky-200/80 dark:border-sky-800/80 bg-sky-50 dark:bg-sky-950/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-sky-600" />
                 Bắt đầu hành trình
@@ -359,7 +359,7 @@ export default function Register() {
 
               {/* Họ và tên */}
               <div>
-                <label htmlFor="fullName" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <label htmlFor="fullName" className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Họ và tên
                 </label>
                 <div className="group relative">
@@ -387,7 +387,7 @@ export default function Register() {
 
               {/* Địa chỉ Email */}
               <div>
-                <label htmlFor="email" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Địa chỉ email
                 </label>
                 <div className="group relative">
@@ -414,8 +414,8 @@ export default function Register() {
 
               {/* Số điện thoại */}
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="phone" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="phone" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Số điện thoại
                   </label>
                   <span className="text-[11px] text-slate-400">Tùy chọn</span>
@@ -444,7 +444,7 @@ export default function Register() {
 
               {/* Mật khẩu */}
               <div>
-                <label htmlFor="password" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                   Mật khẩu
                 </label>
                 <div className="group relative">

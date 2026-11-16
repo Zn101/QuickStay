@@ -552,6 +552,57 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Quản lý Dịch vụ Bổ trợ: Tour, Nhà hàng & Tin tức Du lịch */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Link
+          to="/admin/tours"
+          className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs hover:shadow-md hover:border-sky-300 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600 text-xl font-bold group-hover:scale-105 transition-transform">
+              🗺️
+            </span>
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors">Tour & Điểm đến</h4>
+              <p className="text-[11px] text-slate-400">9 gói tour tham quan</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-sky-600 group-hover:translate-x-1 transition-transform">Quản lý →</span>
+        </Link>
+
+        <Link
+          to="/admin/restaurants"
+          className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 text-xl font-bold group-hover:scale-105 transition-transform">
+              🍽️
+            </span>
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">Nhà hàng & Đặt bàn</h4>
+              <p className="text-[11px] text-slate-400">8 đối tác ẩm thực</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-amber-600 group-hover:translate-x-1 transition-transform">Quản lý →</span>
+        </Link>
+
+        <Link
+          to="/admin/news"
+          className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-xl font-bold group-hover:scale-105 transition-transform">
+              📰
+            </span>
+            <div>
+              <h4 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">Tin tức & Cẩm nang</h4>
+              <p className="text-[11px] text-slate-400">6 bài viết du lịch</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">Quản lý →</span>
+        </Link>
+      </div>
+
       {/* 3. ĐỒ THỊ CHÍNH: BIỂU ĐỒ XU HƯỚNG DOANH THU & ĐẶT PHÒNG (INTERACTIVE AREA & LINE CHART) */}
       <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">

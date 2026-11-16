@@ -134,7 +134,7 @@ export default function Login() {
   const activeSlide = SLIDES[currentSlide]
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-white shadow-[0_25px_90px_-20px_rgba(15,23,42,0.12)] lg:grid lg:grid-cols-12">
+    <div className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-white lg:grid lg:grid-cols-12">
       {/* CỘT TRÁI: Cinematic Auto-Carousel Showcase (7/12 cột) */}
       <div className="relative hidden min-h-[700px] flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:col-span-6 lg:flex xl:col-span-7 xl:p-16">
         {/* Danh sách ảnh nền tự động chuyển động với hiệu ứng Ken Burns */}

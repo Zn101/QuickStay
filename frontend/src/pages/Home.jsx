@@ -188,7 +188,12 @@ export default function Home() {
 
   const currentSlide = HERO_SLIDES[activeSlide]
 
-  // Slowly auto-scrolling slider for popular destinations
+  // Danh sách lặp vô tận cho thanh cuộn Điểm đến (Seamless infinite loop ticker)
+  const loopedDestinations = useMemo(() => {
+    return [...dynamicDestinations, ...dynamicDestinations]
+  }, [dynamicDestinations])
+
+  // Slowly auto-scrolling slider for popular destinations with seamless infinite loop
   useEffect(() => {
     if (showAllCities || isSliderPaused) return
     const el = sliderRef.current
@@ -196,29 +201,16 @@ export default function Home() {
 
     const interval = setInterval(() => {
       if (!el) return
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 6) {
-        if (typeof el.scrollTo === 'function') {
-          el.scrollTo({ left: 0, behavior: 'smooth' })
-        } else {
-          el.scrollLeft = 0
-        }
+      const half = el.scrollWidth / 2
+      if (el.scrollLeft >= half - 1) {
+        el.scrollLeft = 0
       } else {
         el.scrollLeft += 1
       }
-    }, 35)
+    }, 28)
 
     return () => clearInterval(interval)
-  }, [showAllCities, isSliderPaused])
-
-  const scrollSlider = (direction) => {
-    if (!sliderRef.current) return
-    const el = sliderRef.current
-    if (typeof el.scrollBy === 'function') {
-      el.scrollBy({ left: direction * 320, behavior: 'smooth' })
-    } else {
-      el.scrollLeft += direction * 320
-    }
-  }
+  }, [showAllCities, isSliderPaused, dynamicDestinations])
 
   function applyDatePreset(daysAhead, stayNights = 1) {
     const today = new Date()
@@ -362,7 +354,7 @@ export default function Home() {
       )}
 
       {/* HERO SECTION VỚI SLIDESHOW CHUYỂN ĐỘNG & FLOATING CARDS */}
-      <section className="relative overflow-hidden bg-slate-950 px-4 py-16 text-white sm:px-6 lg:py-20">
+      <section className="relative overflow-hidden bg-slate-950 px-4 pt-16 pb-28 text-white sm:px-6 lg:pt-20 lg:pb-36">
         {/* Background Slideshow với hiệu ứng Ken Burns Zoom */}
         {HERO_SLIDES.map((slide, index) => {
           const isActive = index === activeSlide
@@ -389,29 +381,31 @@ export default function Home() {
         <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
 
         {/* Gradient mờ chuyển tiếp êm ái sang nền phía dưới, không bị gắt cạnh */}
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)]/50 to-transparent z-10" />
+        <div className="pointer-events-none absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)]/60 to-transparent z-10" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.12fr_0.88fr] lg:gap-12">
+          <div className="grid items-stretch gap-8 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-[1.05fr_0.95fr] lg:gap-10">
             {/* Cột trái: Tiêu đề + Thanh tìm kiếm nâng cao */}
-            <div>
-              <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
-                {t('hero_badge')}
+            <div className="flex flex-col justify-between">
+              <div>
+                <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
+                  {t('hero_badge')}
+                </div>
+
+                <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[54px]">
+                  Mỗi chuyến đi,
+                  <br />
+                  <span className="bg-gradient-to-r from-blue-200 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                    một trải nghiệm
+                  </span>{' '}
+                  đáng nhớ.
+                </h1>
+
+                <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200/90">
+                  {t('hero_subtitle')}
+                </p>
               </div>
-
-              <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[54px]">
-                Mỗi chuyến đi,
-                <br />
-                <span className="bg-gradient-to-r from-blue-200 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-                  một trải nghiệm
-                </span>{' '}
-                đáng nhớ.
-              </h1>
-
-              <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-200/90">
-                {t('hero_subtitle')}
-              </p>
 
               {/* Thanh Tìm Kiếm Glassmorphism với Custom UI */}
               <form
@@ -663,17 +657,17 @@ export default function Home() {
               </form>
             </div>
 
-            {/* Cột phải: KHUNG ẢNH NỔI BẬT */}
-            <div className="relative hidden lg:block w-full">
-              <div className="relative mx-auto max-w-lg pb-2">
-                <div className="animate-presentation-float relative overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
+            {/* Cột phải: KHUNG ẢNH NỔI BẬT (Bigger, matching height with the left block, and wider) */}
+            <div className="relative hidden lg:flex flex-col justify-stretch w-full h-full">
+              <div className="relative w-full h-full flex flex-col justify-stretch">
+                <div className="animate-presentation-float relative flex-1 flex flex-col overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
                   <div
                     onClick={() => {
                       if (currentSlide.city) {
                         selectQuickCity(currentSlide.city)
                       }
                     }}
-                    className="group relative h-[340px] sm:h-[370px] overflow-hidden rounded-2xl cursor-pointer"
+                    className="group relative flex-1 min-h-[460px] xl:min-h-[500px] overflow-hidden rounded-2xl cursor-pointer"
                     title="Bấm để xem điểm đến này"
                   >
                     <img
@@ -736,44 +730,24 @@ export default function Home() {
                 {t('section_destinations')}
               </h2>
             </div>
-            <div className="flex items-center gap-3">
+            <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                 {t('section_destinations_desc')}
               </p>
-              {!showAllCities && (
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => scrollSlider(-1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                    aria-label="Cuộn sang trái"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollSlider(1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                    aria-label="Cuộn sang phải"
-                  >
-                    →
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Khi !showAllCities: Auto-scrolling Slider; Khi showAllCities: Full Grid gốc */}
+          {/* Khi !showAllCities: Auto-scrolling Slider lặp vô tận; Khi showAllCities: Full Grid gốc */}
           {!showAllCities ? (
             <div
               ref={sliderRef}
               onMouseEnter={() => setIsSliderPaused(true)}
               onMouseLeave={() => setIsSliderPaused(false)}
-              className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth py-2 px-1 cursor-grab"
+              className="flex gap-4 overflow-x-auto no-scrollbar py-2 px-1 cursor-grab"
             >
-              {dynamicDestinations.map((dest) => (
+              {loopedDestinations.map((dest, i) => (
                 <div
-                  key={dest.name}
+                  key={`${dest.name}-${i}`}
                   onClick={() => selectQuickCity(dest.name)}
                   className="group relative h-64 w-72 sm:w-80 shrink-0 overflow-hidden rounded-2xl text-left shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1.5 cursor-pointer shimmer-card border border-slate-200/60 dark:border-slate-800"
                 >
@@ -963,6 +937,13 @@ export default function Home() {
   )
 }
 
+export function getHotelRating(hotel) {
+  if (hotel?.rating) return Number(hotel.rating).toFixed(1)
+  const idNum = Number(hotel?.id) || 1
+  const ratings = ['4.9', '4.8', '4.7', '4.9', '4.8', '4.6', '4.9', '4.7']
+  return ratings[(idNum - 1) % ratings.length]
+}
+
 function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin, index = 0 }) {
   const amenityList = hotel.amenities
     ? hotel.amenities
@@ -1019,7 +1000,7 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin, index = 0 }) {
         {/* Huy hiệu Đánh giá góc trên */}
         <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-950/60 px-2.5 py-1 text-[11px] font-bold text-amber-300 backdrop-blur-md">
           <span>★</span>
-          <span>{hotel.rating || '4.9'}</span>
+          <span>{getHotelRating(hotel)}</span>
         </div>
       </div>
 

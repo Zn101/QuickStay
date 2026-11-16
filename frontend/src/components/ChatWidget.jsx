@@ -202,10 +202,12 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Floating button (2x size: 104px, eye-catching, modern, stays pinned at bottom-right) */}
+      {/* Floating button (2x size: 104px, eye-catching, modern, stays pinned at bottom-right, floats up and down) */}
       <button
         type="button"
-        className="pointer-events-auto self-end group relative flex h-24 w-24 sm:h-[104px] sm:w-[104px] flex-col items-center justify-center rounded-full bg-gradient-to-tr from-sky-600 via-sky-600 to-cyan-500 text-white shadow-2xl hover:shadow-sky-500/50 hover:from-sky-500 hover:to-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white/40"
+        className={`pointer-events-auto self-end group relative flex h-24 w-24 sm:h-[104px] sm:w-[104px] flex-col items-center justify-center rounded-full bg-gradient-to-tr from-sky-600 via-sky-600 to-cyan-500 text-white shadow-2xl hover:shadow-sky-500/50 hover:from-sky-500 hover:to-cyan-400 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border-2 border-white/40 hover:animate-none ${
+          !open ? 'animate-chat-float' : ''
+        }`}
         aria-label={open ? 'Đóng chat' : 'Mở chat'}
         onClick={() => setOpen((o) => !o)}
       >

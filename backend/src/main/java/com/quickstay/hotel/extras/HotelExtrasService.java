@@ -107,8 +107,11 @@ public class HotelExtrasService {
     public HotelExtrasView extras(Long hotelId) {
         Hotel h = findHotel(hotelId);
         List<HotelReview> revList = reviews.findByHotelIdOrderByCreatedAtDescIdDesc(hotelId);
-        double avg = revList.isEmpty() ? 4.8
-                : Math.round(revList.stream().mapToInt(HotelReview::getRating).average().orElse(4.8) * 10.0) / 10.0;
+        double[] defaultRatings = { 4.9, 4.8, 4.7, 4.9, 4.8, 4.6, 4.9, 4.7 };
+        int idx = (int) Math.abs((hotelId - 1) % defaultRatings.length);
+        double defaultRating = defaultRatings[idx];
+        double avg = revList.isEmpty() ? defaultRating
+                : Math.round(revList.stream().mapToInt(HotelReview::getRating).average().orElse(defaultRating) * 10.0) / 10.0;
 
         String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
         String airportName = airportForCity(cityLower);
@@ -243,12 +246,12 @@ public class HotelExtrasService {
         list.add(new PhotoItem("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80", "Phòng ngủ Master King Bed cao cấp ngập tràn ánh sáng"));
         list.add(new PhotoItem("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80", "Không gian phòng khách Suite rộng rãi & Ban công ngắm cảnh"));
         list.add(new PhotoItem("https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80", "Phòng tắm đá cẩm thạch sang trọng với bồn tắm ngâm thảo mộc"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80", "Hồ bơi vô cực ngoài trời với ghế tắm nắng & view toàn cảnh"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80", "Hồ bơi ngoài trời với ghế tắm nắng & view toàn cảnh"));
         list.add(new PhotoItem("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80", "Nhà hàng buffet Á - Âu & Không gian ẩm thực thượng lưu"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80", "Khuôn viên vườn nhiệt đới & Lối dạo bộ thư thái"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80", "Khuôn viên vườn nhiệt đới & Lối dạo bộ thư thái"));
         list.add(new PhotoItem("https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80", "Khu trị liệu Spa chăm sóc sức khỏe & Phòng xông hơi khô"));
         list.add(new PhotoItem("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80", "Trung tâm thể hình Gym & Yoga trang thiết bị hiện đại"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80", "Đại sảnh đón tiếp sang trọng & Quầy lễ tân phục vụ 24/7"));
+        list.add(new PhotoItem("https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80", "Đại sảnh đón tiếp sang trọng & Quầy lễ tân phục vụ 24/7"));
         return list;
     }
 
