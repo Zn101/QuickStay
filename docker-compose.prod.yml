@@ -51,8 +51,8 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-no-reply@quickstay.io.vn}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+    # T204 BUG-C: xoa ports backend - khong can expose ra host
+    # Nginx proxy noi bo qua Docker network; cd-docker.yml dung docker compose exec
     networks:
       - internal
     healthcheck:
