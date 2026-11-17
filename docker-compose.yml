@@ -28,8 +28,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-quickstay_pw}
       JWT_SECRET: ${JWT_SECRET:-change-me-change-me-change-me-change-me}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
       MAIL_HOST: ${MAIL_HOST:-}
