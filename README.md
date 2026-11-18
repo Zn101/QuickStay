@@ -1,10 +1,183 @@
-# QuickStay
+# QuickStay 🏨
 
-Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng bằng **React + Vite** (Frontend) và **Spring Boot** (Backend).
+> **Hệ thống đặt phòng khách sạn trực tuyến** — React 18 · Spring Boot 3.5 · MySQL 8.4 · Docker
+
+[![CI](https://github.com/Zn101/QuickStay/actions/workflows/ci.yml/badge.svg)](https://github.com/Zn101/QuickStay/actions/workflows/ci.yml)
 
 ---
 
-## 🚀 Triển khai trên VPS Ubuntu (Production)
+## Mục lục
+
+- [Giới thiệu](#-giới-thiệu)
+- [Tính năng chính](#-tính-năng-chính)
+- [Công nghệ](#-công-nghệ)
+- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+- [Cấu trúc dự án](#-cấu-trúc-dự-án)
+- [Chạy nhanh (Local)](#-chạy-nhanh-local)
+- [Triển khai VPS Ubuntu](#-triển-khai-trên-vps-ubuntu-production)
+- [GHCR Images](#-sử-dụng-docker-image-từ-ghcr-t121)
+- [Tài liệu](#-tài-liệu)
+- [Nhóm phát triển](#-nhóm-phát-triển)
+
+---
+
+## 🎯 Giới thiệu
+
+QuickStay là hệ thống đặt phòng khách sạn trực tuyến cho phép:
+- **Khách hàng** tìm kiếm, xem chi tiết và đặt phòng khách sạn theo ngày.
+- **Quản trị viên** quản lý toàn bộ danh sách khách sạn, loại phòng và đơn đặt phòng.
+
+---
+
+## ✨ Tính năng chính
+
+| Chức năng | Mô tả |
+|-----------|-------|
+| Tìm kiếm & lọc | Tìm khách sạn theo thành phố, giá, loại phòng |
+| Đặt phòng | Chọn phòng, ngày check-in/out, tính tổng tiền tự động |
+| Chống đặt trùng | Khóa phòng bằng `PESSIMISTIC_WRITE` trong transaction |
+| Lịch sử & hủy đơn | Xem lịch sử, hủy đơn PENDING/CONFIRMED |
+| Thanh toán giả lập | CREDIT_CARD, E_WALLET, PAY_AT_HOTEL |
+| Email giao dịch | Xác nhận đặt phòng, nhận phòng, hủy phòng |
+| Xác thực email | Link xác minh khi đăng ký |
+| Đặt lại mật khẩu | Luồng forgot/reset password |
+| Phân quyền ADMIN | Quản lý Hotel, Room, Booking, đổi trạng thái |
+| AI Chatbot | Tích hợp Anthropic Claude (tùy chọn) |
+
+---
+
+## 🛠 Công nghệ
+
+| Tầng | Công nghệ | Phiên bản |
+|------|-----------|-----------|
+| Frontend | React + Vite + Tailwind CSS | 18 / 5.x / 3.x |
+| State | Zustand | 5.x |
+| Reverse Proxy | Nginx (Alpine) | 1.27 |
+| Backend | Spring Boot | 3.5.6 |
+| Ngôn ngữ | Java | 17 |
+| Security | Spring Security + JWT (jjwt) | 0.12.6 |
+| ORM | Spring Data JPA / Hibernate | 6.x |
+| Database | MySQL | 8.4 |
+| Test DB | H2 in-memory | — |
+| Migration | Flyway | 11.x |
+| AI | Anthropic Claude API | claude-* |
+| Container | Docker + Compose | 24+ |
+| CI/CD | GitHub Actions | — |
+| Registry | GitHub Container Registry (GHCR) | — |
+
+---
+
+## 🏗 Kiến trúc hệ thống
+
+```
+Browser :8081
+    └── Nginx (frontend container)
+            ├── /assets/* → React SPA static files
+            ├── /api/*    → proxy → backend:8080 (Docker internal)
+            └── /*        → index.html (SPA fallback)
+                              └── Spring Boot (backend:8080)
+                                        └── MySQL :3306
+```
+
+> Xem sơ đồ chi tiết tại [docs/architecture.md](docs/architecture.md)
+
+---
+
+## 📁 Cấu trúc dự án
+
+```
+QuickStay/
+├── backend/               # Spring Boot 3.5 (Java 17)
+│   ├── src/main/java/com/quickstay/
+│   │   ├── admin/         # API quản trị (Hotel, Room, Booking)
+│   │   ├── booking/       # Logic đặt phòng, chống đặt trùng
+│   │   ├── email/         # Email giao dịch
+│   │   ├── hotel/         # Hotel, Room entities & controllers
+│   │   ├── security/      # JWT filter, SecurityConfig
+│   │   └── user/          # Authentication, User profile
+│   └── src/main/resources/
+│       ├── application.properties
+│       ├── application-prod.properties  # Production overrides
+│       └── db/migration/               # Flyway migrations
+├── frontend/              # React 18 + Vite
+│   ├── src/
+│   │   ├── pages/         # Home, HotelDetail, Booking, Admin, ...
+│   │   ├── components/    # Navbar, ChatWidget, UI components
+│   │   ├── store/         # Zustand auth store
+│   │   └── lib/           # API client, formatters
+│   └── nginx.conf         # Reverse proxy config
+├── docs/                  # Tài liệu dự án
+│   ├── QUICKSTART.md      # Hướng dẫn chạy local
+│   ├── architecture.md    # Sơ đồ kiến trúc
+│   ├── QuickStay-API.md   # API reference
+│   └── ...
+├── docker-compose.yml     # Dev: build từ source
+├── docker-compose.prod.yml # Prod: pull từ GHCR
+└── .env.example           # Template biến môi trường
+```
+
+---
+
+## ⚡ Chạy nhanh (Local)
+
+> 📖 Xem hướng dẫn đầy đủ tại [docs/QUICKSTART.md](docs/QUICKSTART.md)
+
+**Yêu cầu:** Git + Docker Desktop (không cần Java/Node)
+
+```bash
+# 1. Clone
+git clone https://github.com/Zn101/QuickStay.git
+cd QuickStay
+
+# 2. Cấu hình môi trường
+cp .env.example .env
+# Mở .env và điền các giá trị (xem .env.example để biết thêm)
+
+# 3. Khởi chạy (lần đầu sẽ build ~3-5 phút)
+docker compose up -d --build
+
+# 4. Kiểm tra trạng thái
+docker compose ps
+# Chờ đến khi backend STATUS là "(healthy)"
+
+# 5. Truy cập
+# → Frontend: http://localhost:8081
+# → Admin:    admin@quickstay.local / Admin@123
+```
+
+**Dừng hệ thống** (không xóa dữ liệu):
+```bash
+docker compose down
+```
+
+---
+
+## 📚 Tài liệu
+
+| Tài liệu | Mô tả |
+|---------|-------|
+| [Hướng dẫn chạy local](docs/QUICKSTART.md) | Clone, cấu hình `.env`, khởi chạy, debug |
+| [Kiến trúc hệ thống](docs/architecture.md) | Sơ đồ components, database, flow |
+| [API Reference](docs/QuickStay-API.md) | Tất cả endpoints và request/response |
+| [ERD Database](docs/QuickStay-ERD.md) | Schema chi tiết |
+| [Cài Docker trên Ubuntu](docs/deployment/T145-docker-server-setup.md) | Cài đặt Docker cho VPS |
+
+---
+
+## 👥 Nhóm phát triển
+
+**Nhóm 05** — Dự án OJT 2026
+
+| Thành viên | Vai trò |
+|-----------|---------|
+| Nguyễn Thạc Hưng | Team Lead, DevOps |
+| Lê Duy Minh | Backend, Security, Deployment |
+| Phùng Văn Vượng | Backend, Testing |
+| Lê Tiến Đức | Frontend, UI/UX |
+
+---
+
+
 
 > 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)  
 > 📸 Xem tài liệu và minh chứng trạng thái triển khai tại: [docs/evidence/T181/README.md](docs/evidence/T181/README.md)
