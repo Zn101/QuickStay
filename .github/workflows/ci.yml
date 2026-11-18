@@ -1,0 +1,81 @@
+# ============================================================
+# QuickStay – CI Pipeline (T169)
+# ============================================================
+# Trigger: push hoac PR vao nhánh recovery/clean-dev
+# Jobs: Backend (Java 17 + Gradle test) || Frontend (Node 20 + Vitest + build)
+# Khong dung continue-on-error. That bai neu bat ky test nao fail.
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches:
+      - recovery/clean-dev
+  pull_request:
+    branches:
+      - recovery/clean-dev
+
+permissions:
+  contents: read
+
+jobs:
+  # ── BACKEND: Java 17 + Gradle test ─────────────────────────
+  backend:
+    name: Backend Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('backend/**/*.gradle*', 'backend/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x backend/gradlew
+
+      - name: Run Gradle test
+        working-directory: backend
+        run: ./gradlew test --no-daemon
+
+  # ── FRONTEND: Node 20 + Vitest + Vite build ────────────────
+  frontend:
+    name: Frontend Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Vitest
+        working-directory: frontend
+        run: npm test
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build

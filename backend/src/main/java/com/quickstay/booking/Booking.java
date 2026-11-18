@@ -51,6 +51,21 @@ public class Booking {
     @Column(nullable = false, length = 20)
     private BookingStatus status = BookingStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 30)
+    private PaymentMethod paymentMethod = PaymentMethod.PAY_AT_HOTEL;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(length = 64)
+    private String paymentRef;
+
+    private Instant paidAt;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -76,5 +91,13 @@ public class Booking {
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
     public BookingStatus getStatus() { return status; }
     public void setStatus(BookingStatus status) { this.status = status; }
+    public PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+    public PaymentStatus getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }
+    public String getPaymentRef() { return paymentRef; }
+    public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
+    public Instant getPaidAt() { return paidAt; }
+    public void setPaidAt(Instant paidAt) { this.paidAt = paidAt; }
     public Instant getCreatedAt() { return createdAt; }
 }

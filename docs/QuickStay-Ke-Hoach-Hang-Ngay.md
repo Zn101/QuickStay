@@ -399,7 +399,7 @@ Cập nhật 27/10/2026. Nguồn: sheet Master Plan trong `QuickStay-Quan-Tri-Du
 **Lê Duy Minh** (6 giờ)
 
 - [ ] T180 Hỗ trợ sửa lỗi backend và triển khai theo cột Bug (3 giờ) → Bug đã đóng
-- [ ] T181 Chụp ảnh minh chứng: Actions xanh, docker compose ps, website chạy (1.5 giờ) → Ảnh minh chứng trong docs/
+- [x] T181 Chụp ảnh minh chứng: Actions xanh, docker compose ps, website chạy (1.5 giờ) → Ảnh minh chứng trong docs/evidence/T181/
 - [ ] T182 Viết hướng dẫn vận hành và xử lý sự cố thường gặp (1.5 giờ) → Hướng dẫn vận hành
 
 ## Thứ Sáu 13/11/2026

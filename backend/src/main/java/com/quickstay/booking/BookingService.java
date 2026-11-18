@@ -2,14 +2,17 @@ package com.quickstay.booking;
 
 import com.quickstay.booking.BookingDtos.BookingRequest;
 import com.quickstay.booking.BookingDtos.BookingView;
+import com.quickstay.booking.BookingDtos.PaymentRequest;
 import com.quickstay.config.ApiException;
 import com.quickstay.config.PageResponse;
+import com.quickstay.email.EmailService;
 import com.quickstay.hotel.Room;
 import com.quickstay.hotel.RoomRepository;
 import com.quickstay.user.User;
 import com.quickstay.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -17,9 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BookingService {
@@ -30,22 +35,26 @@ public class BookingService {
     private final RoomRepository rooms;
     private final UserRepository users;
     private final Clock clock;
+    private final EmailService emails;
 
     public BookingService(BookingRepository bookings, RoomRepository rooms, UserRepository users, Clock clock) {
+        this(bookings, rooms, users, clock, null);
+    }
+
+    @Autowired
+    public BookingService(BookingRepository bookings, RoomRepository rooms, UserRepository users, Clock clock,
+                          @Autowired(required = false) EmailService emails) {
         this.bookings = bookings;
         this.rooms = rooms;
         this.users = users;
         this.clock = clock;
+        this.emails = emails;
     }
 
     /**
      * POST /api/bookings: tao don PENDING cho khach dang dang nhap.
      * T087 kiem tra ngay, T088 tinh tong tien theo so dem, T089 kiem tra suc chua,
      * T100 chong dat trung: khoa dong phong roi moi dem don chong lan, het phong tra 409.
-     *
-     * Thu tu quan trong: khoa phong la lan doc CSDL DAU TIEN cua transaction, va dung READ_COMMITTED.
-     * Voi REPEATABLE READ (mac dinh cua MySQL) ban chup du lieu lay tu lan doc dau tien; neu doc user truoc
-     * roi moi khoa phong thi cau dem van thay ban chup cu, khong thay don yeu cau truoc vua ghi -> dat trung.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingView create(String email, BookingRequest req) {
@@ -73,8 +82,44 @@ public class BookingService {
         b.setNote(req.note());
         b.setTotalPrice(totalPrice(room.getPricePerNight(), req.checkIn(), req.checkOut()));
         b.setStatus(BookingStatus.PENDING);
+        b.setPaymentMethod(req.paymentMethod() == null ? PaymentMethod.PAY_AT_HOTEL : req.paymentMethod());
+        b.setPaymentStatus(PaymentStatus.UNPAID);
         bookings.save(b);
         log.info("Dat phong moi #{} roomId={} {} -> {}", b.getId(), room.getId(), req.checkIn(), req.checkOut());
+        if (emails != null) {
+            emails.sendBookingConfirmationEmail(b);
+        }
+        return BookingView.of(b);
+    }
+
+    /** POST /api/bookings/{id}/pay: thanh toan mo phong chan thuc cho don cua chinh minh. */
+    @Transactional
+    public BookingView pay(String email, Long id, PaymentRequest req) {
+        Booking b = bookings.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (!b.getUser().getEmail().equals(email)) {
+            throw ApiException.forbidden("Ban khong co quyen thanh toan don dat phong nay");
+        }
+        if (b.getStatus() == BookingStatus.CANCELLED) {
+            throw ApiException.conflict("Khong the thanh toan don da huy");
+        }
+        if (b.getPaymentStatus() == PaymentStatus.PAID) {
+            throw ApiException.conflict("Don dat phong nay da duoc thanh toan");
+        }
+        if (req.paymentMethod() == PaymentMethod.PAY_AT_HOTEL) {
+            throw ApiException.badRequest("Vui long chon phuong thuc thanh toan truc tuyen (the, chuyen khoan hoac vi)");
+        }
+
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        b.setPaymentMethod(req.paymentMethod());
+        b.setPaymentStatus(PaymentStatus.PAID);
+        b.setPaymentRef("QS-PAY-" + b.getId() + "-" + suffix);
+        b.setPaidAt(Instant.now(clock));
+        bookings.save(b);
+        log.info("Thanh toan mo phong thanh cong don #{} ref={} method={}", b.getId(), b.getPaymentRef(), req.paymentMethod());
+        if (emails != null) {
+            emails.sendPaymentReceiptEmail(b);
+        }
         return BookingView.of(b);
     }
 
@@ -107,7 +152,13 @@ public class BookingService {
             throw ApiException.conflict("Chi huy duoc dat phong dang cho xac nhan (PENDING)");
         }
         b.setStatus(BookingStatus.CANCELLED);
+        if (b.getPaymentStatus() == PaymentStatus.PAID) {
+            b.setPaymentStatus(PaymentStatus.REFUNDED);
+        }
         log.info("Khach {} huy dat phong #{}", email, id);
+        if (emails != null) {
+            emails.sendBookingStatusEmail(b);
+        }
         return BookingView.of(b);
     }
 
@@ -132,7 +183,13 @@ public class BookingService {
             throw ApiException.conflict("Khong the chuyen trang thai tu " + b.getStatus() + " sang " + status);
         }
         b.setStatus(status);
+        if (status == BookingStatus.CANCELLED && b.getPaymentStatus() == PaymentStatus.PAID) {
+            b.setPaymentStatus(PaymentStatus.REFUNDED);
+        }
         log.info("Admin chuyen trang thai dat phong #{} sang {}", id, status);
+        if (emails != null) {
+            emails.sendBookingStatusEmail(b);
+        }
         return BookingView.of(b);
     }
 

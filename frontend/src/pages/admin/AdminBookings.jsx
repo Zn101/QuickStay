@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { api } from '../../lib/api'
-import { formatVnd, formatDate, nightsBetween, STATUS_LABEL, STATUS_STYLE, NEXT_STATUS } from '../../lib/format'
-import { StatusBadge, ErrorBox, Spinner, ConfirmModal } from '../../components/ui'
+import { formatVnd, formatDate, nightsBetween, STATUS_LABEL, STATUS_STYLE, NEXT_STATUS, PAYMENT_METHOD_LABEL } from '../../lib/format'
+import { StatusBadge, PaymentBadge, ErrorBox, Spinner, ConfirmModal } from '../../components/ui'
 
 const ACTION_CONFIG = {
   CONFIRMED: {
@@ -579,6 +579,15 @@ export default function AdminBookings() {
                           <span className="font-extrabold text-sky-700 text-sm">
                             {formatVnd(b.totalPrice)}
                           </span>
+                          <div className="mt-1 flex flex-col items-end gap-0.5">
+                            <PaymentBadge status={b.paymentStatus} />
+                            <span className="text-[10px] text-slate-400">
+                              {PAYMENT_METHOD_LABEL[b.paymentMethod] || b.paymentMethod || 'Tại khách sạn'}
+                            </span>
+                            {b.paymentRef && (
+                              <span className="font-mono text-[10px] text-emerald-700">{b.paymentRef}</span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Cột 7: Trạng thái */}

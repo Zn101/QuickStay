@@ -40,10 +40,19 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      # T193-G2.2-A R-02a/R-02b: kich hoat application-prod.properties
+      # -> loai bo fallback Admin@123 va dev JWT secret -> fail-fast neu thieu bien moi truong
+      SPRING_PROFILES_ACTIVE: prod
+      FRONTEND_URL: ${FRONTEND_URL:-https://quickstay.io.vn}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@quickstay.io.vn}
+    # T204 BUG-C: xoa ports backend - khong can expose ra host
+    # Nginx proxy noi bo qua Docker network; cd-docker.yml dung docker compose exec
     networks:
       - internal
     healthcheck:

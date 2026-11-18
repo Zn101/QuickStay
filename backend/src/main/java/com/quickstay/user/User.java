@@ -35,6 +35,34 @@ public class User {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(length = 128)
+    private String verificationToken;
+
+    private Instant verificationTokenExpiresAt;
+
+    @Column(length = 128)
+    private String resetToken;
+
+    private Instant resetTokenExpiresAt;
+
+    @Column(nullable = false, length = 10)
+    private String preferredLanguage = "vi";
+
+    @Column(nullable = false, length = 10)
+    private String currencyDisplay = "VND";
+
+    @Column(nullable = false)
+    private boolean notifyEmail = true;
+
+    @Column(nullable = false)
+    private boolean notifyPromo = false;
+
+    @Column(nullable = false)
+    private boolean compactMode = false;
+
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -47,4 +75,24 @@ public class User {
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
     public Instant getCreatedAt() { return createdAt; }
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+    public String getVerificationToken() { return verificationToken; }
+    public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
+    public Instant getVerificationTokenExpiresAt() { return verificationTokenExpiresAt; }
+    public void setVerificationTokenExpiresAt(Instant verificationTokenExpiresAt) { this.verificationTokenExpiresAt = verificationTokenExpiresAt; }
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+    public Instant getResetTokenExpiresAt() { return resetTokenExpiresAt; }
+    public void setResetTokenExpiresAt(Instant resetTokenExpiresAt) { this.resetTokenExpiresAt = resetTokenExpiresAt; }
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
+    public String getCurrencyDisplay() { return currencyDisplay; }
+    public void setCurrencyDisplay(String currencyDisplay) { this.currencyDisplay = currencyDisplay; }
+    public boolean isNotifyEmail() { return notifyEmail; }
+    public void setNotifyEmail(boolean notifyEmail) { this.notifyEmail = notifyEmail; }
+    public boolean isNotifyPromo() { return notifyPromo; }
+    public void setNotifyPromo(boolean notifyPromo) { this.notifyPromo = notifyPromo; }
+    public boolean isCompactMode() { return compactMode; }
+    public void setCompactMode(boolean compactMode) { this.compactMode = compactMode; }
 }

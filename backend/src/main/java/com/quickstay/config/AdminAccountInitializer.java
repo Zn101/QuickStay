@@ -41,6 +41,7 @@ public class AdminAccountInitializer implements ApplicationRunner {
         u.setPasswordHash(encoder.encode(admin.password()));
         u.setFullName("Quản trị viên");
         u.setRole(Role.ADMIN);
+        u.setEmailVerified(true);
         users.save(u);
         log.info("Da tao tai khoan admin {}", email);
     }

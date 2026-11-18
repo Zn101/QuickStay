@@ -31,18 +31,35 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@quickstay.io.vn}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      # T195 BUG-07: them healthcheck cho backend dev compose
+      # wget co san trong Alpine BusyBox
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   frontend:
     image: ghcr.io/zn101/quickstay-frontend:latest
     build: ./frontend
     depends_on:
-      - backend
+      # T195 BUG-07: cho backend healthy truoc khi start frontend
+      backend:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-8081}:80"
     restart: unless-stopped
 
 volumes:
   mysql-data:
+    name: quickstay_mysql-test

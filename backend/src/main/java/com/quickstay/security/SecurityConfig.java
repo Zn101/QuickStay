@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/hotels/*/questions").permitAll()
                         // Chi ADMIN moi truy cap duoc /api/admin/**
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Chi CUSTOMER moi dat phong

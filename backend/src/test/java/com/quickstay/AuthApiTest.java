@@ -82,4 +82,67 @@ class AuthApiTest extends ApiTestBase {
                         Map.of("email", ADMIN_EMAIL, "password", ADMIN_PASSWORD)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("ADMIN"));
     }
+
+    // ─── T193-G2.2-A R-09: forgot-password security integration tests ───────────
+
+    @Test
+    void TC_AUTH_FORGOT_01_nonexistent_email_returns_200_with_only_message_field() throws Exception {
+        // Email khong ton tai trong he thong van tra 200 voi safe message
+        mvc.perform(withBody(post("/api/auth/forgot-password"), null,
+                        Map.of("email", "doesnotexist-" + newCustomerEmail())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty())
+                // R-09: khong duoc co demoEmail, demoMode trong response
+                .andExpect(jsonPath("$.demoEmail").doesNotExist())
+                .andExpect(jsonPath("$.demoMode").doesNotExist());
+    }
+
+    @Test
+    void TC_AUTH_FORGOT_02_existing_customer_email_returns_200_with_only_message_no_token_fields() throws Exception {
+        // Dang ky mot customer
+        String email = newCustomerEmail();
+        registerCustomer(email);
+
+        mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty())
+                // R-09: response khong duoc co bat ky field nao tiet lo token hay email HTML
+                .andExpect(jsonPath("$.demoEmail").doesNotExist())
+                .andExpect(jsonPath("$.demoMode").doesNotExist())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(jsonPath("$.bodyHtml").doesNotExist())
+                .andExpect(jsonPath("$.recipient").doesNotExist());
+    }
+
+    @Test
+    void TC_AUTH_FORGOT_03_response_has_exactly_one_field_message() throws Exception {
+        String email = newCustomerEmail();
+        registerCustomer(email);
+
+        var result = mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", email)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Parse JSON va kiem tra chi co dung 1 field
+        var node = json.readTree(result.getResponse().getContentAsString());
+        assertEquals(1, node.size(), "Response phai chi co dung 1 field 'message', hien tai co: " + node.fieldNames().next());
+        assertTrue(node.has("message"), "Field duy nhat phai la 'message'");
+    }
+
+    @Test
+    void TC_AUTH_FORGOT_04_nonexistent_and_existing_email_return_identical_message() throws Exception {
+        // Ca hai phai tra cung message de khong tiet lo email co ton tai khong
+        String realEmail = newCustomerEmail();
+        registerCustomer(realEmail);
+
+        var realResult = mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", realEmail)))
+                .andExpect(status().isOk()).andReturn();
+        var ghostResult = mvc.perform(withBody(post("/api/auth/forgot-password"), null,
+                        Map.of("email", "ghost-" + newCustomerEmail())))
+                .andExpect(status().isOk()).andReturn();
+
+        String realMsg = json.readTree(realResult.getResponse().getContentAsString()).get("message").asText();
+        String ghostMsg = json.readTree(ghostResult.getResponse().getContentAsString()).get("message").asText();
+        assertEquals(realMsg, ghostMsg, "Message phai giong nhau de khong tiet lo user enumeration");
+    }
 }

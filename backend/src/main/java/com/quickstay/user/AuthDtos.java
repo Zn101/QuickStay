@@ -30,6 +30,33 @@ public final class AuthDtos {
         }
     }
 
+    public record VerifyEmailRequest(@NotBlank String token) {
+        public VerifyEmailRequest {
+            token = token == null ? null : token.trim();
+        }
+    }
+
+    public record EmailActionRequest(@NotBlank @Email String email) {
+        public EmailActionRequest {
+            email = normalizeEmail(email);
+        }
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
+            @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String newPassword) {
+        public ResetPasswordRequest {
+            token = token == null ? null : token.trim();
+        }
+    }
+
+    // T193-G2.2-A R-09: EmailPreview va demoEmail da bi xoa.
+    // ForgotPasswordResponse chi tra "message" – khong bao gio tiet lo reset token hay HTML email.
+    public record ForgotPasswordResponse(String message) {}
+
+    public record MessageResponse(String message) {}
+
     public record AuthResponse(String token, UserDto user) {}
 
     static String normalizeEmail(String email) {
