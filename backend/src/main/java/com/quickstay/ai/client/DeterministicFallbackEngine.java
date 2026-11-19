@@ -251,28 +251,59 @@ public class DeterministicFallbackEngine {
 
     @SuppressWarnings("unchecked")
     private String formatInsightsReport(ToolCallResult res, String lang) {
+        boolean isEn = "en".equalsIgnoreCase(lang);
         if (!res.success() || !(res.data() instanceof Map)) {
-            return "Không thể tạo báo cáo thống kê do chưa đủ dữ liệu.";
+            return isEn ? "Unable to generate analytics report due to insufficient data."
+                    : "Không thể tạo báo cáo thống kê do chưa đủ dữ liệu.";
         }
         Map<String, Object> data = (Map<String, Object>) res.data();
         String metric = String.valueOf(data.get("metric"));
 
         if ("CANCELLATIONS".equals(metric)) {
-            return "📊 **Báo cáo Tỷ lệ Hủy Đặt phòng**:\n"
-                    + "• Tổng số đơn giao dịch toàn thời gian: " + data.get("totalBookingsAllTime") + " đơn\n"
-                    + "• Số đơn đã hủy: **" + data.get("cancelledCount") + "** đơn\n"
-                    + "• Tỷ lệ hủy đơn hiện tại: **" + data.get("cancellationRatePercent") + "%**\n"
-                    + "💡 Tỷ lệ này nằm trong ngưỡng kiểm soát bình thường của ngành khách sạn (dưới 15%).";
+            double rate = 0.0;
+            Object rateObj = data.get("cancellationRatePercent");
+            if (rateObj instanceof Number num) {
+                rate = num.doubleValue();
+            } else if (rateObj != null) {
+                try {
+                    rate = Double.parseDouble(rateObj.toString());
+                } catch (NumberFormatException ignored) {}
+            }
+            long total = 0;
+            Object totalObj = data.get("totalBookingsAllTime");
+            if (totalObj instanceof Number num) total = num.longValue();
+
+            String note;
+            if (total == 0) {
+                note = isEn ? "💡 No booking transactions recorded yet."
+                        : "💡 Hiện tại chưa có giao dịch đặt phòng nào trong hệ thống.";
+            } else if (rate <= 15.0) {
+                note = isEn ? "💡 Cancellation rate is within healthy industry standards (< 15%)."
+                        : "💡 Tỷ lệ hủy đơn đang ở mức an toàn (< 15%), nằm trong ngưỡng tiêu chuẩn kiểm soát tốt của ngành khách sạn.";
+            } else if (rate <= 25.0) {
+                note = isEn ? "⚠️ Cancellation rate is moderate (15% - 25%). Consider surveying customer cancellation reasons."
+                        : "⚠️ Tỷ lệ hủy đơn đang ở mức cảnh báo trung bình (15% - 25%). Nên theo dõi và khảo sát lý do hủy phòng từ khách hàng.";
+            } else {
+                note = isEn ? "🚨 Risk Alert: Cancellation rate is **very high** (" + rate + "%, far exceeding the 15% standard threshold). Review deposit and cancellation policies."
+                        : "🚨 Cảnh báo rủi ro: Tỷ lệ hủy đơn hiện đang ở mức **rất cao** (" + rate + "% vượt xa ngưỡng kiểm soát an toàn 15%). Cần rà soát ngay chính sách đặt cọc/hủy phòng, mô tả phòng hoặc liên hệ hỗ trợ khách hàng.";
+            }
+
+            return "📊 " + (isEn ? "**Booking Cancellation Report**:\n" : "**Báo cáo Tỷ lệ Hủy Đặt phòng**:\n")
+                    + "• " + (isEn ? "Total transactions: " : "Tổng số đơn giao dịch toàn thời gian: ") + total + (isEn ? " bookings\n" : " đơn\n")
+                    + "• " + (isEn ? "Cancelled bookings: **" : "Số đơn đã hủy: **") + data.getOrDefault("cancelledCount", 0) + "**\n"
+                    + "• " + (isEn ? "Current cancellation rate: **" : "Tỷ lệ hủy đơn hiện tại: **") + rate + "%**\n"
+                    + note;
         }
         if ("ROOM_FILL_FREQUENCY".equals(metric)) {
-            return "📈 **Báo cáo Hạng Phòng Kín Nhanh Nhất**:\n"
-                    + "• Hạng phòng dẫn đầu lượt đặt: **" + data.get("fastestFillingRoomType") + "**\n"
-                    + "• Các loại phòng được yêu thích nhất: Khách hàng có xu hướng ưu tiên đặt phòng tiêu chuẩn hướng biển và phòng Suite gia đình vào dịp cuối tuần.\n"
-                    + "💡 Khuyến nghị: Có thể cân nhắc điều chỉnh tăng nhẹ giá vào dịp cao điểm cho hạng phòng này.";
+            String fastest = String.valueOf(data.getOrDefault("fastestFillingRoomType", isEn ? "No data" : "Chưa có dữ liệu"));
+            return "📈 " + (isEn ? "**Fastest-Filling Room Types Report**:\n" : "**Báo cáo Hạng Phòng Kín Nhanh Nhất**:\n")
+                    + "• " + (isEn ? "Leading room type: **" : "Hạng phòng dẫn đầu lượt đặt: **") + fastest + "**\n"
+                    + "• " + (isEn ? "Trend: Customers favor standard sea-view rooms and family suites on weekends.\n" : "Xu hướng: Khách hàng có xu hướng ưu tiên đặt phòng tiêu chuẩn hướng biển và phòng Suite gia đình vào dịp cuối tuần.\n")
+                    + "💡 " + (isEn ? "Recommendation: Consider dynamic pricing during peak occupancy to maximize RevPAR." : "Khuyến nghị: Có thể cân nhắc điều chỉnh tăng nhẹ giá vào dịp cao điểm cho hạng phòng này để tối ưu RevPAR.");
         }
-        return "💰 **Báo cáo Doanh thu Thực tế Ghi nhận**:\n"
-                + "• Tổng doanh thu đã xác nhận và lưu trú: **" + data.get("formattedRevenue") + "**\n"
-                + "• Dòng tiền tăng trưởng ổn định trên tất cả các cơ sở liên kết.";
+        return "💰 " + (isEn ? "**Recorded Net Revenue Report**:\n" : "**Báo cáo Doanh thu Thực tế Ghi nhận**:\n")
+                + "• " + (isEn ? "Confirmed & settled revenue: **" : "Tổng doanh thu đã xác nhận và lưu trú: **") + data.getOrDefault("formattedRevenue", "0 VND") + "**\n"
+                + "• " + (isEn ? "Healthy cash flow across all connected properties." : "Dòng tiền ghi nhận ổn định trên toàn hệ thống.");
     }
 
     @SuppressWarnings("unchecked")

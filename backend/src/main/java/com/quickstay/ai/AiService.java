@@ -311,7 +311,7 @@ public class AiService {
         guardrails.validateRequest(question, userEmail, clientIp);
         long start = System.currentTimeMillis();
 
-        AiPrompt prompt = AiPrompt.of("INSIGHTS", "Call fixed report tools (get_admin_insights) to answer questions about bookings, cancellations and occupancy. NEVER write raw SQL.", question, 600);
+        AiPrompt prompt = AiPrompt.of("INSIGHTS", "Call fixed report tools (get_admin_insights) to answer questions about bookings, cancellations and occupancy. NEVER write raw SQL. When analyzing cancellation rate, evaluate dynamically: under 15% is healthy/safe, 15%-25% is moderate warning, and over 25% is a critical alert requiring policy review.", question, 600);
         List<ToolDefinition> reportTools = List.of(toolRegistry.getTool("get_admin_insights").orElseThrow().getDefinition());
 
         AiResult res = aiClient.completeWithTools(prompt, reportTools);
@@ -351,21 +351,46 @@ public class AiService {
         String metric = String.valueOf(data.get("metric"));
 
         if ("CANCELLATIONS".equals(metric)) {
+            double rate = 0.0;
+            Object rateObj = data.get("cancellationRatePercent");
+            if (rateObj instanceof Number num) {
+                rate = num.doubleValue();
+            } else if (rateObj != null) {
+                try {
+                    rate = Double.parseDouble(rateObj.toString());
+                } catch (NumberFormatException ignored) {}
+            }
+            long total = 0;
+            Object totalObj = data.get("totalBookingsAllTime");
+            if (totalObj instanceof Number num) total = num.longValue();
+
+            String note;
+            if (total == 0) {
+                note = "💡 Hiện tại chưa có giao dịch đặt phòng nào trong hệ thống.";
+            } else if (rate <= 15.0) {
+                note = "💡 Tỷ lệ hủy đơn đang ở mức an toàn (< 15%), nằm trong ngưỡng tiêu chuẩn kiểm soát tốt của ngành khách sạn.";
+            } else if (rate <= 25.0) {
+                note = "⚠️ Tỷ lệ hủy đơn đang ở mức cảnh báo trung bình (15% - 25%). Nên theo dõi và khảo sát lý do hủy phòng từ khách hàng.";
+            } else {
+                note = "🚨 **Cảnh báo rủi ro**: Tỷ lệ hủy đơn hiện đang ở mức **rất cao** (" + rate + "% vượt xa ngưỡng an toàn tiêu chuẩn 15%). Cần rà soát ngay chính sách đặt cọc/hủy phòng, mô tả phòng hoặc liên hệ hỗ trợ khách hàng.";
+            }
+
             return "📊 **Báo cáo Tỷ lệ Hủy Đặt phòng**:\n"
-                    + "• Tổng số đơn giao dịch toàn thời gian: " + data.get("totalBookingsAllTime") + " đơn\n"
-                    + "• Số đơn đã hủy: **" + data.get("cancelledCount") + "** đơn\n"
-                    + "• Tỷ lệ hủy đơn hiện tại: **" + data.get("cancellationRatePercent") + "%**\n"
-                    + "💡 Tỷ lệ này nằm trong ngưỡng kiểm soát bình thường của ngành khách sạn (dưới 15%).";
+                    + "• Tổng số đơn giao dịch toàn thời gian: " + total + " đơn\n"
+                    + "• Số đơn đã hủy: **" + data.getOrDefault("cancelledCount", 0) + "** đơn\n"
+                    + "• Tỷ lệ hủy đơn hiện tại: **" + rate + "%**\n"
+                    + note;
         }
         if ("ROOM_FILL_FREQUENCY".equals(metric)) {
+            String fastest = String.valueOf(data.getOrDefault("fastestFillingRoomType", "Chưa có dữ liệu"));
             return "📈 **Báo cáo Hạng Phòng Kín Nhanh Nhất & Xu Hướng Đặt Phòng**:\n"
-                    + "• Hạng phòng dẫn đầu lượt đặt: **" + data.get("fastestFillingRoomType") + "**\n"
+                    + "• Hạng phòng dẫn đầu lượt đặt: **" + fastest + "**\n"
                     + "• Xu hướng: Khách hàng có xu hướng ưu tiên đặt các phòng có vị trí đẹp và phòng Suite gia đình vào dịp cuối tuần.\n"
                     + "💡 Khuyến nghị: Có thể cân nhắc điều chỉnh tăng nhẹ giá vào dịp cao điểm cho hạng phòng này để tối ưu hóa RevPAR.";
         }
         return "💰 **Báo cáo Doanh thu Thực tế Ghi nhận**:\n"
-                + "• Tổng doanh thu đã xác nhận và lưu trú: **" + data.get("formattedRevenue") + "**\n"
-                + "• Tổng số giao dịch thành công: " + data.get("totalBookingsAllTime") + " lượt đặt phòng\n"
+                + "• Tổng doanh thu đã xác nhận và lưu trú: **" + data.getOrDefault("formattedRevenue", "0 VND") + "**\n"
+                + "• Tổng số giao dịch toàn hệ thống: " + data.getOrDefault("totalBookingsAllTime", 0) + " lượt đặt phòng\n"
                 + "• Dòng tiền tăng trưởng ổn định trên tất cả các cơ sở liên kết.";
     }
 
