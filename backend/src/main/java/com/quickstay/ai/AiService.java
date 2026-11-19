@@ -29,6 +29,7 @@ public class AiService {
     private final AiGuardrailsService guardrails;
     private final AiCacheService cache;
     private final AiLogRepository aiLogRepo;
+    private final AiAuditService auditService;
     private final HotelRepository hotels;
     private final RoomRepository rooms;
 
@@ -37,6 +38,7 @@ public class AiService {
                      AiGuardrailsService guardrails,
                      AiCacheService cache,
                      AiLogRepository aiLogRepo,
+                     AiAuditService auditService,
                      HotelRepository hotels,
                      RoomRepository rooms) {
         this.aiClient = aiClient;
@@ -44,6 +46,7 @@ public class AiService {
         this.guardrails = guardrails;
         this.cache = cache;
         this.aiLogRepo = aiLogRepo;
+        this.auditService = auditService;
         this.hotels = hotels;
         this.rooms = rooms;
     }
@@ -56,7 +59,6 @@ public class AiService {
     // 1. CHATBOT TƯ VẤN (TOOL CALLING & BILINGUAL)
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public String chat(String message, String userEmail, String clientIp) {
         guardrails.validateRequest(message, userEmail, clientIp);
         long start = System.currentTimeMillis();
@@ -120,7 +122,6 @@ public class AiService {
     // 2. NATURAL-LANGUAGE SEARCH (TÌM KIẾM BẰNG NGÔN NGỮ TỰ NHIÊN)
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public Map<String, Object> naturalLanguageSearch(String query, String userEmail, String clientIp) {
         guardrails.validateRequest(query, userEmail, clientIp);
         long start = System.currentTimeMillis();
@@ -160,7 +161,6 @@ public class AiService {
     // 3. GROUNDED HOTEL Q&A (HỎI ĐÁP CÓ CĂN CỨ VÀ TRẢ LỜI "KHÔNG CÓ THÔNG TIN")
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public String hotelQa(Long hotelId, String question, String userEmail, String clientIp, String lang) {
         guardrails.validateRequest(question, userEmail, clientIp);
         long start = System.currentTimeMillis();
@@ -210,7 +210,6 @@ public class AiService {
     // 4. REVIEW SUMMARY (TỔNG HỢP ĐÁNH GIÁ KHÁCH HÀNG)
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public Map<String, Object> reviewSummary(Long hotelId, String lang) {
         Hotel h = hotels.findById(hotelId).orElse(null);
         if (h == null) return Map.of("error", "Không tìm thấy khách sạn");
@@ -308,7 +307,6 @@ public class AiService {
     // 7. INSIGHTS Q&A CHO ADMIN (BÁO CÁO CỐ ĐỊNH, KHÔNG DÙNG RAW SQL)
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public Map<String, Object> adminInsights(String question, String userEmail, String clientIp) {
         guardrails.validateRequest(question, userEmail, clientIp);
         long start = System.currentTimeMillis();
@@ -338,7 +336,6 @@ public class AiService {
     // 8. PRICING HINTS CHO KHÁCH SẠN / HOMESTAY (GỢI Ý ĐỊNH GIÁ)
     // =========================================================================
 
-    @Transactional(readOnly = true)
     public Map<String, Object> pricingHints(Long hotelId, String lang) {
         Hotel h = hotels.findById(hotelId).orElse(null);
         if (h == null) return Map.of("error", "Không tìm thấy khách sạn ID: " + hotelId);
@@ -398,17 +395,7 @@ public class AiService {
 
     private void recordLog(String feature, String promptSnippet, String userEmail, String clientIp,
                            long latencyMs, int promptTokens, int completionTokens, boolean fallbackUsed, String error) {
-        try {
-            String hash = AiCacheService.sha256(promptSnippet);
-            String snippet = promptSnippet != null && promptSnippet.length() > 250
-                    ? promptSnippet.substring(0, 250) + "..."
-                    : promptSnippet;
-
-            AiLog logEntry = new AiLog(feature, hash, userEmail, clientIp, latencyMs, promptTokens, completionTokens, fallbackUsed, error);
-            aiLogRepo.save(logEntry);
-        } catch (Exception e) {
-            log.error("Không thể ghi log AI: {}", e.getMessage());
-        }
+        auditService.recordLog(feature, promptSnippet, userEmail, clientIp, latencyMs, promptTokens, completionTokens, fallbackUsed, error);
     }
 
     private static boolean isEnglish(String text) {
