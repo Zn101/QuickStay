@@ -53,4 +53,30 @@ class AiApiTest extends ApiTestBase {
         mvc.perform(withBody(post("/api/ai/chat"), null, Map.of("message", " ")))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void TC_AI_06_admin_insights_requires_admin_and_answers_questions() throws Exception {
+        Map<String, String> bodyWithQuery = Map.of("query", "Thang nay co bao nhieu don bi huy?");
+        Map<String, String> bodyWithQuestion = Map.of("question", "Hang phong nao kin nhanh nhat?");
+
+        // 401 for anonymous
+        mvc.perform(withBody(post("/api/ai/admin/insights"), null, bodyWithQuery))
+                .andExpect(status().isUnauthorized());
+
+        // 403 for normal customer
+        mvc.perform(withBody(post("/api/ai/admin/insights"), registerCustomer(newCustomerEmail()), bodyWithQuery))
+                .andExpect(status().isForbidden());
+
+        // 200 for admin with 'query'
+        mvc.perform(withBody(post("/api/ai/admin/insights"), adminToken(), bodyWithQuery))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").isNotEmpty())
+                .andExpect(jsonPath("$.reportData").isMap());
+
+        // 200 for admin with 'question'
+        mvc.perform(withBody(post("/api/ai/admin/insights"), adminToken(), bodyWithQuestion))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").isNotEmpty())
+                .andExpect(jsonPath("$.reportData").isMap());
+    }
 }

@@ -36,7 +36,13 @@ public class AiController {
 
     public record ReplyDraftRequest(String guestName, @NotBlank String guestMessage, String hotelName, String lang) {}
 
-    public record InsightsRequest(@NotBlank @Size(max = 1000) String question) {}
+    public record InsightsRequest(String question, String query) {
+        public String getEffectiveQuestion() {
+            if (question != null && !question.isBlank()) return question.trim();
+            if (query != null && !query.isBlank()) return query.trim();
+            return "";
+        }
+    }
 
     private final AiService ai;
     private final AiEvaluationBenchmark benchmark;
@@ -113,7 +119,11 @@ public class AiController {
     // ---------- 8. Quản trị viên: Insights Q&A (Báo cáo Cố định, không SQL thô) ----------
     @PostMapping("/admin/insights")
     public Map<String, Object> adminInsights(@Valid @RequestBody InsightsRequest req, Authentication auth, HttpServletRequest servletReq) {
-        return ai.adminInsights(req.question(), getUserEmail(auth), getClientIp(servletReq));
+        String q = req.getEffectiveQuestion();
+        if (q.isBlank()) {
+            throw com.quickstay.config.ApiException.badRequest("Câu hỏi không được để trống");
+        }
+        return ai.adminInsights(q, getUserEmail(auth), getClientIp(servletReq));
     }
 
     // ---------- 9. Quản trị viên: Thống kê & Nhật ký AI ----------

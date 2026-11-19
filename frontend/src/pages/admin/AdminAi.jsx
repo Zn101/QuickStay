@@ -57,16 +57,21 @@ export default function AdminAi() {
     }
   }
 
-  async function handleAskInsights(e) {
-    e.preventDefault()
-    if (!insightQuery.trim()) return
+  async function handleAskInsights(e, customQuery) {
+    if (e && e.preventDefault) e.preventDefault()
+    const q = (customQuery || insightQuery).trim()
+    if (!q) return
+    if (customQuery) setInsightQuery(customQuery)
     setInsightLoading(true)
     setInsightError('')
     setInsightResult(null)
     try {
       const res = await api('/ai/admin/insights', {
         method: 'POST',
-        body: { query: insightQuery.trim() },
+        body: {
+          question: q,
+          query: q,
+        },
       })
       setInsightResult(res)
       // Tải lại nhật ký để cập nhật log mới
@@ -368,16 +373,44 @@ export default function AdminAi() {
           </button>
         </form>
 
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+          <span className="text-[11px] font-bold text-slate-400">Gợi ý câu hỏi nhanh:</span>
+          <button
+            type="button"
+            onClick={() => handleAskInsights(null, 'Tháng này có bao nhiêu đơn bị hủy?')}
+            disabled={insightLoading}
+            className="rounded-lg bg-slate-100 hover:bg-purple-100 hover:text-purple-700 text-slate-600 px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            📊 Đơn bị hủy & Tỷ lệ hủy
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAskInsights(null, 'Hạng phòng nào kín nhanh nhất?')}
+            disabled={insightLoading}
+            className="rounded-lg bg-slate-100 hover:bg-purple-100 hover:text-purple-700 text-slate-600 px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            📈 Hạng phòng kín nhanh nhất
+          </button>
+          <button
+            type="button"
+            onClick={() => handleAskInsights(null, 'Tổng doanh thu thực tế ghi nhận')}
+            disabled={insightLoading}
+            className="rounded-lg bg-slate-100 hover:bg-purple-100 hover:text-purple-700 text-slate-600 px-2.5 py-1 text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            💰 Doanh thu thực tế
+          </button>
+        </div>
+
         {insightError && <ErrorBox message={insightError} />}
 
         {insightResult && (
           <div className="rounded-xl border border-purple-100 bg-purple-50/50 p-4 space-y-3">
             <div className="flex items-center justify-between text-xs border-b border-purple-100 pb-2">
               <span className="font-extrabold text-purple-900">Kết quả phân tích từ AI:</span>
-              <span className="text-[11px] font-mono text-purple-600">Độ trễ: {insightResult.latencyMs} ms</span>
+              <span className="text-[11px] font-mono text-purple-600">Độ trễ: {insightResult.latencyMs || 0} ms</span>
             </div>
             <div className="text-xs text-slate-800 whitespace-pre-line leading-relaxed font-medium">
-              {insightResult.answer}
+              {insightResult.answer || (typeof insightResult.reportData === 'object' ? JSON.stringify(insightResult.reportData, null, 2) : 'Đã phân tích xong dữ liệu.')}
             </div>
           </div>
         )}
