@@ -93,6 +93,7 @@ export default function PartnerDashboard() {
           city: hotelForm.city.trim(),
           amenities: hotelForm.amenities,
           tone: aiTone,
+          lang: aiLang,
           language: aiLang,
           variantCount: 3,
         },
