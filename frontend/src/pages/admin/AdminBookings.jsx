@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { formatVnd, formatDate, nightsBetween, STATUS_LABEL, STATUS_STYLE, NEXT_STATUS, PAYMENT_METHOD_LABEL } from '../../lib/format'
 import { StatusBadge, PaymentBadge, ErrorBox, Spinner, ConfirmModal } from '../../components/ui'
@@ -163,7 +164,7 @@ export default function AdminBookings() {
               </span>
             </div>
             <p className="mt-1 text-sm text-slate-300 max-w-xl">
-              Theo dõi, lọc theo trạng thái và phê duyệt toàn bộ giao dịch đặt phòng của khách hàng theo thời gian thực.
+              Giám sát toàn bộ giao dịch đặt phòng trên hệ thống. Quyền xác nhận đơn, check-in và hoàn tất được phân cấp cho tài khoản Đối tác Khách sạn / Homestay.
             </p>
           </div>
           <button
@@ -188,6 +189,35 @@ export default function AdminBookings() {
             {refreshing ? 'Đang tải...' : 'Làm mới'}
           </button>
         </div>
+      </div>
+
+      {/* Banner thông báo phân quyền đối tác */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-sky-200/90 bg-gradient-to-r from-sky-50 via-indigo-50/50 to-white p-4 sm:p-5 shadow-xs">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md text-lg">
+            🏡
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-900">
+                Phân cấp xác nhận đơn cho Đối tác Khách sạn / Homestay
+              </h2>
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                Chính sách vận hành mới
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Để tăng tính chủ động, các đơn đặt phòng mới sẽ do đại diện khách sạn/homestay trực tiếp kiểm tra và bấm Xác nhận. Admin quản lý và cấp phát tài khoản đối tác tại mục chuyên biệt.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/admin/partners"
+          className="inline-flex items-center gap-2 shrink-0 rounded-xl bg-sky-600 hover:bg-sky-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all"
+        >
+          <span>Quản lý Tài khoản Đối tác</span>
+          <span>→</span>
+        </Link>
       </div>
 
       {/* KPI Stats Grid */}
@@ -500,7 +530,7 @@ export default function AdminBookings() {
                     <th className="px-3 py-3.5 text-center">Khách</th>
                     <th className="px-3 py-3.5 text-right">Tổng tiền</th>
                     <th className="px-3 py-3.5 text-center">Trạng thái</th>
-                    <th className="py-3.5 pl-3 pr-5 text-right">Thao tác</th>
+                    <th className="py-3.5 pl-3 pr-5 text-right">Đơn vị phụ trách xử lý</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -595,45 +625,43 @@ export default function AdminBookings() {
                           <StatusBadge status={b.status} />
                         </td>
 
-                        {/* Cột 8: Thao tác chuyển đổi trạng thái & Hủy */}
+                        {/* Cột 8: Đơn vị phụ trách xác nhận (Phân cấp cho Đối tác) */}
                         <td className="whitespace-nowrap py-4 pl-3 pr-5 text-right">
-                          {nextActions.length > 0 ? (
-                            <div className="flex items-center justify-end gap-1.5">
-                              {nextActions.map((targetStatus) => {
-                                const config = ACTION_CONFIG[targetStatus] || {
-                                  label: targetStatus,
-                                  className: 'border-slate-300 text-slate-700 bg-white hover:bg-slate-50',
-                                }
-                                const isThisButtonBusy = isRowBusy && changing === b.id
-
-                                return (
-                                  <button
-                                    key={targetStatus}
-                                    type="button"
-                                    onClick={() => handleActionClick(b, targetStatus)}
-                                    disabled={isRowBusy}
-                                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all disabled:opacity-40 cursor-pointer ${config.className}`}
-                                  >
-                                    {isThisButtonBusy ? (
-                                      <span className="inline-flex items-center gap-1">
-                                        <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                                        </svg>
-                                        ...
-                                      </span>
-                                    ) : (
-                                      config.label
-                                    )}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-[11px] font-semibold text-slate-400 italic">
-                              {b.status === 'COMPLETED' ? 'Đã hoàn tất' : 'Đã kết thúc'}
+                          <div className="flex flex-col items-end gap-1">
+                            {b.status === 'PENDING' && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 shadow-2xs">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span>Chờ đối tác duyệt</span>
+                              </span>
+                            )}
+                            {b.status === 'CONFIRMED' && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-800">
+                                <span>✓</span>
+                                <span>Đối tác đã xác nhận</span>
+                              </span>
+                            )}
+                            {b.status === 'CHECKED_IN' && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-300 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-800">
+                                <span>🏨</span>
+                                <span>Đang lưu trú</span>
+                              </span>
+                            )}
+                            {b.status === 'COMPLETED' && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
+                                <span>🏁</span>
+                                <span>Đã hoàn thành</span>
+                              </span>
+                            )}
+                            {b.status === 'CANCELLED' && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                                <span>✕</span>
+                                <span>Đã hủy</span>
+                              </span>
+                            )}
+                            <span className="text-[11px] font-medium text-slate-400">
+                              Cơ sở: <strong className="text-slate-700">{b.hotelName}</strong>
                             </span>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     )
@@ -651,7 +679,7 @@ export default function AdminBookings() {
                 <strong className="text-slate-800">{bookings.length}</strong> đơn đặt phòng
               </span>
               <span className="text-[11px] text-slate-400">
-                Nhấp &quot;Xác nhận đơn&quot;, &quot;Nhận phòng&quot;, &quot;Hoàn thành&quot; hoặc &quot;Hủy đơn&quot; để cập nhật trạng thái
+                Đơn đặt phòng do tài khoản Đối tác lưu trú phụ trách xác nhận trực tiếp
               </span>
             </div>
           )}

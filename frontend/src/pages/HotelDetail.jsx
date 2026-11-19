@@ -1309,18 +1309,6 @@ function RoomCard({ hotelId, checkIn, checkOut, room, nights, disabled, searchin
               <span>·</span>
               <span className="text-slate-500 dark:text-slate-400 font-medium">🛏️ {meta.bed}</span>
             </div>
-
-            {/* Tags tiện nghi nổi bật của hạng phòng */}
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {meta.amenities.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300"
-                >
-                  ✓ {item}
-                </span>
-              ))}
-            </div>
           </div>
 
           {/* Giá phòng & Nút Đặt ngay */}

@@ -174,6 +174,41 @@ public class BookingService {
         return PageResponse.of(bookings.findAllByOrderByCreatedAtDescIdDesc(pageable).map(BookingView::of));
     }
 
+    /** GET /api/partner/bookings: don dat phong thuoc co so cua doi tac. */
+    @Transactional(readOnly = true)
+    public List<BookingView> forHotel(Long hotelId) {
+        return bookings.findByHotelId(hotelId).stream().map(BookingView::of).toList();
+    }
+
+    /** GET /api/partner/bookings?page=&size=. */
+    @Transactional(readOnly = true)
+    public PageResponse<BookingView> forHotel(Long hotelId, Pageable pageable) {
+        return PageResponse.of(bookings.findByHotelId(hotelId, pageable).map(BookingView::of));
+    }
+
+    /** Doi trang thai boi doi tac khach san / homestay: kiem tra dung co so phu trach. */
+    @Transactional
+    public BookingView changeStatusForPartner(Long id, BookingStatus status, Long partnerHotelId) {
+        Booking b = bookings.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay don dat phong"));
+        if (partnerHotelId != null && (b.getRoom() == null || b.getRoom().getHotel() == null
+                || !b.getRoom().getHotel().getId().equals(partnerHotelId))) {
+            throw ApiException.forbidden("Ban chi co quyen xu ly don dat phong thuoc co so cua minh");
+        }
+        if (!b.getStatus().next().contains(status)) {
+            throw ApiException.conflict("Khong the chuyen trang thai tu " + b.getStatus() + " sang " + status);
+        }
+        b.setStatus(status);
+        if (status == BookingStatus.CANCELLED && b.getPaymentStatus() == PaymentStatus.PAID) {
+            b.setPaymentStatus(PaymentStatus.REFUNDED);
+        }
+        log.info("Doi tac co so #{} chuyen trang thai dat phong #{} sang {}", partnerHotelId, id, status);
+        if (emails != null) {
+            emails.sendBookingStatusEmail(b);
+        }
+        return BookingView.of(b);
+    }
+
     /** PATCH /api/admin/bookings/{id}/status: doi trang thai theo BookingStatus.next(); cung khoa dong don nhu cancel. */
     @Transactional
     public BookingView changeStatus(Long id, BookingStatus status) {

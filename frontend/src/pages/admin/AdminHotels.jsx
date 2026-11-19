@@ -22,6 +22,34 @@ export default function AdminHotels() {
   // States cho tìm kiếm và lọc theo thành phố
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
+  const [aiBusy, setAiBusy] = useState(false)
+
+  async function handleAiGenerate() {
+    if (!form.name.trim()) {
+      setFormError('Vui lòng nhập tên khách sạn trước khi tạo mô tả bằng AI.')
+      return
+    }
+    setAiBusy(true)
+    setFormError('')
+    try {
+      const res = await api('/ai/describe', {
+        method: 'POST',
+        body: {
+          type: 'hotel',
+          name: form.name.trim(),
+          city: form.city.trim(),
+          amenities: form.amenities,
+        },
+      })
+      if (res?.description) {
+        setForm((f) => ({ ...f, description: res.description }))
+      }
+    } catch (err) {
+      setFormError(err.message || 'Không thể tạo mô tả bằng AI')
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   useEffect(() => {
     load()
@@ -541,9 +569,29 @@ export default function AdminHotels() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Mô tả giới thiệu
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Mô tả giới thiệu
+                  </label>
+                  <button
+                    type="button"
+                    disabled={aiBusy}
+                    onClick={handleAiGenerate}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                  >
+                    {aiBusy ? (
+                      <>
+                        <span className="inline-block animate-spin">⏳</span>
+                        <span>Đang AI viết...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨</span>
+                        <span>Tạo mô tả bằng AI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   rows={4}
                   placeholder="Nhập mô tả không gian, điểm nhấn kiến trúc và dịch vụ nổi bật..."

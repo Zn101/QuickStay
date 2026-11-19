@@ -24,6 +24,8 @@ import AdminEmails from './pages/admin/AdminEmails'
 import AdminTours from './pages/admin/AdminTours'
 import AdminRestaurants from './pages/admin/AdminRestaurants'
 import AdminNews from './pages/admin/AdminNews'
+import AdminPartners from './pages/admin/AdminPartners'
+import PartnerDashboard from './pages/PartnerDashboard'
 
 export default function App() {
   return (
@@ -44,6 +46,7 @@ export default function App() {
         <Route path="/hotels/:hotelId/rooms/:roomId/book" element={<BookingForm />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/partner" element={<PartnerDashboard />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
@@ -52,6 +55,7 @@ export default function App() {
         <Route path="hotels" element={<AdminHotels />} />
         <Route path="rooms" element={<AdminRooms />} />
         <Route path="bookings" element={<AdminBookings />} />
+        <Route path="partners" element={<AdminPartners />} />
         <Route path="tours" element={<AdminTours />} />
         <Route path="restaurants" element={<AdminRestaurants />} />
         <Route path="news" element={<AdminNews />} />

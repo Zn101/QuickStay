@@ -115,6 +115,11 @@ export default function Layout() {
                 {t('nav_admin')}
               </NavLink>
             )}
+            {user?.role === 'HOTEL_MANAGER' && (
+              <NavLink to="/partner" className={linkClass}>
+                Cổng Đối tác
+              </NavLink>
+            )}
           </nav>
 
           {/* Controls: Language + Dark Mode + Auth buttons */}
@@ -204,7 +209,7 @@ export default function Layout() {
                         <p className="font-bold text-slate-900 dark:text-white text-xs truncate">{user.fullName}</p>
                         <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
                         <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                          {user.role === 'ADMIN' ? '👑 Quản trị viên' : '✨ Khách hàng'}
+                          {user.role === 'ADMIN' ? '👑 Quản trị viên' : user.role === 'HOTEL_MANAGER' ? '🏡 Đối tác Lưu trú' : '✨ Khách hàng'}
                         </span>
                       </div>
 
@@ -237,6 +242,15 @@ export default function Layout() {
                           >
                             <span>👑</span>
                             <span>Bảng điều khiển Admin</span>
+                          </Link>
+                        )}
+                        {user.role === 'HOTEL_MANAGER' && (
+                          <Link
+                            to="/partner"
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors font-bold"
+                          >
+                            <span>🏡</span>
+                            <span>Trang Đối tác Lưu trú</span>
                           </Link>
                         )}
                       </div>
@@ -330,6 +344,7 @@ export default function Layout() {
               </button>
             )}
             {user?.role === 'ADMIN' && <Link to="/admin" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-amber-300">{t('nav_admin')}</Link>}
+            {user?.role === 'HOTEL_MANAGER' && <Link to="/partner" onClick={() => setMenuOpen(false)} className="block text-sm font-medium text-indigo-400">🏡 Cổng Đối tác Lưu trú</Link>}
             {user ? (
               <button type="button" onClick={openLogoutModal} className="block w-full text-left text-sm font-medium text-red-400 pt-2 border-t border-slate-800">
                 {t('nav_logout')}

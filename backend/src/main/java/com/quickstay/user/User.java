@@ -31,6 +31,9 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role = Role.CUSTOMER;
 
+    @Column(name = "hotel_id")
+    private Long hotelId;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -74,6 +77,8 @@ public class User {
     public void setPhone(String phone) { this.phone = phone; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public Long getHotelId() { return hotelId; }
+    public void setHotelId(Long hotelId) { this.hotelId = hotelId; }
     public Instant getCreatedAt() { return createdAt; }
     public boolean isEmailVerified() { return emailVerified; }
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }

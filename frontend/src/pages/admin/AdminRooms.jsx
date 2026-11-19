@@ -21,6 +21,40 @@ export default function AdminRooms() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+
+  async function handleAiGenerate() {
+    if (!form.hotelId) {
+      setFormError('Vui lòng chọn khách sạn trước khi tạo mô tả bằng AI.')
+      return
+    }
+    if (!form.roomType.trim()) {
+      setFormError('Vui lòng nhập tên hạng phòng (VD: Deluxe, Suite, Villa...).')
+      return
+    }
+    const selectedHotel = hotels.find((h) => String(h.id) === String(form.hotelId))
+    setAiBusy(true)
+    setFormError('')
+    try {
+      const res = await api('/ai/describe', {
+        method: 'POST',
+        body: {
+          type: 'room',
+          name: selectedHotel?.name || '',
+          city: selectedHotel?.city || '',
+          amenities: selectedHotel?.amenities || '',
+          roomType: form.roomType.trim(),
+        },
+      })
+      if (res?.description) {
+        setForm((f) => ({ ...f, description: res.description }))
+      }
+    } catch (err) {
+      setFormError(err.message || 'Không thể tạo mô tả bằng AI')
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   useEffect(() => {
     Promise.all([api('/admin/hotels'), api('/admin/rooms')])
@@ -562,9 +596,29 @@ export default function AdminRooms() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Mô tả chi tiết & Tiện nghi
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Mô tả chi tiết & Tiện nghi
+                  </label>
+                  <button
+                    type="button"
+                    disabled={aiBusy}
+                    onClick={handleAiGenerate}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                  >
+                    {aiBusy ? (
+                      <>
+                        <span className="inline-block animate-spin">⏳</span>
+                        <span>Đang AI viết...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨</span>
+                        <span>Tạo mô tả bằng AI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   rows={4}
                   placeholder="Mô tả diện tích, hướng nhìn, nội thất, tiện ích đi kèm..."

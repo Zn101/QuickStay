@@ -58,6 +58,8 @@ export default function Login() {
       if (!u) return
       if (u.role === 'ADMIN') {
         navigate('/admin')
+      } else if (u.role === 'HOTEL_MANAGER') {
+        navigate('/partner')
       } else if (location.state?.from) {
         navigate(location.state.from, { state: location.state, replace: true })
       } else {

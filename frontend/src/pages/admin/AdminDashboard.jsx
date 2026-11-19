@@ -413,6 +413,13 @@ export default function AdminDashboard() {
             </Link>
 
             <Link
+              to="/admin/partners"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-200/80 px-3.5 py-2.5 text-xs font-bold text-indigo-700 shadow-xs hover:bg-indigo-100 active:scale-95 transition-all cursor-pointer"
+            >
+              <span>🏡 Quản lý Đối tác</span>
+            </Link>
+
+            <Link
               to="/admin/hotels"
               className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 shadow-md hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
             >

@@ -57,6 +57,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
     Page<Booking> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
 
+    /** Don dat phong thuoc khach san / homestay cua doi tac (HOTEL_MANAGER). */
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    @Query("select b from Booking b where b.room.hotel.id = :hotelId order by b.createdAt desc, b.id desc")
+    List<Booking> findByHotelId(@Param("hotelId") Long hotelId);
+
+    @EntityGraph(attributePaths = {"user", "room", "room.hotel"})
+    @Query(value = "select b from Booking b where b.room.hotel.id = :hotelId order by b.createdAt desc, b.id desc",
+           countQuery = "select count(b) from Booking b where b.room.hotel.id = :hotelId")
+    Page<Booking> findByHotelId(@Param("hotelId") Long hotelId, Pageable pageable);
+
     /**
      * Doc don va khoa dong do toi het transaction (T112): khach huy va admin doi trang thai cung luc
      * phai xep hang, nguoi sau thay trang thai moi nhat thay vi ghi de len nguoi truoc.

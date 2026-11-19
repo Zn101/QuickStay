@@ -1,3 +1,3 @@
 package com.quickstay.user;
 
-public enum Role { CUSTOMER, ADMIN }
+public enum Role { CUSTOMER, ADMIN, HOTEL_MANAGER }

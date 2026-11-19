@@ -49,7 +49,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/hotels/*/questions").permitAll()
                         .requestMatchers("/api/ai/chat").permitAll()
-                        .requestMatchers("/api/ai/describe").hasRole("ADMIN")
+                        .requestMatchers("/api/ai/describe").hasAnyRole("ADMIN", "HOTEL_MANAGER")
+                        // Cổng đối tác Khách sạn / Homestay
+                        .requestMatchers("/api/partner/**").hasAnyRole("HOTEL_MANAGER", "ADMIN")
                         // Chi ADMIN moi truy cap duoc /api/admin/**
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Chi CUSTOMER moi dat phong
