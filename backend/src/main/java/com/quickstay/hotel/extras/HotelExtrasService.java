@@ -106,12 +106,21 @@ public class HotelExtrasService {
     @Transactional(readOnly = true)
     public HotelExtrasView extras(Long hotelId) {
         Hotel h = findHotel(hotelId);
-        List<HotelReview> revList = reviews.findByHotelIdOrderByCreatedAtDescIdDesc(hotelId);
         double[] defaultRatings = { 4.9, 4.8, 4.7, 4.9, 4.8, 4.6, 4.9, 4.7 };
         int idx = (int) Math.abs((hotelId - 1) % defaultRatings.length);
         double defaultRating = defaultRatings[idx];
-        double avg = revList.isEmpty() ? defaultRating
-                : Math.round(revList.stream().mapToInt(HotelReview::getRating).average().orElse(defaultRating) * 10.0) / 10.0;
+
+        // Tinh diem trung binh va so danh gia bang SQL index-only scan (khong can load toan bo row vao RAM)
+        List<Object[]> stats = reviews.getRatingStatsByHotelId(hotelId);
+        long revCount = 0;
+        double avg = defaultRating;
+        if (!stats.isEmpty() && stats.get(0) != null) {
+            Object[] row = stats.get(0);
+            revCount = row[0] instanceof Number ? ((Number) row[0]).longValue() : 0L;
+            if (revCount > 0 && row[1] instanceof Number) {
+                avg = Math.round(((Number) row[1]).doubleValue() * 10.0) / 10.0;
+            }
+        }
 
         String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
         String airportName = airportForCity(cityLower);
@@ -132,7 +141,7 @@ public class HotelExtrasService {
                 new PolicyItem("Quy định lưu trú", "Không hút thuốc trong phòng kín. Vui lòng xuất trình CCCD/Hộ chiếu hợp lệ khi nhận phòng.")
         );
 
-        return new HotelExtrasView(hotelId, avg, revList.size(), photos, airportName, transfers, dining, attractions, amenities, policies);
+        return new HotelExtrasView(hotelId, avg, (int) revCount, photos, airportName, transfers, dining, attractions, amenities, policies);
     }
 
     @Transactional(readOnly = true)

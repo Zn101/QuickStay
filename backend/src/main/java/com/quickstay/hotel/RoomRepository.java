@@ -2,12 +2,14 @@ package com.quickstay.hotel;
 
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +19,20 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     List<Room> findByHotelIdOrderByPricePerNightAscIdAsc(Long hotelId);
 
     List<Room> findByHotelId(Long hotelId);
+
+    /** Lay toan bo phong kem thong tin khach san trong 1 truy van (tranh N+1 cho Admin). */
+    @EntityGraph(attributePaths = {"hotel"})
+    @Query("select r from Room r order by r.hotel.id asc, r.pricePerNight asc, r.id asc")
+    List<Room> findAllWithHotel();
+
+    /** Lay phong cua 1 khach san kem hotel eagerly de tranh lazy loading N+1. */
+    @EntityGraph(attributePaths = {"hotel"})
+    @Query("select r from Room r where r.hotel.id = :hotelId order by r.pricePerNight asc, r.id asc")
+    List<Room> findWithHotelByHotelId(@Param("hotelId") Long hotelId);
+
+    /** Lay tat ca phong cua nhieu khach san theo lo (batch) trong 1 truy van duy nhat. */
+    @EntityGraph(attributePaths = {"hotel"})
+    List<Room> findByHotelIdInOrderByPricePerNightAscIdAsc(Collection<Long> hotelIds);
 
     default List<Room> findByHotelIdOrderByPricePerNight(Long hotelId) {
         return findByHotelIdOrderByPricePerNightAscIdAsc(hotelId);

@@ -61,25 +61,42 @@ public class HotelService {
     }
 
     private List<HotelSummary> filterByAvailability(List<HotelSummary> candidates, HotelSearch s) {
-        return candidates.stream()
-                .filter(h -> hasAvailableRoom(h.id(), s))
-                .toList();
-    }
-
-    private boolean hasAvailableRoom(Long hotelId, HotelSearch s) {
-        List<Room> hotelRooms = rooms.findByHotelIdOrderByPricePerNightAscIdAsc(hotelId);
-        if (hotelRooms.isEmpty()) {
-            return false;
+        if (candidates.isEmpty()) {
+            return candidates;
         }
-        Map<Long, Long> booked = bookings.countOverlappingByHotel(hotelId, s.checkIn(), s.checkOut()).stream()
+
+        List<Long> hotelIds = candidates.stream().map(HotelSummary::id).toList();
+
+        // 1 truy van duy nhat lay tat ca phong cua toan bo khach san ung vien (tranh N+1)
+        List<Room> allRooms = rooms.findByHotelIdInOrderByPricePerNightAscIdAsc(hotelIds);
+        if (allRooms.isEmpty()) {
+            return List.of();
+        }
+
+        // 1 truy van duy nhat dem so don chong lan cua toan bo cac khach san tren (tranh N+1)
+        Map<Long, Long> bookedMap = bookings.countOverlappingByHotels(hotelIds, s.checkIn(), s.checkOut()).stream()
                 .collect(Collectors.toMap(RoomBookedCount::roomId, RoomBookedCount::booked));
+
+        // Nhom phong theo hotel_id trong bo nho (O(1) lookup)
+        Map<Long, List<Room>> roomsByHotel = allRooms.stream()
+                .collect(Collectors.groupingBy(r -> r.getHotel().getId()));
+
         String targetType = lower(s.roomType());
-        return hotelRooms.stream().anyMatch(r -> {
-            if (targetType != null && !r.getRoomType().toLowerCase(Locale.ROOT).equals(targetType)) return false;
-            if (s.minPrice() != null && r.getPricePerNight().compareTo(s.minPrice()) < 0) return false;
-            if (s.maxPrice() != null && r.getPricePerNight().compareTo(s.maxPrice()) > 0) return false;
-            return r.remaining(booked.getOrDefault(r.getId(), 0L)) > 0;
-        });
+
+        return candidates.stream()
+                .filter(h -> {
+                    List<Room> hotelRooms = roomsByHotel.get(h.id());
+                    if (hotelRooms == null || hotelRooms.isEmpty()) {
+                        return false;
+                    }
+                    return hotelRooms.stream().anyMatch(r -> {
+                        if (targetType != null && !r.getRoomType().toLowerCase(Locale.ROOT).equals(targetType)) return false;
+                        if (s.minPrice() != null && r.getPricePerNight().compareTo(s.minPrice()) < 0) return false;
+                        if (s.maxPrice() != null && r.getPricePerNight().compareTo(s.maxPrice()) > 0) return false;
+                        return r.remaining(bookedMap.getOrDefault(r.getId(), 0L)) > 0;
+                    });
+                })
+                .toList();
     }
 
     private static void validatePriceRange(HotelSearch s) {

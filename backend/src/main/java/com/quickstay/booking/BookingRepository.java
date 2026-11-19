@@ -96,6 +96,45 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                                   @Param("checkOut") LocalDate checkOut);
 
     /**
+     * So don chua huy chong lan [checkIn, checkOut) cua tung loai phong tren DANH SACH nhieu khach san (batch).
+     * Giai quyet dut diem van de N+1 truy van khi loc phong trong tren ket qua tim kiem.
+     */
+    @Query("""
+            select new com.quickstay.booking.RoomBookedCount(b.room.id, count(b))
+            from Booking b
+            where b.room.hotel.id in :hotelIds
+              and b.checkIn < :checkOut
+              and b.checkOut > :checkIn
+              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
+            group by b.room.id
+            """)
+    List<RoomBookedCount> countOverlappingByHotels(@Param("hotelIds") Collection<Long> hotelIds,
+                                                   @Param("checkIn") LocalDate checkIn,
+                                                   @Param("checkOut") LocalDate checkOut);
+
+    /** Dem tong so don dat phong theo trang thai cu the (tranh load entity vao bo nho). */
+    long countByStatus(BookingStatus status);
+
+    /** Tinh tong doanh thu thuc te (CONFIRMED, CHECKED_IN, COMPLETED) truc tiep bang ham SUM trong SQL. */
+    @Query("""
+            select coalesce(sum(b.totalPrice), 0)
+            from Booking b
+            where b.status in (com.quickstay.booking.BookingStatus.CONFIRMED,
+                               com.quickstay.booking.BookingStatus.CHECKED_IN,
+                               com.quickstay.booking.BookingStatus.COMPLETED)
+            """)
+    java.math.BigDecimal sumConfirmedRevenue();
+
+    /** Lay top cac loai phong duoc dat nhieu nhat bang GROUP BY va ORDER BY truc tiep tren DB. */
+    @Query("""
+            select b.room.roomType, count(b)
+            from Booking b
+            group by b.room.roomType
+            order by count(b) desc
+            """)
+    List<Object[]> findTopBookedRoomTypes(Pageable pageable);
+
+    /**
      * Kiem tra xem loai phong co bat ky don dat phong nao khong (moi trang thai).
      * bookings.room_id NOT NULL nen khong the xoa Room khi con Booking, ke ca CANCELLED.
      * Goi tu RoomAdminService.delete() (T095).

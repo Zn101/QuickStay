@@ -46,11 +46,11 @@ public class RoomAdminService {
     @Transactional(readOnly = true)
     public List<RoomResponse> list(Long hotelId) {
         if (hotelId != null) {
-            return roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(hotelId).stream()
+            return roomRepository.findWithHotelByHotelId(hotelId).stream()
                     .map(RoomResponse::of)
                     .toList();
         }
-        return roomRepository.findAll().stream()
+        return roomRepository.findAllWithHotel().stream()
                 .map(RoomResponse::of)
                 .toList();
     }

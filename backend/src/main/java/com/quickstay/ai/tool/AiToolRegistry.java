@@ -83,43 +83,55 @@ public class AiToolRegistry {
                     List<Hotel> hotelList = hotels.findAll();
                     String cityNormalized = stripAccents(city);
 
-                    List<Map<String, Object>> matchedRooms = new ArrayList<>();
-
-                    for (Hotel h : hotelList) {
+                    List<Hotel> matchingHotels = hotelList.stream().filter(h -> {
                         if (cityNormalized != null && !cityNormalized.isBlank()) {
                             if (!stripAccents(h.getCity()).contains(cityNormalized) && !stripAccents(h.getName()).contains(cityNormalized)) {
-                                continue;
+                                return false;
                             }
                         }
                         if (amenities != null && !amenities.isBlank()) {
                             if (h.getAmenities() == null || !stripAccents(h.getAmenities()).contains(stripAccents(amenities))) {
-                                continue;
+                                return false;
                             }
                         }
+                        return true;
+                    }).toList();
 
-                        List<Room> rList = rooms.findByHotelIdOrderByPricePerNightAscIdAsc(h.getId());
-                        for (Room r : rList) {
-                            if (guests != null && r.getCapacity() < guests) continue;
-                            if (maxPrice != null && r.getPricePerNight().compareTo(maxPrice) > 0) continue;
+                    if (matchingHotels.isEmpty()) {
+                        return ToolCallResult.ok(toolCallId, "search_rooms", List.of());
+                    }
 
-                            long booked = bookings.countOverlapping(r.getId(), in, out);
-                            long available = Math.max(0, r.getQuantity() - booked);
+                    List<Long> matchedHotelIds = matchingHotels.stream().map(Hotel::getId).toList();
+                    List<Room> allRooms = rooms.findByHotelIdInOrderByPricePerNightAscIdAsc(matchedHotelIds);
+                    Map<Long, Long> bookedMap = bookings.countOverlappingByHotels(matchedHotelIds, in, out).stream()
+                            .collect(Collectors.toMap(com.quickstay.booking.RoomBookedCount::roomId, com.quickstay.booking.RoomBookedCount::booked));
 
-                            if (available > 0) {
-                                Map<String, Object> item = new LinkedHashMap<>();
-                                item.put("hotelId", h.getId());
-                                item.put("hotelName", h.getName());
-                                item.put("city", h.getCity());
-                                item.put("roomId", r.getId());
-                                item.put("roomType", r.getRoomType());
-                                item.put("capacity", r.getCapacity());
-                                item.put("pricePerNight", r.getPricePerNight());
-                                item.put("priceFormatted", VND.format(r.getPricePerNight()) + " VND");
-                                item.put("availableRooms", available);
-                                item.put("checkIn", in.toString());
-                                item.put("checkOut", out.toString());
-                                matchedRooms.add(item);
-                            }
+                    LocalDate finalIn = in;
+                    LocalDate finalOut = out;
+                    List<Map<String, Object>> matchedRooms = new ArrayList<>();
+
+                    for (Room r : allRooms) {
+                        if (guests != null && r.getCapacity() < guests) continue;
+                        if (maxPrice != null && r.getPricePerNight().compareTo(maxPrice) > 0) continue;
+
+                        long booked = bookedMap.getOrDefault(r.getId(), 0L);
+                        long available = Math.max(0, r.getQuantity() - booked);
+
+                        if (available > 0) {
+                            Hotel h = r.getHotel();
+                            Map<String, Object> item = new LinkedHashMap<>();
+                            item.put("hotelId", h.getId());
+                            item.put("hotelName", h.getName());
+                            item.put("city", h.getCity());
+                            item.put("roomId", r.getId());
+                            item.put("roomType", r.getRoomType());
+                            item.put("capacity", r.getCapacity());
+                            item.put("pricePerNight", r.getPricePerNight());
+                            item.put("priceFormatted", VND.format(r.getPricePerNight()) + " VND");
+                            item.put("availableRooms", available);
+                            item.put("checkIn", finalIn.toString());
+                            item.put("checkOut", finalOut.toString());
+                            matchedRooms.add(item);
                         }
                     }
 
@@ -254,33 +266,29 @@ public class AiToolRegistry {
             public ToolCallResult execute(String toolCallId, Map<String, Object> args) {
                 try {
                     String metric = String.valueOf(args.get("metric")).toUpperCase();
-                    List<Booking> allBookings = bookings.findAll();
+                    long totalBookings = bookings.count();
 
                     Map<String, Object> report = new LinkedHashMap<>();
-                    report.put("totalBookingsAllTime", allBookings.size());
+                    report.put("totalBookingsAllTime", totalBookings);
 
                     if (metric.contains("CANCEL")) {
-                        long cancelled = allBookings.stream().filter(b -> b.getStatus() == BookingStatus.CANCELLED).count();
-                        double cancelRate = allBookings.isEmpty() ? 0 : (double) cancelled * 100 / allBookings.size();
+                        long cancelled = bookings.countByStatus(BookingStatus.CANCELLED);
+                        double cancelRate = totalBookings == 0 ? 0 : (double) cancelled * 100.0 / totalBookings;
                         report.put("metric", "CANCELLATIONS");
                         report.put("cancelledCount", cancelled);
                         report.put("cancellationRatePercent", Math.round(cancelRate * 10.0) / 10.0);
                         report.put("summary", "Tổng cộng " + cancelled + " đơn đã hủy (" + (Math.round(cancelRate * 10.0) / 10.0) + "% trên tổng số đơn).");
                     } else if (metric.contains("OCCUPANCY") || metric.contains("ROOM")) {
-                        Map<String, Long> roomCounts = allBookings.stream()
-                                .collect(Collectors.groupingBy(b -> b.getRoom().getRoomType(), Collectors.counting()));
-                        List<Map.Entry<String, Long>> sorted = roomCounts.entrySet().stream()
-                                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                                .limit(5).toList();
+                        List<Object[]> topRows = bookings.findTopBookedRoomTypes(org.springframework.data.domain.PageRequest.of(0, 5));
+                        List<Map.Entry<String, Long>> sorted = topRows.stream()
+                                .map(row -> Map.entry(String.valueOf(row[0]), ((Number) row[1]).longValue()))
+                                .toList();
                         report.put("metric", "ROOM_FILL_FREQUENCY");
                         report.put("topBookedRoomTypes", sorted);
                         String fastest = sorted.isEmpty() ? "Chưa có dữ liệu" : sorted.get(0).getKey() + " (" + sorted.get(0).getValue() + " lượt đặt)";
                         report.put("fastestFillingRoomType", fastest);
                     } else { // REVENUE
-                        BigDecimal totalRev = allBookings.stream()
-                                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.CHECKED_IN || b.getStatus() == BookingStatus.COMPLETED)
-                                .map(Booking::getTotalPrice)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        BigDecimal totalRev = bookings.sumConfirmedRevenue();
                         report.put("metric", "REVENUE");
                         report.put("totalRevenueConfirmedVND", totalRev);
                         report.put("formattedRevenue", VND.format(totalRev) + " VND");
