@@ -1,9 +1,13 @@
 package com.quickstay.hotel.extras;
 
+import com.quickstay.booking.BookingRepository;
+import com.quickstay.booking.BookingStatus;
 import com.quickstay.config.ApiException;
 import com.quickstay.email.EmailService;
 import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
+import com.quickstay.user.EmailVerificationPolicy;
+import com.quickstay.user.Role;
 import com.quickstay.user.User;
 import com.quickstay.user.UserRepository;
 import jakarta.validation.constraints.*;
@@ -12,11 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Service
 public class HotelExtrasService {
@@ -91,10 +97,17 @@ public class HotelExtrasService {
     private final ConciergeRequestRepository concierges;
     private final UserRepository users;
     private final EmailService emails;
+    private final BookingRepository bookings;
+    private final EmailVerificationPolicy verification;
+    private final Clock clock;
 
     public HotelExtrasService(HotelRepository hotels, HotelReviewRepository reviews,
                               HotelQuestionRepository questions, ConciergeRequestRepository concierges,
-                              UserRepository users, @Autowired(required = false) EmailService emails) {
+                              UserRepository users, @Autowired(required = false) EmailService emails,
+                              BookingRepository bookings, EmailVerificationPolicy verification, Clock clock) {
+        this.bookings = bookings;
+        this.verification = verification;
+        this.clock = clock;
         this.hotels = hotels;
         this.reviews = reviews;
         this.questions = questions;
@@ -106,14 +119,12 @@ public class HotelExtrasService {
     @Transactional(readOnly = true)
     public HotelExtrasView extras(Long hotelId) {
         Hotel h = findHotel(hotelId);
-        double[] defaultRatings = { 4.9, 4.8, 4.7, 4.9, 4.8, 4.6, 4.9, 4.7 };
-        int idx = (int) Math.abs((hotelId - 1) % defaultRatings.length);
-        double defaultRating = defaultRatings[idx];
 
-        // Tinh diem trung binh va so danh gia bang SQL index-only scan (khong can load toan bo row vao RAM)
+        // Tinh diem trung binh va so danh gia bang SQL index-only scan (khong can load toan bo row vao RAM).
+        // Chua co danh gia thi diem = 0 (khong hien thi diem gia).
         List<Object[]> stats = reviews.getRatingStatsByHotelId(hotelId);
         long revCount = 0;
-        double avg = defaultRating;
+        double avg = 0;
         if (!stats.isEmpty() && stats.get(0) != null) {
             Object[] row = stats.get(0);
             revCount = row[0] instanceof Number ? ((Number) row[0]).longValue() : 0L;
@@ -125,11 +136,7 @@ public class HotelExtrasService {
         String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
         String airportName = airportForCity(cityLower);
         List<PhotoItem> photos = buildPhotos(h);
-        List<TransferOption> transfers = List.of(
-                new TransferOption("SEDAN_4", "Xe Sedan 4 chỗ riêng tư", "Toyota Vios / Mazda 3", 3, "20 - 30 phút", BigDecimal.valueOf(250_000)),
-                new TransferOption("SUV_7", "Xe SUV 7 chỗ gia đình", "Toyota Fortuner / Innova", 6, "20 - 30 phút", BigDecimal.valueOf(380_000)),
-                new TransferOption("LIMO_VIP", "Limousine DCar VIP đón bảng tên", "Ford Transit Limousine", 9, "20 - 30 phút", BigDecimal.valueOf(650_000))
-        );
+        List<TransferOption> transfers = TRANSFERS;
         List<DiningOption> dining = diningForHotel(h);
         List<AttractionItem> attractions = attractionsForCity(cityLower);
         List<AmenityCategory> amenities = buildAmenities(h);
@@ -144,6 +151,13 @@ public class HotelExtrasService {
         return new HotelExtrasView(hotelId, avg, (int) revCount, photos, airportName, transfers, dining, attractions, amenities, policies);
     }
 
+    /** Bang gia dua don san bay: nguon duy nhat cho ca hien thi va tinh phi (khong tin phi do client gui). */
+    static final List<TransferOption> TRANSFERS = List.of(
+            new TransferOption("SEDAN_4", "Xe Sedan 4 chỗ riêng tư", "Toyota Vios / Mazda 3", 3, "20 - 30 phút", BigDecimal.valueOf(250_000)),
+            new TransferOption("SUV_7", "Xe SUV 7 chỗ gia đình", "Toyota Fortuner / Innova", 6, "20 - 30 phút", BigDecimal.valueOf(380_000)),
+            new TransferOption("LIMO_VIP", "Limousine DCar VIP đón bảng tên", "Ford Transit Limousine", 9, "20 - 30 phút", BigDecimal.valueOf(650_000))
+    );
+
     @Transactional(readOnly = true)
     public List<ReviewView> reviewsOf(Long hotelId) {
         findHotel(hotelId);
@@ -154,6 +168,18 @@ public class HotelExtrasService {
     public ReviewView addReview(Long hotelId, String userEmail, CreateReviewRequest req) {
         Hotel h = findHotel(hotelId);
         User u = users.findByEmail(userEmail).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        if (u.getRole() != Role.CUSTOMER) {
+            throw ApiException.forbidden("Chi khach luu tru moi duoc danh gia");
+        }
+        verification.requireVerified(u);
+        // Chi khach da nhan phong / hoan tat ky nghi tai co so nay moi duoc danh gia, moi nguoi mot danh gia
+        if (!bookings.existsByUserIdAndRoomHotelIdAndStatusIn(u.getId(), hotelId,
+                List.of(BookingStatus.CHECKED_IN, BookingStatus.COMPLETED))) {
+            throw ApiException.forbidden("Ban can luu tru tai co so nay truoc khi danh gia");
+        }
+        if (reviews.existsByHotelIdAndUserId(hotelId, u.getId())) {
+            throw ApiException.conflict("Ban da danh gia co so nay");
+        }
         HotelReview r = new HotelReview();
         r.setHotel(h);
         r.setUserId(u.getId());
@@ -186,6 +212,28 @@ public class HotelExtrasService {
         return QuestionView.of(questions.save(q));
     }
 
+    /** Cau hoi cua co so do doi tac (HOTEL_MANAGER) phu trach. */
+    @Transactional(readOnly = true)
+    public List<QuestionView> questionsForPartner(String partnerEmail) {
+        User u = users.findByEmail(partnerEmail).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        if (u.getHotelId() == null) {
+            return List.of();
+        }
+        return questionsOf(u.getHotelId());
+    }
+
+    /** Doi tac tra loi cau hoi: chi cau hoi thuoc co so cua minh (ADMIN tra loi moi co so). */
+    @Transactional
+    public QuestionView answerQuestionAsPartner(Long questionId, String partnerEmail, AnswerQuestionRequest req) {
+        User u = users.findByEmail(partnerEmail).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        HotelQuestion q = questions.findById(questionId)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay cau hoi"));
+        if (u.getRole() != Role.ADMIN && (u.getHotelId() == null || !u.getHotelId().equals(q.getHotel().getId()))) {
+            throw ApiException.forbidden("Ban chi tra loi duoc cau hoi thuoc co so cua minh");
+        }
+        return answerQuestion(questionId, partnerEmail, req);
+    }
+
     @Transactional
     public QuestionView answerQuestion(Long questionId, String adminEmail, AnswerQuestionRequest req) {
         HotelQuestion q = questions.findById(questionId)
@@ -203,6 +251,26 @@ public class HotelExtrasService {
         if (!List.of("AIRPORT_TRANSFER", "DINING", "ATTRACTION_TRANSPORT").contains(type)) {
             throw ApiException.badRequest("Loai dich vu khong hop le");
         }
+        verification.requireVerified(u);
+        if (req.serviceDate().isBefore(LocalDate.now(clock))) {
+            throw ApiException.badRequest("Ngay su dung dich vu khong duoc o qua khu");
+        }
+        if (req.serviceDate().isAfter(LocalDate.now(clock).plusDays(365))) {
+            throw ApiException.badRequest("Chi nhan dat dich vu truoc toi da 365 ngay");
+        }
+        // Phi tinh tu bang gia cua he thong, bo qua estimatedFee client gui len.
+        // Dich vu ngoai danh muc: cho co so bao gia (PENDING, phi 0).
+        String title = req.serviceTitle().trim();
+        String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
+        Optional<BigDecimal> catalogFee = switch (type) {
+            case "AIRPORT_TRANSFER" -> TRANSFERS.stream()
+                    .filter(t -> t.title().equalsIgnoreCase(title) || t.code().equalsIgnoreCase(title))
+                    .map(TransferOption::price).findFirst();
+            case "ATTRACTION_TRANSPORT" -> attractionsForCity(cityLower).stream()
+                    .filter(a -> a.name().equalsIgnoreCase(title))
+                    .map(AttractionItem::price).findFirst();
+            default -> Optional.of(BigDecimal.ZERO); // Am thuc: thanh toan tai nha hang
+        };
         ConciergeRequest c = new ConciergeRequest();
         c.setHotel(h);
         c.setUserId(u.getId());
@@ -215,8 +283,8 @@ public class HotelExtrasService {
         c.setServiceTime(req.serviceTime() == null ? null : req.serviceTime().trim());
         c.setGuests(req.guests());
         c.setDetails(req.details() == null ? null : req.details().trim());
-        c.setEstimatedFee(req.estimatedFee() == null ? BigDecimal.ZERO : req.estimatedFee());
-        c.setStatus("CONFIRMED");
+        c.setEstimatedFee(catalogFee.orElse(BigDecimal.ZERO));
+        c.setStatus(catalogFee.isPresent() ? "CONFIRMED" : "PENDING");
         concierges.save(c);
 
         if (emails != null) {

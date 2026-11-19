@@ -61,6 +61,11 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
         return r.getId();
     }
 
+    private static String tokenFromEmail(EmailLog log) {
+        var m = java.util.regex.Pattern.compile("token=([0-9a-f-]{36})").matcher(log.getBodyHtml());
+        return m.find() ? m.group(1) : null;
+    }
+
     @Test
     void register_sends_verification_email_and_verify_endpoint_marks_verified() throws Exception {
         String email = newCustomerEmail();
@@ -69,14 +74,15 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.user.emailVerified").value(false));
 
-        User saved = users.findByEmail(email).orElseThrow();
-        String token = saved.getVerificationToken();
-        assertNotNull(token);
-
         List<EmailLog> logs = emailLogs.findTop30ByRecipientOrderBySentAtDescIdDesc(email);
         assertFalse(logs.isEmpty());
         assertEquals("EMAIL_VERIFICATION", logs.get(0).getEmailType());
-        assertTrue(logs.get(0).getBodyHtml().contains(token));
+        String token = tokenFromEmail(logs.get(0));
+        assertNotNull(token);
+
+        // DB chi luu ban bam SHA-256, khong luu ma goc
+        User saved = users.findByEmail(email).orElseThrow();
+        assertEquals(com.quickstay.security.TokenHasher.sha256(token), saved.getVerificationToken());
 
         mvc.perform(withBody(post("/api/auth/verify-email"), null, Map.of("token", token)))
                 .andExpect(status().isOk())
@@ -97,8 +103,9 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
                 .andExpect(jsonPath("$.demoMode").value(true))
                 .andExpect(jsonPath("$.demoEmail").doesNotExist());
 
-        String resetToken = users.findByEmail(email).orElseThrow().getResetToken();
+        String resetToken = tokenFromEmail(emailLogs.findTop30ByRecipientOrderBySentAtDescIdDesc(email).get(0));
         assertNotNull(resetToken);
+        assertNotEquals(resetToken, users.findByEmail(email).orElseThrow().getResetToken());
 
         // Khong bao gio lo token qua API forgot-password cho ca admin va customer
         mvc.perform(withBody(post("/api/auth/forgot-password"), null, Map.of("email", ADMIN_EMAIL)))

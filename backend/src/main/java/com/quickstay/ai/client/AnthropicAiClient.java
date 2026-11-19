@@ -61,6 +61,8 @@ public class AnthropicAiClient implements AiClient {
         RetryConfig retryConfig = RetryConfig.custom()
                 .maxAttempts(2)
                 .waitDuration(Duration.ofMillis(800))
+                // Loi 4xx (sai key, request khong hop le, het quota) goi lai cung khong khoi: khong retry
+                .ignoreExceptions(org.springframework.web.client.HttpClientErrorException.class)
                 .build();
         this.retry = Retry.of("anthropicAiClient", retryConfig);
     }

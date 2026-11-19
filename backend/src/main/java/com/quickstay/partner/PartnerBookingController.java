@@ -7,8 +7,10 @@ import com.quickstay.booking.BookingDtos.BookingView;
 import com.quickstay.booking.BookingService;
 import com.quickstay.booking.BookingStatus;
 import com.quickstay.config.ApiException;
-import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
+import com.quickstay.hotel.extras.HotelExtrasService;
+import com.quickstay.hotel.extras.HotelExtrasService.AnswerQuestionRequest;
+import com.quickstay.hotel.extras.HotelExtrasService.QuestionView;
 import com.quickstay.user.Role;
 import com.quickstay.user.User;
 import com.quickstay.user.UserRepository;
@@ -21,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cổng tiếp nhận và xử lý đơn đặt phòng và thông tin cơ sở lưu trú dành cho đối tác Khách sạn / Homestay (/api/partner/**).
+ * Cổng tiếp nhận và xử lý đơn đặt phòng, thông tin cơ sở và hỏi đáp dành cho đối tác Khách sạn / Homestay (/api/partner/**).
  */
 @RestController
 @RequestMapping("/api/partner")
@@ -31,15 +33,18 @@ public class PartnerBookingController {
     private final UserRepository users;
     private final HotelRepository hotels;
     private final HotelAdminService hotelAdminService;
+    private final HotelExtrasService extras;
 
     public PartnerBookingController(BookingService bookingService,
                                     UserRepository users,
                                     HotelRepository hotels,
-                                    HotelAdminService hotelAdminService) {
+                                    HotelAdminService hotelAdminService,
+                                    HotelExtrasService extras) {
         this.bookingService = bookingService;
         this.users = users;
         this.hotels = hotels;
         this.hotelAdminService = hotelAdminService;
+        this.extras = extras;
     }
 
     private User currentUser(Authentication auth) {
@@ -47,36 +52,42 @@ public class PartnerBookingController {
                 .orElseThrow(() -> ApiException.unauthorized("Tài khoản không tồn tại"));
     }
 
+    /**
+     * Cơ sở của đối tác. ADMIN (không gắn cơ sở) có thể chỉ định ?hotelId=; bỏ trống thì xem cơ sở đầu tiên (chỉ đọc).
+     * Trả DTO, không trả entity JPA.
+     */
     @GetMapping("/hotel")
     @Transactional(readOnly = true)
-    public Hotel getMyHotel(Authentication auth) {
+    public HotelResponse getMyHotel(Authentication auth, @RequestParam(required = false) Long hotelId) {
         User u = currentUser(auth);
         if (u.getRole() == Role.ADMIN) {
-            return hotels.findAll().stream().findFirst().orElse(null);
+            var hotel = hotelId != null
+                    ? hotels.findById(hotelId)
+                    : hotels.findAll().stream().findFirst();
+            return hotel.map(HotelResponse::of)
+                    .orElseThrow(() -> ApiException.notFound("Không tìm thấy cơ sở lưu trú"));
         }
         if (u.getHotelId() == null) {
             throw ApiException.notFound("Tài khoản chưa được gán cơ sở lưu trú");
         }
         return hotels.findById(u.getHotelId())
+                .map(HotelResponse::of)
                 .orElseThrow(() -> ApiException.notFound("Không tìm thấy cơ sở lưu trú tương ứng"));
     }
 
+    /** Đối tác cập nhật cơ sở được gán. ADMIN phải chỉ rõ cơ sở qua PUT /api/partner/hotel/{id}. */
     @PutMapping("/hotel")
     public HotelResponse updateMyHotel(
             Authentication auth,
             @Valid @RequestBody HotelRequest req) {
         User u = currentUser(auth);
-        Long hotelId = u.getHotelId();
-        if (u.getRole() == Role.ADMIN) {
-            if (hotelId == null) {
-                hotelId = hotels.findAll().stream().findFirst()
-                        .map(Hotel::getId)
-                        .orElseThrow(() -> ApiException.notFound("Không có cơ sở lưu trú nào"));
-            }
-        } else if (hotelId == null) {
+        if (u.getRole() == Role.ADMIN && u.getHotelId() == null) {
+            throw ApiException.badRequest("Quản trị viên cần chỉ định cơ sở: dùng PUT /api/partner/hotel/{id}");
+        }
+        if (u.getHotelId() == null) {
             throw ApiException.notFound("Tài khoản chưa được gán cơ sở lưu trú");
         }
-        return hotelAdminService.update(hotelId, req);
+        return hotelAdminService.update(u.getHotelId(), req);
     }
 
     @PutMapping("/hotel/{id}")
@@ -121,7 +132,24 @@ public class PartnerBookingController {
         }
 
         User u = currentUser(auth);
+        if (u.getRole() != Role.ADMIN && u.getHotelId() == null) {
+            // Không có cơ sở thì không có quyền trên đơn nào (không để null bỏ qua kiểm tra sở hữu)
+            throw ApiException.forbidden("Tài khoản chưa được gán cơ sở lưu trú");
+        }
         Long partnerHotelId = u.getRole() == Role.ADMIN ? null : u.getHotelId();
         return bookingService.changeStatusForPartner(id, status, partnerHotelId);
+    }
+
+    /** Câu hỏi của khách về cơ sở do đối tác phụ trách. */
+    @GetMapping("/questions")
+    public List<QuestionView> myQuestions(Authentication auth) {
+        return extras.questionsForPartner(auth.getName());
+    }
+
+    /** Đối tác trả lời câu hỏi thuộc cơ sở của mình. */
+    @PatchMapping("/questions/{qid}")
+    public QuestionView answerQuestion(Authentication auth, @PathVariable Long qid,
+                                       @Valid @RequestBody AnswerQuestionRequest req) {
+        return extras.answerQuestionAsPartner(qid, auth.getName(), req);
     }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
 import { api } from '../lib/api'
+import PartnerQuestions from '../components/PartnerQuestions'
 import { formatVnd, formatDate, nightsBetween, STATUS_LABEL, STATUS_STYLE, PAYMENT_METHOD_LABEL } from '../lib/format'
 import { StatusBadge, PaymentBadge, ErrorBox, Spinner, ConfirmModal } from '../components/ui'
 
@@ -125,7 +126,8 @@ export default function PartnerDashboard() {
     setHotelFormBusy(true)
     setHotelFormError('')
     try {
-      const updated = await api('/partner/hotel', {
+      // Luôn chỉ rõ cơ sở: admin không còn "sửa cơ sở đầu tiên" ngầm định
+      const updated = await api(`/partner/hotel/${hotel.id}`, {
         method: 'PUT',
         body: hotelForm,
       })
@@ -1015,6 +1017,9 @@ export default function PartnerDashboard() {
             )}
           </div>
         )}
+
+        {/* Hỏi đáp của khách (đối tác trả lời câu hỏi của cơ sở mình) */}
+        {user?.role === 'HOTEL_MANAGER' && <PartnerQuestions />}
 
         {/* Modal xác nhận Hủy đơn */}
         <ConfirmModal

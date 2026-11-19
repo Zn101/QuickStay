@@ -8,6 +8,9 @@ import com.quickstay.config.ApiException;
 import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
 import com.quickstay.hotel.RoomRepository;
+import com.quickstay.hotel.extras.ConciergeRequestRepository;
+import com.quickstay.hotel.extras.HotelQuestionRepository;
+import com.quickstay.hotel.extras.HotelReviewRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,10 +30,19 @@ public class HotelAdminService {
     private final HotelRepository hotelRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
+    private final HotelReviewRepository reviewRepository;
+    private final HotelQuestionRepository questionRepository;
+    private final ConciergeRequestRepository conciergeRepository;
 
     public HotelAdminService(HotelRepository hotelRepository,
                              RoomRepository roomRepository,
-                             BookingRepository bookingRepository) {
+                             BookingRepository bookingRepository,
+                             HotelReviewRepository reviewRepository,
+                             HotelQuestionRepository questionRepository,
+                             ConciergeRequestRepository conciergeRepository) {
+        this.reviewRepository = reviewRepository;
+        this.questionRepository = questionRepository;
+        this.conciergeRepository = conciergeRepository;
         this.hotelRepository = hotelRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
@@ -111,6 +123,13 @@ public class HotelAdminService {
                     "Khach san da co dat phong, khong the xoa");
         }
 
+        // Yeu cau dich vu concierge la giao dich cua khach: khong xoa am tham
+        if (conciergeRepository.existsByHotelId(id)) {
+            throw ApiException.conflict("Khach san da co yeu cau dich vu (concierge), khong the xoa");
+        }
+        // Danh gia va hoi dap gan voi khach san (FK khong cascade): xoa truoc de khong vi pham rang buoc
+        reviewRepository.deleteByHotelId(id);
+        questionRepository.deleteByHotelId(id);
         roomRepository.deleteAll(roomRepository.findByHotelIdOrderByPricePerNightAscIdAsc(id));
         hotelRepository.delete(hotel);
         log.info("Admin xoa khach san id={} name=\"{}\"", id, hotel.getName());

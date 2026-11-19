@@ -9,6 +9,7 @@ import com.quickstay.email.EmailService;
 import com.quickstay.hotel.Room;
 import com.quickstay.hotel.RoomRepository;
 import com.quickstay.user.User;
+import com.quickstay.user.EmailVerificationPolicy;
 import com.quickstay.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,14 +37,25 @@ public class BookingService {
     private final UserRepository users;
     private final Clock clock;
     private final EmailService emails;
+    private final EmailVerificationPolicy verification;
+
+    /** Dat toi da 365 ngay truoc va toi da 30 dem moi don. */
+    static final int MAX_DAYS_AHEAD = 365;
+    static final int MAX_NIGHTS = 30;
 
     public BookingService(BookingRepository bookings, RoomRepository rooms, UserRepository users, Clock clock) {
-        this(bookings, rooms, users, clock, null);
+        this(bookings, rooms, users, clock, null, EmailVerificationPolicy.disabled());
+    }
+
+    public BookingService(BookingRepository bookings, RoomRepository rooms, UserRepository users, Clock clock,
+                          EmailService emails) {
+        this(bookings, rooms, users, clock, emails, EmailVerificationPolicy.disabled());
     }
 
     @Autowired
     public BookingService(BookingRepository bookings, RoomRepository rooms, UserRepository users, Clock clock,
-                          @Autowired(required = false) EmailService emails) {
+                          @Autowired(required = false) EmailService emails, EmailVerificationPolicy verification) {
+        this.verification = verification;
         this.bookings = bookings;
         this.rooms = rooms;
         this.users = users;
@@ -62,6 +74,7 @@ public class BookingService {
         Room room = rooms.findByIdForUpdate(req.roomId())
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay phong"));
         User user = users.findByEmail(email).orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        verification.requireVerified(user);
         if (req.guests() > room.getCapacity()) {
             throw ApiException.badRequest("Phong chi chua toi da " + room.getCapacity() + " khach");
         }
@@ -115,6 +128,7 @@ public class BookingService {
         b.setPaymentStatus(PaymentStatus.PAID);
         b.setPaymentRef("QS-PAY-" + b.getId() + "-" + suffix);
         b.setPaidAt(Instant.now(clock));
+        b.setPaymentAccountLabel(req.accountLabel());
         bookings.save(b);
         log.info("Thanh toan mo phong thanh cong don #{} ref={} method={}", b.getId(), b.getPaymentRef(), req.paymentMethod());
         if (emails != null) {
@@ -160,6 +174,11 @@ public class BookingService {
             emails.sendBookingStatusEmail(b);
         }
         return BookingView.of(b);
+    }
+
+    @Transactional(readOnly = true)
+    public long countByStatus(BookingStatus status) {
+        return bookings.countByStatus(status);
     }
 
     /** GET /api/admin/bookings: toan bo don, moi nhat truoc. */
@@ -233,8 +252,15 @@ public class BookingService {
         if (!checkOut.isAfter(checkIn)) {
             throw ApiException.badRequest("Ngay tra phong phai sau ngay nhan phong");
         }
-        if (checkIn.isBefore(LocalDate.now(clock))) {
+        LocalDate today = LocalDate.now(clock);
+        if (checkIn.isBefore(today)) {
             throw ApiException.badRequest("Ngay nhan phong khong duoc o qua khu");
+        }
+        if (checkIn.isAfter(today.plusDays(MAX_DAYS_AHEAD))) {
+            throw ApiException.badRequest("Chi nhan dat phong truoc toi da " + MAX_DAYS_AHEAD + " ngay");
+        }
+        if (ChronoUnit.DAYS.between(checkIn, checkOut) > MAX_NIGHTS) {
+            throw ApiException.badRequest("Moi don dat toi da " + MAX_NIGHTS + " dem");
         }
     }
 

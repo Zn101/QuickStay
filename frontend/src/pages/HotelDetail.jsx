@@ -22,35 +22,6 @@ function validateDates(inDate, outDate) {
   return ''
 }
 
-const REVIEWS_POOL = [
-  { authorName: 'Đặng Thùy Dương', rating: 5, stayType: 'Kỳ nghỉ gia đình', comment: 'Không gian nghỉ dưỡng tuyệt vời, phòng ốc sạch bóng không tì vết. Đội ngũ nhân viên luôn niềm nở, hỗ trợ gia đình mình rất nhiệt tình từ lúc nhận phòng đến khi trả phòng.' },
-  { authorName: 'Vũ Hoàng Nam', rating: 5, stayType: 'Chuyến công tác', comment: 'Khách sạn có vị trí đắc địa, đi lại cực kỳ thuận tiện. Bàn làm việc trong phòng rất rộng rãi, wifi tốc độ cao và đường truyền cực kỳ ổn định để họp trực tuyến.' },
-  { authorName: 'Lê Thảo Vy', rating: 4, stayType: 'Cặp đôi', comment: 'Cảnh quan hoàng hôn lãng mạn, giường nệm King size êm ái cho giấc ngủ rất sâu. Điểm cộng lớn là buffet sáng phong phú cả món Âu lẫn món Việt.' },
-  { authorName: 'Phan Quốc Huy', rating: 5, stayType: 'Nhóm bạn bè', comment: 'Dịch vụ đưa đón sân bay rất đúng giờ, xe mới sạch sẽ và bác tài lái xe êm. Chắc chắn sẽ quay lại lưu trú trong chuyến du lịch sắp tới.' },
-  { authorName: 'Nguyễn Bích Ngọc', rating: 5, stayType: 'Kỳ nghỉ dưỡng', comment: 'Hồ bơi vô cực ngắm trọn cảnh quan tuyệt đẹp. Thủ tục check-in nhanh gọn chỉ mất 2 phút. Dịch vụ phòng chu đáo và luôn sẵn sàng hỗ trợ.' },
-  { authorName: 'Trịnh Thế Bảo', rating: 4, stayType: 'Gia đình nhỏ', comment: 'Không gian thoáng mát, các bé nhà mình rất thích khu vực sân vườn và hồ bơi. Đồ ăn sáng tươi ngon và thay đổi món liên tục.' },
-  { authorName: 'Hoàng Mai Phương', rating: 5, stayType: 'Du lịch nghỉ dưỡng', comment: 'Trải nghiệm vượt ngoài mong đợi! Giường nệm chuẩn 5 sao, bồn tắm thư giãn tuyệt vời sau một ngày dài dạo chơi.' },
-]
-
-function getHotelDiversifiedReviews(hotel, rawReviews) {
-  const userAdded = (rawReviews || []).filter((r) => r.isUserCreated || (r.id && typeof r.id === 'number' && r.id > 100))
-  const hotelIdNum = Number(hotel?.id) || 1
-  const startIdx = (hotelIdNum * 2) % REVIEWS_POOL.length
-  const pool = [
-    ...REVIEWS_POOL.slice(startIdx),
-    ...REVIEWS_POOL.slice(0, startIdx),
-  ]
-  const seeded = pool.slice(0, 3).map((item, idx) => ({
-    id: `custom-rev-${hotel?.id}-${idx}`,
-    authorName: item.authorName,
-    rating: item.rating,
-    stayType: item.stayType,
-    comment: item.comment,
-    createdAt: 'Tháng 11/2026',
-  }))
-  return [...userAdded, ...seeded]
-}
-
 export default function HotelDetail() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -389,13 +360,12 @@ export default function HotelDetail() {
   })
 
   const mapQuery = encodeURIComponent([hotel.name, hotel.address, hotel.city, 'Vietnam'].filter(Boolean).join(', '))
-  const displayReviews = hotel ? getHotelDiversifiedReviews(hotel, reviews) : reviews
-  const defaultRatings = ['4.9', '4.8', '4.7', '4.9', '4.8', '4.6', '4.9', '4.7']
-  const fallbackHotelRating = defaultRatings[Math.abs((Number(hotel.id) - 1) % defaultRatings.length)]
+  // Chỉ hiển thị đánh giá thật từ API (không trộn đánh giá mẫu, không ẩn đánh giá có id nhỏ)
+  const displayReviews = reviews || []
   const avgRating =
     displayReviews.length > 0
       ? (displayReviews.reduce((sum, r) => sum + r.rating, 0) / displayReviews.length).toFixed(1)
-      : hotel.rating ? Number(hotel.rating).toFixed(1) : extras?.averageRating || fallbackHotelRating
+      : '—'
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -816,7 +786,7 @@ export default function HotelDetail() {
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">/ 5</span>
                   </div>
                   <span className="text-xs font-bold text-amber-800 dark:text-amber-300">
-                    {parseFloat(avgRating) >= 4.5 ? 'Xuất sắc' : 'Rất tốt'} · {reviews.length} đánh giá
+                    {reviews.length === 0 ? 'Chưa có đánh giá' : parseFloat(avgRating) >= 4.5 ? 'Xuất sắc' : parseFloat(avgRating) >= 4 ? 'Rất tốt' : parseFloat(avgRating) >= 3 ? 'Tốt' : 'Trung bình'} · {reviews.length} đánh giá
                   </span>
                 </div>
               </div>

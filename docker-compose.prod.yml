@@ -37,10 +37,12 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
       DB_USER: quickstay
       DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?Can dat JWT_SECRET trong .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Can dat ADMIN_PASSWORD trong .env}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-false}
+      REQUIRE_VERIFIED_EMAIL: ${REQUIRE_VERIFIED_EMAIL:-true}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-https://quickstay.io.vn}
       MAIL_HOST: ${MAIL_HOST:-}

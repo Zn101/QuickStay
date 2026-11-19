@@ -141,6 +141,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByRoomId(Long roomId);
 
+    /** Khach da tung luu tru (theo trang thai) tai khach san: dieu kien de danh gia. */
+    boolean existsByUserIdAndRoomHotelIdAndStatusIn(Long userId, Long hotelId, Collection<BookingStatus> statuses);
+
+    /** Don con hieu luc (chua huy / chua hoan tat) chua tra phong cua mot loai phong: dung de tinh dinh so phong dang dung. */
+    @Query("""
+            select b from Booking b
+            where b.room.id = :roomId
+              and b.checkOut > :today
+              and b.status in (com.quickstay.booking.BookingStatus.PENDING,
+                               com.quickstay.booking.BookingStatus.CONFIRMED,
+                               com.quickstay.booking.BookingStatus.CHECKED_IN)
+            """)
+    List<Booking> findActiveUpcomingByRoom(@Param("roomId") Long roomId, @Param("today") LocalDate today);
+
     /**
      * Kiem tra xem khach san co don dat phong o cac trang thai cho truoc khong.
      * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).

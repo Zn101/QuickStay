@@ -11,6 +11,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -34,10 +39,12 @@ public class EmailService {
     private final String mailHost;
     private final String fromAddress;
     private final String frontendUrl;
+    private final TransactionTemplate newTx;
 
     public EmailService(
             EmailLogRepository logs,
             ObjectProvider<JavaMailSender> mailSenderProvider,
+            PlatformTransactionManager txManager,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:no-reply@quickstay.io.vn}") String fromAddress,
             @Value("${app.frontend-url:http://localhost:5173}") String frontendUrl) {
@@ -46,17 +53,45 @@ public class EmailService {
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
         this.frontendUrl = frontendUrl.endsWith("/") ? frontendUrl.substring(0, frontendUrl.length() - 1) : frontendUrl;
+        this.newTx = new TransactionTemplate(txManager);
+        this.newTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public boolean smtpEnabled() {
         return mailHost != null && !mailHost.isBlank() && mailSenderProvider.getIfAvailable() != null;
     }
 
-    public EmailLog send(String to, String subject, String bodyHtml, String emailType) {
-        String safeBody = bodyHtml.length() > 7900 ? bodyHtml.substring(0, 7900) : bodyHtml;
-        String status = "SENT_DEMO";
+    public void send(String to, String subject, String bodyHtml, String emailType) {
+        send(to, subject, bodyHtml, emailType, null);
+    }
 
-        if (smtpEnabled()) {
+    /**
+     * Gui email. Neu dang trong transaction: chi gui SAU KHI commit de
+     * (1) khong giu khoa dong (vd. khoa phong khi dat) trong luc cho SMTP,
+     * (2) khong gui email cho thao tac da bi rollback.
+     *
+     * @param secret ma bi mat trong noi dung (ma xac thuc / khoi phuc). Khi he thong co SMTP that,
+     *               ban luu trong email_logs bi che ma nay: hop thu trong ung dung khong duoc thay the email that.
+     */
+    public void send(String to, String subject, String bodyHtml, String emailType, String secret) {
+        String safeBody = bodyHtml.length() > 7900 ? bodyHtml.substring(0, 7900) : bodyHtml;
+        Runnable task = () -> deliver(to, subject, safeBody, emailType, secret);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
+    }
+
+    private void deliver(String to, String subject, String body, String emailType, String secret) {
+        String status;
+        boolean smtp = smtpEnabled();
+        if (smtp) {
             try {
                 JavaMailSender sender = mailSenderProvider.getIfAvailable();
                 MimeMessage message = sender.createMimeMessage();
@@ -64,28 +99,35 @@ public class EmailService {
                 helper.setFrom(fromAddress);
                 helper.setTo(to);
                 helper.setSubject(subject);
-                helper.setText(safeBody, true);
+                helper.setText(body, true);
                 sender.send(message);
                 status = "SENT_SMTP";
                 log.info("Da gui email SMTP toi {} [{}]", to, emailType);
             } catch (Exception e) {
-                log.warn("Gui email SMTP toi {} that bai ({}), luu du phong vao email_logs", to, e.getMessage());
-                status = "SENT_DEMO";
+                log.warn("Gui email SMTP toi {} that bai ({})", to, e.getMessage());
+                status = "FAILED_SMTP";
             }
         } else {
+            status = "SENT_DEMO";
             log.info("[DEMO EMAIL] To: {} | Type: {} | Subject: {}", to, emailType, subject);
         }
 
+        String stored = smtp && secret != null && !secret.isEmpty() ? body.replace(secret, "••••••••") : body;
         EmailLog entry = new EmailLog();
         entry.setRecipient(to);
         entry.setSubject(subject);
-        entry.setBodyHtml(safeBody);
+        entry.setBodyHtml(stored);
         entry.setEmailType(emailType);
         entry.setStatus(status);
-        return logs.save(entry);
+        try {
+            // afterCommit: transaction cu da xong, phai mo transaction moi thi ban ghi moi duoc luu
+            newTx.executeWithoutResult(s -> logs.save(entry));
+        } catch (Exception e) {
+            log.warn("Khong luu duoc email_logs cho {} [{}]: {}", to, emailType, e.getMessage());
+        }
     }
 
-    public EmailLog sendVerificationEmail(String to, String fullName, String token) {
+    public void sendVerificationEmail(String to, String fullName, String token) {
         String link = frontendUrl + "/verify-email?token=" + escape(token);
         String name = escape(fullName == null || fullName.isBlank() ? "Quý khách" : fullName);
         String html = wrapTemplate(
@@ -96,10 +138,10 @@ public class EmailService {
                 + "<p style='font-size:13px;color:#64748b;'>Hoặc sử dụng mã xác thực: <code style='background:#f1f5f9;padding:3px 8px;border-radius:6px;font-weight:700;color:#0f172a;'>" + escape(token) + "</code></p>"
                 + "<p style='font-size:12px;color:#94a3b8;'>Liên kết có hiệu lực trong vòng 24 giờ. Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email.</p>"
         );
-        return send(to, "[QuickStay] Xác thực địa chỉ email tài khoản", html, "EMAIL_VERIFICATION");
+        send(to, "[QuickStay] Xác thực địa chỉ email tài khoản", html, "EMAIL_VERIFICATION", token);
     }
 
-    public EmailLog sendPasswordResetEmail(String to, String fullName, String token) {
+    public void sendPasswordResetEmail(String to, String fullName, String token) {
         String link = frontendUrl + "/reset-password?token=" + escape(token);
         String name = escape(fullName == null || fullName.isBlank() ? "Quý khách" : fullName);
         String html = wrapTemplate(
@@ -110,10 +152,10 @@ public class EmailService {
                 + "<p style='font-size:13px;color:#64748b;'>Hoặc nhập mã khôi phục: <code style='background:#f1f5f9;padding:3px 8px;border-radius:6px;font-weight:700;color:#0f172a;'>" + escape(token) + "</code></p>"
                 + "<p style='font-size:12px;color:#94a3b8;'>Liên kết sẽ hết hạn sau <strong>15 phút</strong>. Nếu bạn không yêu cầu thay đổi mật khẩu, tài khoản của bạn vẫn an toàn và bạn có thể bỏ qua email này.</p>"
         );
-        return send(to, "[QuickStay] Hướng dẫn đặt lại mật khẩu", html, "PASSWORD_RESET");
+        send(to, "[QuickStay] Hướng dẫn đặt lại mật khẩu", html, "PASSWORD_RESET", token);
     }
 
-    public EmailLog sendPasswordChangedEmail(String to, String fullName) {
+    public void sendPasswordChangedEmail(String to, String fullName) {
         String name = escape(fullName == null || fullName.isBlank() ? "Quý khách" : fullName);
         String html = wrapTemplate(
                 "Mật khẩu của bạn đã được cập nhật",
@@ -121,10 +163,10 @@ public class EmailService {
                 + "<p>Mật khẩu đăng nhập tài khoản QuickStay của bạn vừa được thay đổi thành công.</p>"
                 + "<p style='font-size:13px;color:#64748b;'>Nếu bạn không thực hiện thao tác này, vui lòng liên hệ hỗ trợ ngay lập tức để bảo vệ tài khoản.</p>"
         );
-        return send(to, "[QuickStay] Thông báo thay đổi mật khẩu", html, "PASSWORD_CHANGED");
+        send(to, "[QuickStay] Thông báo thay đổi mật khẩu", html, "PASSWORD_CHANGED");
     }
 
-    public EmailLog sendBookingConfirmationEmail(Booking b) {
+    public void sendBookingConfirmationEmail(Booking b) {
         String hotelName = escape(b.getRoom().getHotel().getName());
         String roomType = escape(b.getRoom().getRoomType());
         String guest = escape(b.getGuestName());
@@ -147,10 +189,10 @@ public class EmailService {
                 })
                 + ctaButton(frontendUrl + "/my-bookings", "Xem chi tiết đơn đặt phòng", "#0284c7")
         );
-        return send(b.getUser().getEmail(), "[QuickStay] Xác nhận đặt phòng #" + b.getId() + " - " + b.getRoom().getHotel().getName(), html, "BOOKING_CONFIRMATION");
+        send(b.getUser().getEmail(), "[QuickStay] Xác nhận đặt phòng #" + b.getId() + " - " + b.getRoom().getHotel().getName(), html, "BOOKING_CONFIRMATION");
     }
 
-    public EmailLog sendPaymentReceiptEmail(Booking b) {
+    public void sendPaymentReceiptEmail(Booking b) {
         String hotelName = escape(b.getRoom().getHotel().getName());
         String guest = escape(b.getGuestName());
         String paidTime = b.getPaidAt() != null ? TS_FMT.format(b.getPaidAt()) : "";
@@ -169,10 +211,10 @@ public class EmailService {
                 })
                 + ctaButton(frontendUrl + "/my-bookings", "Xem biên lai trên QuickStay", "#059669")
         );
-        return send(b.getUser().getEmail(), "[QuickStay] Biên lai thanh toán #" + b.getId() + " (" + b.getPaymentRef() + ")", html, "PAYMENT_RECEIPT");
+        send(b.getUser().getEmail(), "[QuickStay] Biên lai thanh toán #" + b.getId() + " (" + b.getPaymentRef() + ")", html, "PAYMENT_RECEIPT");
     }
 
-    public EmailLog sendBookingStatusEmail(Booking b) {
+    public void sendBookingStatusEmail(Booking b) {
         String hotelName = escape(b.getRoom().getHotel().getName());
         String guest = escape(b.getGuestName());
         String refundNote = b.getPaymentStatus() == PaymentStatus.REFUNDED
@@ -185,10 +227,10 @@ public class EmailService {
                 + refundNote
                 + ctaButton(frontendUrl + "/my-bookings", "Kiểm tra đơn đặt phòng", "#0284c7")
         );
-        return send(b.getUser().getEmail(), "[QuickStay] Cập nhật đơn đặt phòng #" + b.getId() + " - " + b.getStatus(), html, "BOOKING_STATUS");
+        send(b.getUser().getEmail(), "[QuickStay] Cập nhật đơn đặt phòng #" + b.getId() + " - " + b.getStatus(), html, "BOOKING_STATUS");
     }
 
-    public EmailLog sendConciergeConfirmationEmail(String to, String guestName, String hotelName,
+    public void sendConciergeConfirmationEmail(String to, String guestName, String hotelName,
                                                    String serviceTypeLabel, String serviceTitle,
                                                    String serviceDate, String serviceTime, int guests,
                                                    BigDecimal estimatedFee, String details) {
@@ -207,7 +249,7 @@ public class EmailService {
                 })
                 + ctaButton(frontendUrl + "/my-bookings", "Quản lý lịch trình trên QuickStay", "#0284c7")
         );
-        return send(to, "[QuickStay] Xác nhận " + serviceTypeLabel + " - " + hotelName, html, "CONCIERGE_SERVICE");
+        send(to, "[QuickStay] Xác nhận " + serviceTypeLabel + " - " + hotelName, html, "CONCIERGE_SERVICE");
     }
 
     private static String wrapTemplate(String heading, String content) {

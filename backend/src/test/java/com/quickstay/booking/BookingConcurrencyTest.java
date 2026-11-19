@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Dat phong dong thoi that (T114): nhieu luong cung goi BookingService, moi luong mot transaction,
  * chay tren CSDL that cua test nen khoa FOR UPDATE co tac dung. Khong dat @Transactional o lop test.
  */
-@SpringBootTest
+@SpringBootTest(properties = "app.auth.require-verified-email=false")
 class BookingConcurrencyTest {
 
     @Autowired BookingService service;

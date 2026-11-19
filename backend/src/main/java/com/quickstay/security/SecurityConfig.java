@@ -1,5 +1,6 @@
 package com.quickstay.security;
 
+import com.quickstay.user.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,8 +30,8 @@ public class SecurityConfig {
     // JwtAuthFilter khong phai @Component: neu la bean, Spring Boot dang ky them no o tang servlet va filter chay 2 lan
     private final JwtAuthFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtService jwtService) {
-        this.jwtAuthFilter = new JwtAuthFilter(jwtService);
+    public SecurityConfig(JwtService jwtService, UserRepository users) {
+        this.jwtAuthFilter = new JwtAuthFilter(jwtService, users);
     }
 
     @Bean
@@ -47,6 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/content/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/hotels/*/questions").permitAll()
                         .requestMatchers("/api/ai/chat", "/api/ai/nl-search", "/api/ai/hotel-qa", "/api/ai/reviews/**").permitAll()
                         .requestMatchers("/api/ai/describe/**", "/api/ai/reply-draft", "/api/ai/pricing-hints/**").hasAnyRole("ADMIN", "HOTEL_MANAGER")

@@ -1,6 +1,12 @@
 package com.quickstay.ai;
 
 import com.quickstay.ai.eval.AiEvaluationBenchmark;
+import com.quickstay.ai.guard.AiGuardrailsService;
+import com.quickstay.config.ApiException;
+import com.quickstay.config.ClientIp;
+import com.quickstay.user.Role;
+import com.quickstay.user.User;
+import com.quickstay.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -46,18 +52,31 @@ public class AiController {
 
     private final AiService ai;
     private final AiEvaluationBenchmark benchmark;
+    private final AiGuardrailsService guardrails;
+    private final UserRepository users;
 
-    public AiController(AiService ai, AiEvaluationBenchmark benchmark) {
+    public AiController(AiService ai, AiEvaluationBenchmark benchmark, AiGuardrailsService guardrails,
+                        UserRepository users) {
         this.ai = ai;
         this.benchmark = benchmark;
+        this.guardrails = guardrails;
+        this.users = users;
+    }
+
+    /** HOTEL_MANAGER chi duoc xem du lieu co so cua minh; ADMIN xem moi co so. */
+    private void requireHotelAccess(Authentication auth, Long hotelId) {
+        User u = users.findByEmail(auth.getName())
+                .orElseThrow(() -> ApiException.unauthorized("Tai khoan khong ton tai"));
+        if (u.getRole() == Role.ADMIN) {
+            return;
+        }
+        if (u.getHotelId() == null || !u.getHotelId().equals(hotelId)) {
+            throw ApiException.forbidden("Ban chi co quyen xem du lieu co so luu tru duoc phan cong");
+        }
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xf = request.getHeader("X-Forwarded-For");
-        if (xf != null && !xf.isBlank()) {
-            return xf.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIp.of(request);
     }
 
     private String getUserEmail(Authentication auth) {
@@ -86,18 +105,23 @@ public class AiController {
 
     // ---------- 4. Tóm tắt Đánh giá Khách sạn ----------
     @GetMapping("/reviews/{hotelId}/summary")
-    public Map<String, Object> reviewSummary(@PathVariable Long hotelId, @RequestParam(required = false) String lang) {
+    public Map<String, Object> reviewSummary(@PathVariable Long hotelId, @RequestParam(required = false) String lang,
+                                             Authentication auth, HttpServletRequest servletReq) {
+        guardrails.checkQuota(getUserEmail(auth), getClientIp(servletReq));
         return ai.reviewSummary(hotelId, lang);
     }
 
     // ---------- 5. Sinh Mô tả (Cũ & Mới đa phong cách) ----------
     @PostMapping("/describe")
-    public DescribeResponse describe(@Valid @RequestBody DescribeRequest req) {
+    public DescribeResponse describe(@Valid @RequestBody DescribeRequest req, Authentication auth, HttpServletRequest servletReq) {
+        guardrails.checkQuota(getUserEmail(auth), getClientIp(servletReq));
         return new DescribeResponse(ai.describe(req.type(), req.name(), req.city(), req.amenities(), req.roomType()));
     }
 
     @PostMapping("/describe/advanced")
-    public DescribeAdvancedResponse describeAdvanced(@Valid @RequestBody DescribeAdvancedRequest req) {
+    public DescribeAdvancedResponse describeAdvanced(@Valid @RequestBody DescribeAdvancedRequest req, Authentication auth,
+                                                     HttpServletRequest servletReq) {
+        guardrails.checkQuota(getUserEmail(auth), getClientIp(servletReq));
         List<String> list = ai.describeAdvanced(req.type(), req.name(), req.city(), req.amenities(),
                 req.roomType(), req.tone(), req.lang(), req.variantCount() != null ? req.variantCount() : 3);
         return new DescribeAdvancedResponse(list);
@@ -105,14 +129,18 @@ public class AiController {
 
     // ---------- 6. Soạn Bản thảo Trả lời cho Khách sạn / Homestay ----------
     @PostMapping("/reply-draft")
-    public Map<String, Object> replyDraft(@Valid @RequestBody ReplyDraftRequest req) {
+    public Map<String, Object> replyDraft(@Valid @RequestBody ReplyDraftRequest req, Authentication auth, HttpServletRequest servletReq) {
+        guardrails.validateRequest(req.guestMessage(), getUserEmail(auth), getClientIp(servletReq));
         String draft = ai.replyDraft(req.guestName(), req.guestMessage(), req.hotelName(), req.lang());
         return Map.of("draftReply", draft);
     }
 
     // ---------- 7. Gợi ý Định giá & Công suất (Pricing Hints) ----------
     @GetMapping("/pricing-hints/{hotelId}")
-    public Map<String, Object> pricingHints(@PathVariable Long hotelId, @RequestParam(required = false) String lang) {
+    public Map<String, Object> pricingHints(@PathVariable Long hotelId, @RequestParam(required = false) String lang,
+                                            Authentication auth, HttpServletRequest servletReq) {
+        requireHotelAccess(auth, hotelId);
+        guardrails.checkQuota(getUserEmail(auth), getClientIp(servletReq));
         return ai.pricingHints(hotelId, lang);
     }
 

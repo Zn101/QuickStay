@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { INITIAL_TOURS } from '../Tours'
 import { formatVnd } from '../../lib/format'
 import { ConfirmModal } from '../../components/ui'
+import { useManagedSiteContent } from '../../lib/siteContent'
 
 const EMPTY_TOUR = {
   title: '',
@@ -16,7 +17,7 @@ const EMPTY_TOUR = {
 }
 
 export default function AdminTours() {
-  const [tours, setTours] = useState(INITIAL_TOURS)
+  const [tours, setTours, contentStatus] = useManagedSiteContent('tours', INITIAL_TOURS)
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
   const [showModal, setShowModal] = useState(false)
@@ -99,6 +100,10 @@ export default function AdminTours() {
 
   return (
     <div className="space-y-6">
+      {contentStatus.error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{contentStatus.error}</div>
+      )}
+      {contentStatus.saving && <div className="text-xs font-semibold text-slate-400">Đang lưu lên máy chủ...</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>

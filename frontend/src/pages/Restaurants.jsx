@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { formatVnd } from '../lib/format'
 import { useAuth } from '../store/authStore'
+import { useSiteContent } from '../lib/siteContent'
 
 export const INITIAL_RESTAURANTS = [
   {
@@ -120,7 +121,7 @@ export const INITIAL_RESTAURANTS = [
 
 export default function Restaurants() {
   const { user } = useAuth()
-  const [restaurants] = useState(INITIAL_RESTAURANTS)
+  const restaurants = useSiteContent('restaurants', INITIAL_RESTAURANTS)
   const [selectedCity, setSelectedCity] = useState('Tất cả')
   const [selectedCuisine, setSelectedCuisine] = useState('Tất cả')
   const [searchKeyword, setSearchKeyword] = useState('')

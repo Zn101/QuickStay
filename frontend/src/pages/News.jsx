@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from '../lib/i18n'
+import { useSiteContent } from '../lib/siteContent'
 
 export const INITIAL_NEWS = [
   {
@@ -109,7 +110,7 @@ Tuyến thuyền số 2 và 3 là hai tuyến được du khách yêu thích nh�
 
 export default function News() {
   const { t } = useTranslation()
-  const [news] = useState(INITIAL_NEWS)
+  const news = useSiteContent('news', INITIAL_NEWS)
   const [activeCategory, setActiveCategory] = useState('Tất cả')
   const [activeArticle, setActiveArticle] = useState(null)
 

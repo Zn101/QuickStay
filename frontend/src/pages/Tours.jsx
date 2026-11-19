@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { formatVnd } from '../lib/format'
 import { useAuth } from '../store/authStore'
 import { useTranslation } from '../lib/i18n'
+import { useSiteContent } from '../lib/siteContent'
 
 export const INITIAL_TOURS = [
   {
@@ -136,7 +137,7 @@ export const INITIAL_TOURS = [
 export default function Tours() {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const [tours] = useState(INITIAL_TOURS)
+  const tours = useSiteContent('tours', INITIAL_TOURS)
   const [selectedCity, setSelectedCity] = useState('Tất cả')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')

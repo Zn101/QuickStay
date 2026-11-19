@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * controller va xu ly loi nhu khi chay that. MockMvc khong co buoc chuyen sang /error
  * nen khong bat duoc loi kieu 403 bi doi thanh 401.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "app.auth.require-verified-email=false")
 class RealHttpApiTest {
 
     private static final String ADMIN_EMAIL = "admin@quickstay.local";
@@ -211,7 +211,7 @@ class RealHttpApiTest {
         call(HttpMethod.POST, "/api/bookings", oldToken, bookingBody(room, 40, 41));
         String newEmail = "http-" + UUID.randomUUID() + "@test.com";
 
-        ResponseEntity<String> updated = call(HttpMethod.PUT, "/api/users/me", oldToken, Map.of("email", newEmail));
+        ResponseEntity<String> updated = call(HttpMethod.PUT, "/api/users/me", oldToken, Map.of("email", newEmail, "currentPassword", "secret123"));
         assertEquals(HttpStatus.OK, updated.getStatusCode(), updated.getBody());
         assertEquals(newEmail, parse(updated).get("email").asText());
         String newToken = parse(updated).path("token").asText();

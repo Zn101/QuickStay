@@ -33,6 +33,9 @@ public class AdminAccountInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         String email = admin.email().trim().toLowerCase();
+        if ("Admin@123".equals(admin.password())) {
+            log.warn("ADMIN_PASSWORD dang dung gia tri mac dinh cong khai (Admin@123). Hay dat ADMIN_PASSWORD rieng tren moi truong that.");
+        }
         if (users.existsByEmail(email)) {
             return;
         }

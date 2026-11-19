@@ -35,6 +35,12 @@ public class BookingAdminController {
     /**
      * PATCH /api/admin/bookings/{id}/status - Cap nhat trang thai don dat phong.
      */
+    /** GET /api/admin/bookings/pending-count: so don dang cho xac nhan (khong tai toan bo danh sach). */
+    @GetMapping("/pending-count")
+    public Map<String, Long> pendingCount() {
+        return Map.of("count", bookingService.countByStatus(BookingStatus.PENDING));
+    }
+
     @PatchMapping("/{id}/status")
     public BookingView updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String statusStr = body.get("status");

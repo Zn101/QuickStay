@@ -6,13 +6,14 @@ import { ErrorBox } from '../components/ui'
 import EmailInboxModal from '../components/EmailInboxModal'
 
 export default function Profile() {
-  const { user, setUser } = useAuth()
+  const { user, setUser, setSession } = useAuth()
   const settings = useSettings()
   const [form, setForm] = useState({
     fullName: user?.fullName || '',
     phone: user?.phone || '',
     email: user?.email || '',
     password: '',
+    currentPassword: '',
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -66,6 +67,7 @@ export default function Profile() {
       phone: user?.phone || '',
       email: user?.email || '',
       password: '',
+      currentPassword: '',
     })
     setError('')
     setSuccess('')
@@ -80,19 +82,31 @@ export default function Profile() {
     if (form.phone !== undefined) body.phone = form.phone
     if (form.email) body.email = form.email
     if (form.password.length >= 6) body.password = form.password
+    if (needsCurrentPassword) {
+      if (!form.currentPassword) {
+        setError('Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu hoặc email.')
+        return
+      }
+      body.currentPassword = form.currentPassword
+    }
 
     setBusy(true)
     try {
-      const updated = await api('/users/me', { method: 'PUT', body })
-      setUser(updated)
+      const { token: newToken, ...updated } = await api('/users/me', { method: 'PUT', body })
+      // Đổi email / mật khẩu: token cũ bị thu hồi, phải lưu token mới để không bị đăng xuất
+      if (newToken) setSession(newToken, { ...user, ...updated })
+      else setUser({ ...user, ...updated })
       setSuccess('Cập nhật hồ sơ thành công!')
-      setForm((f) => ({ ...f, password: '' }))
+      setForm((f) => ({ ...f, password: '', currentPassword: '' }))
     } catch (err) {
       setError(err.message)
     } finally {
       setBusy(false)
     }
   }
+
+  const emailChanged = form.email.trim().toLowerCase() !== (user?.email || '').toLowerCase()
+  const needsCurrentPassword = form.password.length > 0 || (form.email.trim() !== '' && emailChanged)
 
   // Kiểm tra xem người dùng đã thay đổi thông tin gì chưa
   const isDirty =
@@ -539,6 +553,26 @@ export default function Profile() {
                   />
                 </label>
               </div>
+            </div>
+          )}
+
+          {/* Mật khẩu hiện tại: bắt buộc khi đổi mật khẩu hoặc email */}
+          {activeTab !== 'settings' && needsCurrentPassword && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-amber-800">
+                Mật khẩu hiện tại
+              </label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                placeholder="Nhập mật khẩu hiện tại để xác nhận thay đổi"
+                value={form.currentPassword}
+                onChange={set('currentPassword')}
+                className={inputClass}
+              />
+              <p className="mt-2 text-xs text-amber-700">
+                Bắt buộc khi đổi mật khẩu hoặc email. Sau khi đổi mật khẩu, các thiết bị khác sẽ bị đăng xuất.
+              </p>
             </div>
           )}
 

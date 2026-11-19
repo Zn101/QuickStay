@@ -30,6 +30,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quickstay.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+      REQUIRE_VERIFIED_EMAIL: ${REQUIRE_VERIFIED_EMAIL:-true}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
       MAIL_HOST: ${MAIL_HOST:-}

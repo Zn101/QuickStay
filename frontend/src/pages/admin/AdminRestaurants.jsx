@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { INITIAL_RESTAURANTS } from '../Restaurants'
 import { ConfirmModal } from '../../components/ui'
+import { useManagedSiteContent } from '../../lib/siteContent'
 
 const EMPTY_REST = {
   name: '',
@@ -15,7 +16,7 @@ const EMPTY_REST = {
 }
 
 export default function AdminRestaurants() {
-  const [restaurants, setRestaurants] = useState(INITIAL_RESTAURANTS)
+  const [restaurants, setRestaurants, contentStatus] = useManagedSiteContent('restaurants', INITIAL_RESTAURANTS)
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
   const [showModal, setShowModal] = useState(false)
@@ -96,6 +97,10 @@ export default function AdminRestaurants() {
 
   return (
     <div className="space-y-6">
+      {contentStatus.error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{contentStatus.error}</div>
+      )}
+      {contentStatus.saving && <div className="text-xs font-semibold text-slate-400">Đang lưu lên máy chủ...</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>

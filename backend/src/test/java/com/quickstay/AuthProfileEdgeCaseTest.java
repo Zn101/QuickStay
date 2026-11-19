@@ -149,7 +149,7 @@ class AuthProfileEdgeCaseTest extends ApiTestBase {
         assertBadRequest(updateProfile(token, Map.of("password", "12345")));
         login(Map.of("email", email, "password", "secret123")).andExpect(status().isOk());
 
-        updateProfile(token, Map.of("password", THREE_BYTES.repeat(24))).andExpect(status().isOk());
+        updateProfile(token, Map.of("password", THREE_BYTES.repeat(24), "currentPassword", "secret123")).andExpect(status().isOk());
         login(Map.of("email", email, "password", THREE_BYTES.repeat(24))).andExpect(status().isOk());
     }
 

@@ -29,6 +29,15 @@ export async function api(path, { method = 'GET', body, params } = {}) {
   if (res.status === 204) return null
   const data = await res.json().catch(() => null)
   if (!res.ok) {
+    // Token hết hạn / bị thu hồi (đổi mật khẩu, tài khoản bị xoá): xoá phiên để giao diện không còn "đăng nhập giả"
+    if (res.status === 401 && token) {
+      try {
+        localStorage.removeItem(KEY)
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new CustomEvent('quickstay:unauthorized'))
+    }
     const err = new Error(data?.message || defaultMessage(res.status))
     err.status = res.status
     err.errors = data?.errors || null

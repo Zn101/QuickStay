@@ -51,6 +51,9 @@ public class User {
 
     private Instant resetTokenExpiresAt;
 
+    /** JWT co iat truoc moc nay bi tu choi (dat khi doi / dat lai mat khau de dang xuat moi phien cu). */
+    private Instant tokensValidAfter;
+
     @Column(nullable = false, length = 10)
     private String preferredLanguage = "vi";
 
@@ -90,6 +93,8 @@ public class User {
     public void setResetToken(String resetToken) { this.resetToken = resetToken; }
     public Instant getResetTokenExpiresAt() { return resetTokenExpiresAt; }
     public void setResetTokenExpiresAt(Instant resetTokenExpiresAt) { this.resetTokenExpiresAt = resetTokenExpiresAt; }
+    public Instant getTokensValidAfter() { return tokensValidAfter; }
+    public void setTokensValidAfter(Instant tokensValidAfter) { this.tokensValidAfter = tokensValidAfter; }
     public String getPreferredLanguage() { return preferredLanguage; }
     public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
     public String getCurrencyDisplay() { return currencyDisplay; }

@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -75,7 +77,7 @@ public class AdminPartnerController {
 
     @PutMapping("/{id}")
     @Transactional
-    public PartnerView update(@PathVariable Long id, @RequestBody UpdatePartnerRequest req) {
+    public PartnerView update(@PathVariable Long id, @Valid @RequestBody UpdatePartnerRequest req) {
         User u = users.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Không tìm thấy tài khoản đối tác"));
 
@@ -95,10 +97,13 @@ public class AdminPartnerController {
             u.setHotelId(hotel.getId());
         }
         if (req.password() != null && !req.password().isBlank()) {
-            if (req.password().length() < 6 || req.password().length() > 72) {
-                throw ApiException.badRequest("Mật khẩu mới phải từ 6 đến 72 ký tự");
+            // Gioi han 72 byte (bcrypt) da kiem tra bang @MaxUtf8Bytes
+            if (req.password().length() < 6) {
+                throw ApiException.badRequest("Mật khẩu mới tối thiểu 6 ký tự");
             }
             u.setPasswordHash(encoder.encode(req.password()));
+            // Đăng xuất mọi phiên cũ của đối tác
+            u.setTokensValidAfter(Instant.now().truncatedTo(ChronoUnit.SECONDS));
         }
         users.save(u);
 

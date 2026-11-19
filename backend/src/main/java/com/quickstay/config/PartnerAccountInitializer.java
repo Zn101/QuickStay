@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -17,9 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Khoi tao tai khoan doi tac mau cho Homestay va Khach san (HOTEL_MANAGER).
  * Chay o @Order(3) sau khi Admin va Sample Data da duoc nap.
+ * CHI chay khi bat du lieu mau (app.seed.sample-data=true): mat khau mau la cong khai, khong duoc ton tai tren moi truong that.
  */
 @Component
 @Order(3)
+@ConditionalOnProperty(name = "app.seed.sample-data", havingValue = "true", matchIfMissing = true)
 public class PartnerAccountInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(PartnerAccountInitializer.class);

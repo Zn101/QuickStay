@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * dieu quan trong la khong bi 401/403 nham. Test admin cua T108 dung MockMvc nen khong bat duoc
  * loi chi xay ra khi chay that (vd. 403 bi doi thanh 401).
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "app.auth.require-verified-email=false")
 class RealHttpPermissionTest {
 
     private static final String ADMIN_EMAIL = "admin@quickstay.local";

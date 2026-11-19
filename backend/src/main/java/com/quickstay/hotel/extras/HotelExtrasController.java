@@ -13,9 +13,11 @@ import java.util.List;
 public class HotelExtrasController {
 
     private final HotelExtrasService extras;
+    private final com.quickstay.ai.guard.AiGuardrailsService limiter;
 
-    public HotelExtrasController(HotelExtrasService extras) {
+    public HotelExtrasController(HotelExtrasService extras, com.quickstay.ai.guard.AiGuardrailsService limiter) {
         this.extras = extras;
+        this.limiter = limiter;
     }
 
     @GetMapping("/hotels/{id}/extras")
@@ -41,7 +43,10 @@ public class HotelExtrasController {
 
     @PostMapping("/hotels/{id}/questions")
     @ResponseStatus(HttpStatus.CREATED)
-    public QuestionView askQuestion(@PathVariable Long id, Authentication auth, @Valid @RequestBody CreateQuestionRequest req) {
+    public QuestionView askQuestion(@PathVariable Long id, Authentication auth, @Valid @RequestBody CreateQuestionRequest req,
+                                    jakarta.servlet.http.HttpServletRequest http) {
+        // API cong khai: gioi han 5 cau hoi / phut moi IP (hoac tai khoan) de chong spam
+        limiter.checkRate(auth != null ? "q:usr:" + auth.getName() : "q:ip:" + com.quickstay.config.ClientIp.of(http), 5);
         return extras.askQuestion(id, auth == null ? null : auth.getName(), req);
     }
 

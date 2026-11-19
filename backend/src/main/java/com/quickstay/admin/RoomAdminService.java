@@ -2,6 +2,7 @@ package com.quickstay.admin;
 
 import com.quickstay.admin.RoomAdminDtos.RoomRequest;
 import com.quickstay.admin.RoomAdminDtos.RoomResponse;
+import com.quickstay.booking.Booking;
 import com.quickstay.booking.BookingRepository;
 import com.quickstay.config.ApiException;
 import com.quickstay.hotel.Hotel;
@@ -13,7 +14,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Logic nghiep vu quan ly loai phong cua Admin (T094, T095).
@@ -27,10 +31,13 @@ public class RoomAdminService {
     private final RoomRepository roomRepository;
     private final HotelRepository hotelRepository;
     private final BookingRepository bookingRepository;
+    private final Clock clock;
 
     public RoomAdminService(RoomRepository roomRepository,
                             HotelRepository hotelRepository,
-                            BookingRepository bookingRepository) {
+                            BookingRepository bookingRepository,
+                            Clock clock) {
+        this.clock = clock;
         this.roomRepository = roomRepository;
         this.hotelRepository = hotelRepository;
         this.bookingRepository = bookingRepository;
@@ -121,11 +128,38 @@ public class RoomAdminService {
         Hotel hotel = hotelRepository.findById(req.hotelId())
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay khach san voi id=" + req.hotelId()));
 
+        // Don dat phong tham chieu loai phong: doi khach san se "chuyen" ca lich su don sang co so khac
+        if (!room.getHotel().getId().equals(hotel.getId()) && bookingRepository.existsByRoomId(id)) {
+            throw ApiException.conflict("Loai phong da co don dat phong, khong the chuyen sang khach san khac");
+        }
+        int peak = peakConcurrentBookings(id);
+        if (req.quantity() < peak) {
+            throw ApiException.conflict("So luong phong khong duoc nho hon " + peak
+                    + " (so don dang hieu luc cung luc lon nhat cua loai phong nay)");
+        }
+
         applyRequest(room, hotel, req);
         roomRepository.save(room);
         log.info("Admin cap nhat loai phong id={} type=\"{}\" hotelId={}",
                 room.getId(), room.getRoomType(), hotel.getId());
         return RoomResponse.of(room);
+    }
+
+    /** So don con hieu luc chong lan nhau nhieu nhat tai mot thoi diem (quet su kien nhan/tra phong). */
+    int peakConcurrentBookings(Long roomId) {
+        List<Booking> active = bookingRepository.findActiveUpcomingByRoom(roomId, LocalDate.now(clock));
+        TreeMap<LocalDate, Integer> delta = new TreeMap<>();
+        for (Booking b : active) {
+            delta.merge(b.getCheckIn(), 1, Integer::sum);
+            delta.merge(b.getCheckOut(), -1, Integer::sum);
+        }
+        int current = 0;
+        int peak = 0;
+        for (int d : delta.values()) {
+            current += d;
+            peak = Math.max(peak, current);
+        }
+        return peak;
     }
 
     /** Ap dung du lieu tu request len entity (dung chung cho create va update). */

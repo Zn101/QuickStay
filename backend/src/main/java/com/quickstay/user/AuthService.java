@@ -4,6 +4,7 @@ import com.quickstay.config.ApiException;
 import com.quickstay.email.EmailLog;
 import com.quickstay.email.EmailService;
 import com.quickstay.security.JwtService;
+import com.quickstay.security.TokenHasher;
 import com.quickstay.user.AuthDtos.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public class AuthService {
         u.setRole(Role.CUSTOMER);
         u.setEmailVerified(false);
         String token = UUID.randomUUID().toString();
-        u.setVerificationToken(token);
+        u.setVerificationToken(TokenHasher.sha256(token));
         u.setVerificationTokenExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
         users.save(u);
         log.info("Dang ky tai khoan moi id={}", u.getId());
@@ -77,7 +78,7 @@ public class AuthService {
 
     @Transactional
     public UserDto verifyEmail(String token) {
-        User u = users.findByVerificationToken(token)
+        User u = users.findByVerificationToken(TokenHasher.sha256(token))
                 .orElseThrow(() -> ApiException.badRequest("Ma xac thuc khong hop le hoac da duoc su dung"));
         if (u.getVerificationTokenExpiresAt() != null && u.getVerificationTokenExpiresAt().isBefore(Instant.now())) {
             throw ApiException.badRequest("Ma xac thuc da het han, vui long yeu cau gui lai");
@@ -95,7 +96,7 @@ public class AuthService {
         users.findByEmail(email).ifPresent(u -> {
             if (!u.isEmailVerified()) {
                 String token = UUID.randomUUID().toString();
-                u.setVerificationToken(token);
+                u.setVerificationToken(TokenHasher.sha256(token));
                 u.setVerificationTokenExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
                 users.save(u);
                 if (emails != null) {
@@ -114,7 +115,7 @@ public class AuthService {
         if (opt.isPresent()) {
             User u = opt.get();
             String token = UUID.randomUUID().toString();
-            u.setResetToken(token);
+            u.setResetToken(TokenHasher.sha256(token));
             u.setResetTokenExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
             users.save(u);
             if (emails != null) {
@@ -132,7 +133,7 @@ public class AuthService {
 
     @Transactional
     public MessageResponse resetPassword(String token, String newPassword) {
-        User u = users.findByResetToken(token)
+        User u = users.findByResetToken(TokenHasher.sha256(token))
                 .orElseThrow(() -> ApiException.badRequest("Lien ket hoac ma khoi phuc khong hop le"));
         if (u.getResetTokenExpiresAt() != null && u.getResetTokenExpiresAt().isBefore(Instant.now())) {
             throw ApiException.badRequest("Ma khoi phuc da het han, vui long gui lai yeu cau");
@@ -141,6 +142,8 @@ public class AuthService {
         u.setResetToken(null);
         u.setResetTokenExpiresAt(null);
         u.setEmailVerified(true);
+        // Dang xuat moi phien cu (ke ca phien cua ke da chiem tai khoan)
+        u.setTokensValidAfter(Instant.now().truncatedTo(ChronoUnit.SECONDS));
         users.save(u);
         if (emails != null) {
             emails.sendPasswordChangedEmail(u.getEmail(), u.getFullName());

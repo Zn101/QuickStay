@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/authStore'
 import { api } from '../../lib/api'
 import { ConfirmModal } from '../../components/ui'
@@ -24,16 +24,15 @@ export default function AdminLayout() {
     return () => clearInterval(timer)
   }, [])
 
+  const isAdmin = user?.role === 'ADMIN'
+
   useEffect(() => {
-    api('/admin/bookings')
-      .then((res) => {
-        if (Array.isArray(res)) {
-          const count = res.filter((b) => b.status === 'PENDING').length
-          setPendingCount(count)
-        }
-      })
+    if (!isAdmin) return
+    // Chỉ lấy số đếm, không tải toàn bộ danh sách đơn
+    api('/admin/bookings/pending-count')
+      .then((res) => setPendingCount(res?.count ?? 0))
       .catch(() => {})
-  }, [])
+  }, [isAdmin])
 
   function openLogoutModal() {
     setMobileMenuOpen(false)
@@ -56,6 +55,10 @@ export default function AdminLayout() {
   const iconClass = (isActive) =>
     `h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? 'text-sky-600' : 'text-slate-400 group-hover:text-slate-600'
     }`
+
+  // Chặn truy cập trang quản trị ở phía client (backend vẫn kiểm tra quyền ở mọi API)
+  if (!user) return <Navigate to="/login" replace state={{ from: '/admin' }} />
+  if (!isAdmin) return <Navigate to="/" replace />
 
   return (
     <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans">

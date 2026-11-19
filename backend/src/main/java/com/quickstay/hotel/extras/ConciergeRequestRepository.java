@@ -7,4 +7,6 @@ import java.util.List;
 public interface ConciergeRequestRepository extends JpaRepository<ConciergeRequest, Long> {
     List<ConciergeRequest> findByGuestEmailOrderByCreatedAtDescIdDesc(String guestEmail);
     List<ConciergeRequest> findAllByOrderByCreatedAtDescIdDesc();
+
+    boolean existsByHotelId(Long hotelId);
 }

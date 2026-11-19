@@ -53,7 +53,7 @@ public final class BookingDtos {
                               LocalDate checkIn, LocalDate checkOut, int guests, String guestName, String guestPhone,
                               String note, BigDecimal totalPrice, BookingStatus status,
                               PaymentMethod paymentMethod, PaymentStatus paymentStatus, String paymentRef, Instant paidAt,
-                              Instant createdAt) {
+                              String paymentAccountLabel, Instant createdAt) {
 
         public static BookingView of(Booking b) {
             var room = b.getRoom();
@@ -62,7 +62,7 @@ public final class BookingDtos {
                     b.getUser().getEmail(), b.getCheckIn(), b.getCheckOut(), b.getGuests(), b.getGuestName(),
                     b.getGuestPhone(), b.getNote(), b.getTotalPrice(), b.getStatus(),
                     b.getPaymentMethod(), b.getPaymentStatus(), b.getPaymentRef(), b.getPaidAt(),
-                    b.getCreatedAt());
+                    b.getPaymentAccountLabel(), b.getCreatedAt());
         }
     }
 }

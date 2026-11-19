@@ -1,5 +1,6 @@
 package com.quickstay.admin;
 
+import com.quickstay.user.MaxUtf8Bytes;
 import com.quickstay.user.Role;
 import com.quickstay.user.User;
 import jakarta.validation.constraints.Email;
@@ -12,18 +13,20 @@ import java.time.Instant;
 public class PartnerDtos {
 
     public record CreatePartnerRequest(
-            @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 72) String password,
-            @NotBlank String fullName,
-            String phone,
+            @NotBlank @Email @Size(max = 255) String email,
+            @NotBlank @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
+            @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String password,
+            @NotBlank @Size(max = 255) String fullName,
+            @Size(max = 30) String phone,
             @NotNull Long hotelId
     ) {}
 
+    /** Moi truong tuy chon; password rong = giu nguyen. */
     public record UpdatePartnerRequest(
-            String fullName,
-            String phone,
+            @Size(max = 255) String fullName,
+            @Size(max = 30) String phone,
             Long hotelId,
-            String password
+            @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String password
     ) {}
 
     public record PartnerView(

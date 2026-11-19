@@ -15,7 +15,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.auth.require-verified-email=false")
 @AutoConfigureMockMvc
 public abstract class ApiTestBase {
 

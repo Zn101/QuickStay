@@ -48,6 +48,12 @@ public class UserService {
     public UpdateProfileResponse update(String email, UpdateProfileRequest req) {
         User u = current(email);
         boolean emailChanged = false;
+        boolean passwordChanged = false;
+        boolean wantsEmailChange = req.email() != null && !req.email().equals(u.getEmail());
+        if ((req.password() != null || wantsEmailChange)
+                && (req.currentPassword() == null || !encoder.matches(req.currentPassword(), u.getPasswordHash()))) {
+            throw ApiException.forbidden("Mat khau hien tai khong dung (bat buoc khi doi mat khau hoac email)");
+        }
         if (req.fullName() != null) {
             u.setFullName(req.fullName());
         }
@@ -62,7 +68,7 @@ public class UserService {
             u.setEmail(req.email());
             u.setEmailVerified(false);
             String token = UUID.randomUUID().toString();
-            u.setVerificationToken(token);
+            u.setVerificationToken(com.quickstay.security.TokenHasher.sha256(token));
             u.setVerificationTokenExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));
             emailChanged = true;
             if (emails != null) {
@@ -71,11 +77,17 @@ public class UserService {
         }
         if (req.password() != null) {
             u.setPasswordHash(encoder.encode(req.password()));
+            // Moi phien dang nhap khac (token cu) het hieu luc; phien hien tai nhan token moi ben duoi
+            u.setTokensValidAfter(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+            passwordChanged = true;
             log.info("Nguoi dung id={} doi mat khau", u.getId());
+            if (emails != null) {
+                emails.sendPasswordChangedEmail(u.getEmail(), u.getFullName());
+            }
         }
         // Entity dang duoc quan ly trong transaction: thay doi tu ghi xuong DB khi commit.
-        // Token mang email lam subject nen doi email thi token cu het tac dung: cap token moi de khong bi mat dang nhap.
-        return UpdateProfileResponse.of(u, emailChanged ? jwt.generate(u) : null);
+        // Doi email (subject cua token) hoac doi mat khau (tokensValidAfter) thi token cu het tac dung: cap token moi.
+        return UpdateProfileResponse.of(u, emailChanged || passwordChanged ? jwt.generate(u) : null);
     }
 
     public record UserSettingsDto(

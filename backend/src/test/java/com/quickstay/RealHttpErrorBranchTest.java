@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Nhanh loi chi xay ra khi chay that (T151): cho khoa qua lau, dang ky trung email cung luc,
  * header Authorization sai dang. Moi loi phai la ma 4xx kem {"message"}, khong duoc la 500.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "app.auth.require-verified-email=false")
 class RealHttpErrorBranchTest {
 
     @Autowired TestRestTemplate http;

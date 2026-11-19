@@ -126,6 +126,22 @@ class HotelExtrasAndFiltersTest extends ApiTestBase {
         mvc.perform(withBody(post("/api/hotels/" + hotelId + "/reviews"), null,
                         Map.of("rating", 5, "comment", "Tuyet voi")))
                 .andExpect(status().isUnauthorized());
+        // Chua luu tru tai co so: khong duoc danh gia
+        mvc.perform(withBody(post("/api/hotels/" + hotelId + "/reviews"), customer,
+                        Map.of("rating", 5, "comment", "Chua o ma danh gia")))
+                .andExpect(status().isForbidden());
+        // Dat phong, admin xac nhan va cho nhan phong -> du dieu kien danh gia
+        long roomId = read(mvc.perform(get("/api/hotels/" + hotelId + "/rooms")).andReturn()).get(0).get("id").asLong();
+        long bookingId = read(mvc.perform(withBody(post("/api/bookings"), customer, Map.of(
+                        "roomId", roomId,
+                        "checkIn", LocalDate.now().plusDays(200).toString(),
+                        "checkOut", LocalDate.now().plusDays(201).toString(),
+                        "guests", 1, "guestName", "Khach Test", "guestPhone", "0900000000")))
+                .andExpect(status().isCreated()).andReturn()).get("id").asLong();
+        for (String st : new String[]{"CONFIRMED", "CHECKED_IN"}) {
+            mvc.perform(withBody(patch("/api/admin/bookings/" + bookingId + "/status"), admin, Map.of("status", st)))
+                    .andExpect(status().isOk());
+        }
         mvc.perform(withBody(post("/api/hotels/" + hotelId + "/reviews"), customer,
                         Map.of("rating", 5, "comment", "Dich vu dua don san bay rat tot", "stayType", "Cong tac")))
                 .andExpect(status().isCreated())
@@ -133,6 +149,10 @@ class HotelExtrasAndFiltersTest extends ApiTestBase {
         mvc.perform(get("/api/hotels/" + hotelId + "/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comment", containsString("dua don san bay")));
+        // Moi khach mot danh gia cho moi co so
+        mvc.perform(withBody(post("/api/hotels/" + hotelId + "/reviews"), customer,
+                        Map.of("rating", 1, "comment", "Danh gia lan hai")))
+                .andExpect(status().isConflict());
 
         // Q&A: khach hoi (public), admin tra loi (ADMIN only)
         MvcResult qRes = mvc.perform(withBody(post("/api/hotels/" + hotelId + "/questions"), null,
@@ -157,8 +177,10 @@ class HotelExtrasAndFiltersTest extends ApiTestBase {
                         "guests", 2,
                         "guestPhone", "0912345678",
                         "details", "Chuyen bay VN123",
-                        "estimatedFee", 250000)))
+                        "estimatedFee", 1)))
                 .andExpect(status().isCreated())
+                // Phi lay tu bang gia he thong, khong tin gia tri client gui
+                .andExpect(jsonPath("$.estimatedFee").value(250000))
                 .andExpect(jsonPath("$.serviceType").value("AIRPORT_TRANSFER"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
 

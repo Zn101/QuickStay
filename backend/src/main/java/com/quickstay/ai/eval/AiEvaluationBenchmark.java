@@ -22,9 +22,11 @@ public class AiEvaluationBenchmark {
     private static final Logger log = LoggerFactory.getLogger(AiEvaluationBenchmark.class);
 
     private final AiService aiService;
+    private final com.quickstay.ai.guard.AiGuardrailsService guardrails;
 
-    public AiEvaluationBenchmark(AiService aiService) {
+    public AiEvaluationBenchmark(AiService aiService, com.quickstay.ai.guard.AiGuardrailsService guardrails) {
         this.aiService = aiService;
+        this.guardrails = guardrails;
     }
 
     public record TestCase(
@@ -54,7 +56,12 @@ public class AiEvaluationBenchmark {
             List<TestCaseResult> details
     ) {}
 
+    /** Chay bo kiem chuan nhu ma noi bo tin cay: khong bi gioi han tan suat (khong mien tru theo email). */
     public BenchmarkReport runBenchmark() {
+        return guardrails.runTrusted(this::doRunBenchmark);
+    }
+
+    private BenchmarkReport doRunBenchmark() {
         List<TestCase> cases = getTestCases();
         List<TestCaseResult> results = new ArrayList<>();
         long totalLatency = 0;

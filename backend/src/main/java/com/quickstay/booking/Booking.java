@@ -66,6 +66,9 @@ public class Booking {
 
     private Instant paidAt;
 
+    @Column(length = 60)
+    private String paymentAccountLabel;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -99,5 +102,7 @@ public class Booking {
     public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
     public Instant getPaidAt() { return paidAt; }
     public void setPaidAt(Instant paidAt) { this.paidAt = paidAt; }
+    public String getPaymentAccountLabel() { return paymentAccountLabel; }
+    public void setPaymentAccountLabel(String paymentAccountLabel) { this.paymentAccountLabel = paymentAccountLabel; }
     public Instant getCreatedAt() { return createdAt; }
 }

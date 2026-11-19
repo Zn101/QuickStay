@@ -39,6 +39,11 @@ export const useAuth = create((set, get) => ({
     return res.user
   },
 
+  setSession(token, user) {
+    persist({ token, user })
+    set({ token, user })
+  },
+
   setUser(user) {
     persist({ token: get().token, user })
     set({ user })
@@ -49,3 +54,10 @@ export const useAuth = create((set, get) => ({
     set({ token: null, user: null })
   },
 }))
+
+// api.js phat su kien khi server tra 401 voi token dang dung: dong bo state ve trang thai dang xuat
+if (typeof window !== 'undefined') {
+  window.addEventListener('quickstay:unauthorized', () => {
+    useAuth.setState({ token: null, user: null })
+  })
+}

@@ -76,7 +76,12 @@ class UserApiTest extends ApiTestBase {
     @Test
     void TC_AUTH_08_change_password_then_login_with_new_one() throws Exception {
         String email = newUser();
-        update(email, Map.of("password", "newpass123")).andExpect(status().isOk());
+        // Thieu / sai mat khau hien tai: tu choi, mat khau cu van dung
+        update(email, Map.of("password", "newpass123")).andExpect(status().isForbidden());
+        update(email, Map.of("password", "newpass123", "currentPassword", "sai-mat-khau")).andExpect(status().isForbidden());
+        canLogin(email, "secret123", true);
+        update(email, Map.of("password", "newpass123", "currentPassword", "secret123")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
         canLogin(email, "newpass123", true);
         canLogin(email, "secret123", false);
     }
@@ -91,11 +96,12 @@ class UserApiTest extends ApiTestBase {
         same.put("fullName", "Van Giu Email");
         update(email, same).andExpect(status().isOk()).andExpect(jsonPath("$.email").value(email));
 
-        update(email, Map.of("email", other)).andExpect(status().isConflict())
+        update(email, Map.of("email", other, "currentPassword", "secret123")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Email da duoc su dung"));
 
         String changed = newCustomerEmail();
-        update(email, Map.of("email", " " + changed.toUpperCase())).andExpect(status().isOk())
+        update(email, Map.of("email", changed)).andExpect(status().isForbidden());
+        update(email, Map.of("email", " " + changed.toUpperCase(), "currentPassword", "secret123")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(changed));
         canLogin(changed, "secret123", true);
         // Token cu mang email cu: phai dang nhap lai
