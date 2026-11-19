@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatVnd } from '../lib/format'
 import { useAuth } from '../store/authStore'
 import { useTranslation } from '../lib/i18n'
-import { useSiteContent } from '../lib/siteContent'
+import { useVenueList } from '../lib/venues'
+import { api } from '../lib/api'
 
 export const INITIAL_TOURS = [
   {
@@ -137,7 +138,10 @@ export const INITIAL_TOURS = [
 export default function Tours() {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const tours = useSiteContent('tours', INITIAL_TOURS)
+  const { items: tours, offline } = useVenueList('tours', INITIAL_TOURS)
+  const navigate = useNavigate()
+  const [bookingError, setBookingError] = useState('')
+  const [bookingBusy, setBookingBusy] = useState(false)
   const [selectedCity, setSelectedCity] = useState('Tất cả')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
@@ -171,6 +175,7 @@ export default function Tours() {
   function handleOpenBooking(tour) {
     setBookingTour(tour)
     setBookingSuccess(false)
+    setBookingError("")
     setBookingGuests(2)
     setBookingVehicle('SEDAN_4')
     if (user) {
@@ -178,19 +183,50 @@ export default function Tours() {
     }
   }
 
-  function handleConfirmBooking(e) {
+  async function handleConfirmBooking(e) {
     e.preventDefault()
-    if (!guestPhone.trim() || !bookingDate) {
-      alert('Vui lòng điền đầy đủ số điện thoại và ngày khởi hành.')
+    setBookingError('')
+    if (!user) {
+      navigate('/login', { state: { from: '/tours' } })
       return
     }
-    setBookingSuccess(true)
-    setTimeout(() => {
-      setBookingTour(null)
-      setBookingSuccess(false)
-      setGuestPhone('')
-      setGuestNote('')
-    }, 2800)
+    if (user.role !== 'CUSTOMER') {
+      setBookingError('Chỉ tài khoản khách hàng mới đặt được tour.')
+      return
+    }
+    if (offline) {
+      setBookingError('Không kết nối được máy chủ, vui lòng thử lại sau.')
+      return
+    }
+    if (!guestPhone.trim() || !bookingDate) {
+      setBookingError('Vui lòng điền đầy đủ số điện thoại và ngày khởi hành.')
+      return
+    }
+    setBookingBusy(true)
+    try {
+      await api(`/tours/${bookingTour.id}/bookings`, {
+        method: 'POST',
+        body: {
+          date: bookingDate,
+          guests: Number(bookingGuests),
+          guestName: guestName.trim() || user.fullName || user.email,
+          guestPhone: guestPhone.trim(),
+          vehicle: bookingVehicle,
+          note: guestNote.trim(),
+        },
+      })
+      setBookingSuccess(true)
+      setTimeout(() => {
+        setBookingTour(null)
+        setBookingSuccess(false)
+        setGuestPhone('')
+        setGuestNote('')
+      }, 2800)
+    } catch (err) {
+      setBookingError(err.message || 'Không gửi được yêu cầu đặt tour.')
+    } finally {
+      setBookingBusy(false)
+    }
   }
 
   return (
@@ -299,10 +335,10 @@ export default function Tours() {
                   📍 {tour.city}
                 </span>
 
-                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 text-slate-950 px-2.5 py-0.5 text-xs font-black shadow-sm">
+                {tour.rating != null && (<div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 text-slate-950 px-2.5 py-0.5 text-xs font-black shadow-sm">
                   <span>★</span>
                   <span>{tour.rating}</span>
-                </div>
+                </div>)}
 
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <span className="text-[11px] font-semibold text-cyan-300 flex items-center gap-1">
@@ -393,7 +429,7 @@ export default function Tours() {
                   </div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">Yêu Cầu Đặt Tour Thành Công!</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                    Đội ngũ Concierge của QuickStay đã tiếp nhận yêu cầu đặt tour <strong>{bookingTour.title}</strong> vào ngày {bookingDate}. Chúng tôi sẽ liên hệ qua SĐT <strong>{guestPhone}</strong> trong vòng 15 phút để xác nhận.
+                    Đơn vị tổ chức đã nhận yêu cầu đặt tour <strong>{bookingTour.title}</strong> ngày {bookingDate} và sẽ xác nhận qua SĐT <strong>{guestPhone}</strong>. Theo dõi trạng thái tại mục <strong>Đơn của tôi</strong>.
                   </p>
                 </div>
               ) : (
@@ -490,11 +526,15 @@ export default function Tours() {
 
                     <button
                       type="submit"
-                      className="btn-liquid-glass rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
+                      disabled={bookingBusy}
+                      className="btn-liquid-glass rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer disabled:opacity-60"
                     >
-                      Xác nhận gửi yêu cầu
+                      {bookingBusy ? 'Đang gửi...' : 'Xác nhận gửi yêu cầu'}
                     </button>
                   </div>
+                  {bookingError && (
+                    <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{bookingError}</p>
+                  )}
                 </form>
               )}
             </div>

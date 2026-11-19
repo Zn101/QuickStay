@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatVnd } from '../lib/format'
 import { useAuth } from '../store/authStore'
-import { useSiteContent } from '../lib/siteContent'
+import { useVenueList } from '../lib/venues'
+import { api } from '../lib/api'
 
 export const INITIAL_RESTAURANTS = [
   {
@@ -121,7 +122,10 @@ export const INITIAL_RESTAURANTS = [
 
 export default function Restaurants() {
   const { user } = useAuth()
-  const restaurants = useSiteContent('restaurants', INITIAL_RESTAURANTS)
+  const { items: restaurants, offline } = useVenueList('restaurants', INITIAL_RESTAURANTS)
+  const navigate = useNavigate()
+  const [resError, setResError] = useState('')
+  const [resBusy, setResBusy] = useState(false)
   const [selectedCity, setSelectedCity] = useState('Tất cả')
   const [selectedCuisine, setSelectedCuisine] = useState('Tất cả')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -156,24 +160,57 @@ export default function Restaurants() {
   function handleOpenReserve(restaurant) {
     setResModal(restaurant)
     setResSuccess(false)
+    setResError('')
     if (user) {
       setGuestName(user.fullName || user.email)
     }
   }
 
-  function handleConfirmReservation(e) {
+  async function handleConfirmReservation(e) {
     e.preventDefault()
-    if (!guestPhone.trim() || !resDate) {
-      alert('Vui lòng điền đầy đủ số điện thoại và ngày giờ đặt bàn.')
+    setResError('')
+    if (!user) {
+      navigate('/login', { state: { from: '/restaurants' } })
       return
     }
-    setResSuccess(true)
-    setTimeout(() => {
-      setResModal(null)
-      setResSuccess(false)
-      setGuestPhone('')
-      setSpecialRequest('')
-    }, 2800)
+    if (user.role !== 'CUSTOMER') {
+      setResError('Chỉ tài khoản khách hàng mới đặt bàn được.')
+      return
+    }
+    if (offline) {
+      setResError('Không kết nối được máy chủ, vui lòng thử lại sau.')
+      return
+    }
+    if (!guestPhone.trim() || !resDate) {
+      setResError('Vui lòng điền đầy đủ số điện thoại và ngày giờ đặt bàn.')
+      return
+    }
+    setResBusy(true)
+    try {
+      await api(`/restaurants/${resModal.id}/reservations`, {
+        method: 'POST',
+        body: {
+          date: resDate,
+          time: resTime,
+          partySize: Number(partySize),
+          guestName: guestName.trim() || user.fullName || user.email,
+          guestPhone: guestPhone.trim(),
+          seatingArea,
+          note: specialRequest.trim(),
+        },
+      })
+      setResSuccess(true)
+      setTimeout(() => {
+        setResModal(null)
+        setResSuccess(false)
+        setGuestPhone('')
+        setSpecialRequest('')
+      }, 2800)
+    } catch (err) {
+      setResError(err.message || 'Không gửi được yêu cầu đặt bàn.')
+    } finally {
+      setResBusy(false)
+    }
   }
 
   return (
@@ -280,10 +317,10 @@ export default function Restaurants() {
                   📍 {item.city}
                 </span>
 
-                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 text-slate-950 px-2 py-0.5 text-xs font-black shadow-sm">
+                {item.rating != null && (<div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-400 text-slate-950 px-2 py-0.5 text-xs font-black shadow-sm">
                   <span>★</span>
                   <span>{item.rating}</span>
-                </div>
+                </div>)}
 
                 <div className="absolute bottom-2.5 left-3 right-3 text-white">
                   <span className="rounded-md bg-white/20 backdrop-blur px-2 py-0.5 text-[10px] font-bold text-white">
@@ -368,7 +405,7 @@ export default function Restaurants() {
                   </div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white">Đặt Bàn Thành Công!</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                    Yêu cầu đặt bàn tại <strong>{resModal.name}</strong> cho {partySize} khách vào lúc {resTime} ngày {resDate} đã được gửi tới quản lý nhà hàng. Chúng tôi sẽ gửi tin nhắn SMS xác nhận tới <strong>{guestPhone}</strong>.
+                    Yêu cầu đặt bàn tại <strong>{resModal.name}</strong> cho {partySize} khách vào lúc {resTime} ngày {resDate} đã được gửi tới quản lý nhà hàng. Nhà hàng sẽ xác nhận qua SĐT <strong>{guestPhone}</strong>; theo dõi trạng thái tại mục <strong>Đơn của tôi</strong>.
                   </p>
                 </div>
               ) : (
@@ -477,11 +514,15 @@ export default function Restaurants() {
 
                     <button
                       type="submit"
-                      className="btn-liquid-glass rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer"
+                      disabled={resBusy}
+                      className="btn-liquid-glass rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md cursor-pointer disabled:opacity-60"
                     >
-                      Xác nhận đặt bàn
+                      {resBusy ? "Đang gửi..." : "Xác nhận đặt bàn"}
                     </button>
                   </div>
+                  {resError && (
+                    <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">{resError}</p>
+                  )}
                 </form>
               )}
             </div>

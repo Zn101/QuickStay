@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { formatVnd, formatDate, PAYMENT_METHOD_LABEL } from '../lib/format'
 import { StatusBadge, PaymentBadge, Spinner, ErrorBox, ConfirmModal } from '../components/ui'
 import PaymentModal from '../components/PaymentModal'
+import MyVenueOrders from '../components/MyVenueOrders'
 
 export default function MyBookings() {
   const { state } = useLocation()
@@ -207,6 +208,8 @@ export default function MyBookings() {
           </div>
         </section>
       )}
+
+      <MyVenueOrders />
 
       <ConfirmModal
         isOpen={!!cancelTarget}

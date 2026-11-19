@@ -60,6 +60,8 @@ export default function Login() {
         navigate('/admin')
       } else if (u.role === 'HOTEL_MANAGER') {
         navigate('/partner')
+      } else if (u.role === 'RESTAURANT_OWNER' || u.role === 'TOUR_OPERATOR') {
+        navigate('/owner')
       } else if (location.state?.from) {
         navigate(location.state.from, { state: location.state, replace: true })
       } else {

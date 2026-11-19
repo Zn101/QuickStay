@@ -27,6 +27,7 @@ import AdminNews from './pages/admin/AdminNews'
 import AdminPartners from './pages/admin/AdminPartners'
 import AdminAi from './pages/admin/AdminAi'
 import PartnerDashboard from './pages/PartnerDashboard'
+import OwnerDashboard from './pages/OwnerDashboard'
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/partner" element={<PartnerDashboard />} />
+        <Route path="/owner" element={<OwnerDashboard />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>

@@ -30,8 +30,17 @@ public class PartnerAccountInitializer implements ApplicationRunner {
     private final UserRepository users;
     private final HotelRepository hotels;
     private final PasswordEncoder encoder;
+    private final com.quickstay.venue.VenueService venues;
+    private final com.quickstay.venue.RestaurantRepository venueRestaurants;
+    private final com.quickstay.venue.TourRepository venueTours;
 
-    public PartnerAccountInitializer(UserRepository users, HotelRepository hotels, PasswordEncoder encoder) {
+    public PartnerAccountInitializer(UserRepository users, HotelRepository hotels, PasswordEncoder encoder,
+                                     com.quickstay.venue.VenueService venues,
+                                     com.quickstay.venue.RestaurantRepository venueRestaurants,
+                                     com.quickstay.venue.TourRepository venueTours) {
+        this.venues = venues;
+        this.venueRestaurants = venueRestaurants;
+        this.venueTours = venueTours;
         this.users = users;
         this.hotels = hotels;
         this.encoder = encoder;
@@ -83,5 +92,28 @@ public class PartnerAccountInitializer implements ApplicationRunner {
                 log.info("Da tao tai khoan doi tac Khach san: {} (co so: {})", partnerEmail, hotel.getName());
             }
         }
+
+        // 3. Chu nha hang mau: so huu nha hang dau tien
+        sampleVenueOwner("restaurant@quickstay.local", "Restaurant@123", "Chủ nhà hàng Sunrise Bistro", Role.RESTAURANT_OWNER,
+                venueRestaurants.findAllByOrderByIdAsc().stream().limit(1).map(r -> r.getId()).toList());
+
+        // 4. Don vi to chuc tour mau: so huu cac tour o Da Nang
+        sampleVenueOwner("tour@quickstay.local", "Tour@123", "Công ty Du lịch Đà Nẵng Xanh", Role.TOUR_OPERATOR,
+                venueTours.findAllByOrderByIdAsc().stream().filter(t -> t.getCity().contains("Đà Nẵng")).map(t -> t.getId()).toList());
+    }
+
+    private void sampleVenueOwner(String email, String password, String name, Role role, java.util.List<Long> listingIds) {
+        if (users.existsByEmail(email) || listingIds.isEmpty()) {
+            return;
+        }
+        User u = new User();
+        u.setEmail(email);
+        u.setPasswordHash(encoder.encode(password));
+        u.setFullName(name);
+        u.setRole(role);
+        u.setEmailVerified(true);
+        users.save(u);
+        venues.assignListings(u, listingIds);
+        log.info("Da tao tai khoan doi tac mau {} ({}), {} co so", email, role, listingIds.size());
     }
 }

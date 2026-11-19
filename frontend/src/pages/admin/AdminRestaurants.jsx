@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
-import { INITIAL_RESTAURANTS } from '../Restaurants'
 import { ConfirmModal } from '../../components/ui'
-import { useManagedSiteContent } from '../../lib/siteContent'
+import { useAdminVenues } from '../../lib/venues'
 
 const EMPTY_REST = {
   name: '',
@@ -16,7 +15,7 @@ const EMPTY_REST = {
 }
 
 export default function AdminRestaurants() {
-  const [restaurants, setRestaurants, contentStatus] = useManagedSiteContent('restaurants', INITIAL_RESTAURANTS)
+  const { items: restaurants, save, remove, error: saveError, busy: saving } = useAdminVenues('restaurants')
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
   const [showModal, setShowModal] = useState(false)
@@ -58,49 +57,38 @@ export default function AdminRestaurants() {
     setShowModal(true)
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault()
     const parsedSpecialties = form.specialties
       ? form.specialties.split(',').map((s) => s.trim()).filter(Boolean)
       : []
 
-    if (editId) {
-      setRestaurants((prev) =>
-        prev.map((r) =>
-          r.id === editId
-            ? {
-                ...r,
-                ...form,
-                specialties: parsedSpecialties,
-              }
-            : r
-        )
-      )
-    } else {
-      const newRest = {
-        ...form,
-        id: Date.now(),
-        rating: 5.0,
-        reviewsCount: 1,
-        specialties: parsedSpecialties,
-      }
-      setRestaurants((prev) => [newRest, ...prev])
-    }
-    setShowModal(false)
+    const ok = await save(editId, {
+      name: form.name,
+      city: form.city,
+      cuisine: form.cuisine,
+      address: form.address,
+      hours: form.hours,
+      priceRange: form.priceRange,
+      specialties: parsedSpecialties,
+      description: form.description,
+      image: form.image,
+    })
+    if (ok) setShowModal(false)
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) return
-    setRestaurants((prev) => prev.filter((r) => r.id !== deleteTarget.id))
+    await remove(deleteTarget.id)
     setDeleteTarget(null)
   }
 
   return (
     <div className="space-y-6">
-      {contentStatus.error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{contentStatus.error}</div>
+      {saveError && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{saveError}</div>
       )}
-      {contentStatus.saving && <div className="text-xs font-semibold text-slate-400">Đang lưu lên máy chủ...</div>}
+      {saving && <div className="text-xs font-semibold text-slate-400">Đang lưu...</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -153,7 +141,7 @@ export default function AdminRestaurants() {
                 <th className="px-4 py-3">Thành phố</th>
                 <th className="px-4 py-3">Giờ mở cửa</th>
                 <th className="px-4 py-3">Khoảng giá</th>
-                <th className="px-4 py-3">Đánh giá</th>
+                <th className="px-4 py-3">Đối tác</th>
                 <th className="px-4 py-3 text-right">Thao tác</th>
               </tr>
             </thead>
@@ -173,8 +161,7 @@ export default function AdminRestaurants() {
                   <td className="px-4 py-3">{r.hours}</td>
                   <td className="px-4 py-3 font-semibold text-slate-700">{r.priceRange}</td>
                   <td className="px-4 py-3">
-                    <span className="font-bold text-amber-600">★ {r.rating}</span>
-                    <span className="text-[10px] text-slate-400"> ({r.reviewsCount})</span>
+                    <span className="text-xs font-semibold text-slate-600">{r.ownerName || <span className="text-slate-400">Chưa gán</span>}</span>
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button

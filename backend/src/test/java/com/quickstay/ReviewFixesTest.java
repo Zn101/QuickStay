@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** Hoi quy cho cac loi phat hien khi review toan bo code (bao mat, AI, du lieu). */
 class ReviewFixesTest extends ApiTestBase {
 
+    /** "Hom nay" theo mui gio nghiep vu cua app (app.timezone), khong theo mui gio may chay test. */
+    private static final java.time.ZoneId APP_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
+
     @Autowired UserRepository users;
     @Autowired HotelRepository hotels;
     @Autowired RoomRepository rooms;
@@ -70,8 +73,8 @@ class ReviewFixesTest extends ApiTestBase {
     private long book(String token, long roomId, int fromDay, int toDay) throws Exception {
         return read(mvc.perform(withBody(post("/api/bookings"), token, Map.of(
                         "roomId", roomId,
-                        "checkIn", LocalDate.now().plusDays(fromDay).toString(),
-                        "checkOut", LocalDate.now().plusDays(toDay).toString(),
+                        "checkIn", LocalDate.now(APP_ZONE).plusDays(fromDay).toString(),
+                        "checkOut", LocalDate.now(APP_ZONE).plusDays(toDay).toString(),
                         "guests", 1, "guestName", "Khach", "guestPhone", "0900000000")))
                 .andExpect(status().isCreated()).andReturn()).get("id").asLong();
     }
@@ -185,13 +188,13 @@ class ReviewFixesTest extends ApiTestBase {
         Room room = newRoom(newHotel(), 1);
         String c = registerCustomer(newCustomerEmail());
         mvc.perform(withBody(post("/api/bookings"), c, Map.of("roomId", room.getId(),
-                        "checkIn", LocalDate.now().plusDays(1).toString(),
-                        "checkOut", LocalDate.now().plusDays(40).toString(),
+                        "checkIn", LocalDate.now(APP_ZONE).plusDays(1).toString(),
+                        "checkOut", LocalDate.now(APP_ZONE).plusDays(40).toString(),
                         "guests", 1, "guestName", "K", "guestPhone", "09")))
                 .andExpect(status().isBadRequest());
         mvc.perform(withBody(post("/api/bookings"), c, Map.of("roomId", room.getId(),
-                        "checkIn", LocalDate.now().plusDays(400).toString(),
-                        "checkOut", LocalDate.now().plusDays(401).toString(),
+                        "checkIn", LocalDate.now(APP_ZONE).plusDays(400).toString(),
+                        "checkOut", LocalDate.now(APP_ZONE).plusDays(401).toString(),
                         "guests", 1, "guestName", "K", "guestPhone", "09")))
                 .andExpect(status().isBadRequest());
     }
@@ -222,7 +225,7 @@ class ReviewFixesTest extends ApiTestBase {
         String c = registerCustomer(newCustomerEmail());
         mvc.perform(withBody(post("/api/hotels/" + h.getId() + "/concierge"), c, Map.of(
                         "serviceType", "DINING", "serviceTitle", "Ban toi",
-                        "serviceDate", LocalDate.now().minusDays(1).toString(),
+                        "serviceDate", LocalDate.now(APP_ZONE).minusDays(1).toString(),
                         "guests", 2, "guestPhone", "0900000000")))
                 .andExpect(status().isBadRequest());
     }

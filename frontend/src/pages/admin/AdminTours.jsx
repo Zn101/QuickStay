@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react'
-import { INITIAL_TOURS } from '../Tours'
 import { formatVnd } from '../../lib/format'
 import { ConfirmModal } from '../../components/ui'
-import { useManagedSiteContent } from '../../lib/siteContent'
+import { useAdminVenues } from '../../lib/venues'
 
 const EMPTY_TOUR = {
   title: '',
@@ -17,7 +16,7 @@ const EMPTY_TOUR = {
 }
 
 export default function AdminTours() {
-  const [tours, setTours, contentStatus] = useManagedSiteContent('tours', INITIAL_TOURS)
+  const { items: tours, save, remove, error: saveError, busy: saving } = useAdminVenues('tours')
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
   const [showModal, setShowModal] = useState(false)
@@ -59,51 +58,37 @@ export default function AdminTours() {
     setShowModal(true)
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault()
     const parsedHighlights = form.highlights
       ? form.highlights.split(',').map((s) => s.trim()).filter(Boolean)
       : []
-
-    if (editId) {
-      setTours((prev) =>
-        prev.map((t) =>
-          t.id === editId
-            ? {
-                ...t,
-                ...form,
-                price: Number(form.price),
-                highlights: parsedHighlights,
-              }
-            : t
-        )
-      )
-    } else {
-      const newTour = {
-        ...form,
-        id: Date.now(),
-        price: Number(form.price),
-        rating: 5.0,
-        reviewsCount: 1,
-        highlights: parsedHighlights,
-      }
-      setTours((prev) => [newTour, ...prev])
-    }
-    setShowModal(false)
+    const ok = await save(editId, {
+      title: form.title,
+      city: form.city,
+      category: form.category,
+      duration: form.duration,
+      price: Number(form.price),
+      transport: form.transport,
+      highlights: parsedHighlights,
+      description: form.description,
+      image: form.image,
+    })
+    if (ok) setShowModal(false)
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) return
-    setTours((prev) => prev.filter((t) => t.id !== deleteTarget.id))
+    await remove(deleteTarget.id)
     setDeleteTarget(null)
   }
 
   return (
     <div className="space-y-6">
-      {contentStatus.error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{contentStatus.error}</div>
+      {saveError && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{saveError}</div>
       )}
-      {contentStatus.saving && <div className="text-xs font-semibold text-slate-400">Đang lưu lên máy chủ...</div>}
+      {saving && <div className="text-xs font-semibold text-slate-400">Đang lưu...</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
@@ -156,7 +141,7 @@ export default function AdminTours() {
                 <th className="px-4 py-3">Địa điểm</th>
                 <th className="px-4 py-3">Thời lượng</th>
                 <th className="px-4 py-3">Giá tour</th>
-                <th className="px-4 py-3">Đánh giá</th>
+                <th className="px-4 py-3">Đối tác</th>
                 <th className="px-4 py-3 text-right">Thao tác</th>
               </tr>
             </thead>
@@ -176,8 +161,7 @@ export default function AdminTours() {
                   <td className="px-4 py-3">{t.duration}</td>
                   <td className="px-4 py-3 font-black text-sky-700">{formatVnd(t.price)}</td>
                   <td className="px-4 py-3">
-                    <span className="font-bold text-amber-600">★ {t.rating}</span>
-                    <span className="text-[10px] text-slate-400"> ({t.reviewsCount})</span>
+                    <span className="text-xs font-semibold text-slate-600">{t.ownerName || <span className="text-slate-400">Chưa gán</span>}</span>
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button

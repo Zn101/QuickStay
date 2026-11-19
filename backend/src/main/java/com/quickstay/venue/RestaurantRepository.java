@@ -1,0 +1,12 @@
+package com.quickstay.venue;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Collection;
+import java.util.List;
+
+public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
+    List<Restaurant> findAllByOrderByIdAsc();
+    List<Restaurant> findByOwnerIdOrderByIdAsc(Long ownerId);
+    List<Restaurant> findByIdIn(Collection<Long> ids);
+}

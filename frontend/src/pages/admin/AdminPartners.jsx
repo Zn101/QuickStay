@@ -2,6 +2,51 @@ import { useState, useEffect, useMemo } from 'react'
 import { api } from '../../lib/api'
 import { Spinner, ErrorBox, ConfirmModal } from '../../components/ui'
 
+const ROLE_LABEL = {
+  HOTEL_MANAGER: '🏨 Khách sạn / Homestay',
+  RESTAURANT_OWNER: '🍽️ Chủ nhà hàng',
+  TOUR_OPERATOR: '🧭 Tour / Khu du lịch',
+}
+
+/** Chọn nhà hàng / tour giao cho đối tác. Mục đã thuộc đối tác khác bị khoá. */
+function ListingPicker({ role, options, selected, onChange, ownerId }) {
+  const isRestaurant = role === 'RESTAURANT_OWNER'
+  function toggle(id) {
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+  }
+  return (
+    <div>
+      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+        {isRestaurant ? 'Nhà hàng phụ trách' : 'Tour / điểm du lịch phụ trách'} <span className="text-rose-500">*</span>
+      </label>
+      <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-2 space-y-1">
+        {options.length === 0 && <p className="p-2 text-xs text-slate-400">Chưa có {isRestaurant ? 'nhà hàng' : 'tour'} nào.</p>}
+        {options.map((o) => {
+          const takenByOther = o.ownerId != null && o.ownerId !== ownerId && !selected.includes(o.id)
+          return (
+            <label
+              key={o.id}
+              className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${takenByOther ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}
+            >
+              <input
+                type="checkbox"
+                disabled={takenByOther}
+                checked={selected.includes(o.id)}
+                onChange={() => toggle(o.id)}
+                className="accent-indigo-600"
+              />
+              <span className="flex-1 truncate text-slate-800">
+                {isRestaurant ? o.name : o.title} <span className="text-xs text-slate-400">· {o.city}</span>
+              </span>
+              {takenByOther && <span className="text-[10px] font-semibold text-slate-500">Đã có chủ: {o.ownerName}</span>}
+            </label>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPartners() {
   const [partners, setPartners] = useState([])
   const [hotels, setHotels] = useState([])
@@ -23,9 +68,20 @@ export default function AdminPartners() {
     password: '',
     phone: '',
     hotelId: '',
+    role: 'HOTEL_MANAGER',
+    listingIds: [],
   })
   const [formBusy, setFormBusy] = useState(false)
   const [formError, setFormError] = useState('')
+  const [restaurants, setRestaurants] = useState([])
+  const [tours, setTours] = useState([])
+
+  // Danh sách nhà hàng / tour kèm chủ sở hữu hiện tại (để biết mục nào đã được gán)
+  async function reloadListings() {
+    const [r, t] = await Promise.all([api('/restaurants').catch(() => []), api('/tours').catch(() => [])])
+    setRestaurants(Array.isArray(r) ? r : [])
+    setTours(Array.isArray(t) ? t : [])
+  }
 
   async function loadData(manual = false) {
     if (manual) setRefreshing(true)
@@ -35,6 +91,7 @@ export default function AdminPartners() {
       const [partnerList, hotelList] = await Promise.all([
         api('/admin/partners'),
         api('/admin/hotels'),
+        reloadListings(),
       ])
       setPartners(Array.isArray(partnerList) ? partnerList : [])
       setHotels(Array.isArray(hotelList) ? hotelList : [])
@@ -62,6 +119,8 @@ export default function AdminPartners() {
       password: '',
       phone: '',
       hotelId: hotels.length > 0 ? String(hotels[0].id) : '',
+      role: 'HOTEL_MANAGER',
+      listingIds: [],
     })
     setFormError('')
     setShowCreateModal(true)
@@ -75,6 +134,8 @@ export default function AdminPartners() {
       password: '',
       phone: p.phone || '',
       hotelId: p.hotelId ? String(p.hotelId) : (hotels.length > 0 ? String(hotels[0].id) : ''),
+      role: p.role || 'HOTEL_MANAGER',
+      listingIds: (p.listings || []).map((l) => l.id),
     })
     setFormError('')
   }
@@ -95,8 +156,17 @@ export default function AdminPartners() {
       setFormError('Mật khẩu khởi tạo phải từ 6 ký tự trở lên.')
       return
     }
-    if (!form.hotelId) {
+    const isHotel = form.role === 'HOTEL_MANAGER'
+    if (isHotel && !form.hotelId) {
       setFormError('Vui lòng chọn cơ sở lưu trú (Khách sạn hoặc Homestay) phụ trách.')
+      return
+    }
+    if (!isHotel && form.listingIds.length === 0) {
+      setFormError(
+        form.role === 'RESTAURANT_OWNER'
+          ? 'Vui lòng chọn ít nhất một nhà hàng cho chủ nhà hàng.'
+          : 'Vui lòng chọn ít nhất một tour cho đơn vị tổ chức tour.',
+      )
       return
     }
 
@@ -109,12 +179,14 @@ export default function AdminPartners() {
           email: form.email.trim(),
           password: form.password,
           phone: form.phone.trim(),
-          hotelId: Number(form.hotelId),
+          role: form.role,
+          ...(isHotel ? { hotelId: Number(form.hotelId) } : { listingIds: form.listingIds }),
         },
       })
       setPartners((prev) => [created, ...prev])
       setShowCreateModal(false)
-      showToast(`Đã cấp tài khoản đối tác thành công cho ${created.fullName} (${created.hotelName || 'Lưu trú'})!`)
+      await reloadListings()
+      showToast(`Đã cấp tài khoản ${ROLE_LABEL[created.role]} cho ${created.fullName}!`)
     } catch (err) {
       setFormError(err.message || 'Có lỗi xảy ra khi tạo tài khoản đối tác.')
     } finally {
@@ -137,7 +209,11 @@ export default function AdminPartners() {
       const payload = {
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
-        hotelId: form.hotelId ? Number(form.hotelId) : undefined,
+      }
+      if (form.role === 'HOTEL_MANAGER') {
+        if (form.hotelId) payload.hotelId = Number(form.hotelId)
+      } else {
+        payload.listingIds = form.listingIds
       }
       if (form.password && form.password.trim()) {
         if (form.password.trim().length < 6) {
@@ -154,6 +230,7 @@ export default function AdminPartners() {
       })
       setPartners((prev) => prev.map((p) => (p.id === editingPartner.id ? updated : p)))
       setEditingPartner(null)
+      await reloadListings()
       showToast(`Đã cập nhật thông tin tài khoản đối tác #${editingPartner.id} thành công!`)
     } catch (err) {
       setFormError(err.message || 'Có lỗi xảy ra khi cập nhật thông tin.')
@@ -184,7 +261,8 @@ export default function AdminPartners() {
       const matchName = p.fullName?.toLowerCase().includes(q)
       const matchEmail = p.email?.toLowerCase().includes(q)
       const matchPhone = p.phone?.toLowerCase().includes(q)
-      const matchHotel = p.hotelName?.toLowerCase().includes(q)
+      const matchHotel =
+        p.hotelName?.toLowerCase().includes(q) || (p.listings || []).some((l) => l.name.toLowerCase().includes(q))
       const matchCity = p.hotelCity?.toLowerCase().includes(q)
       const matchId = String(p.id).includes(q)
       return matchName || matchEmail || matchPhone || matchHotel || matchCity || matchId
@@ -193,11 +271,11 @@ export default function AdminPartners() {
 
   // Phân loại đối tác homestay và khách sạn
   const homestayPartners = useMemo(
-    () => partners.filter((p) => (p.hotelName || '').toLowerCase().includes('homestay')),
+    () => partners.filter((p) => p.role === 'HOTEL_MANAGER' && (p.hotelName || '').toLowerCase().includes('homestay')),
     [partners]
   )
   const hotelPartners = useMemo(
-    () => partners.filter((p) => !(p.hotelName || '').toLowerCase().includes('homestay')),
+    () => partners.filter((p) => p.role === 'HOTEL_MANAGER' && !(p.hotelName || '').toLowerCase().includes('homestay')),
     [partners]
   )
 
@@ -221,7 +299,7 @@ export default function AdminPartners() {
               </span>
             </div>
             <p className="mt-1 text-sm text-slate-300 max-w-xl">
-              Cấp tài khoản đăng nhập cho từng Khách sạn và Homestay để cơ sở lưu trú chủ động duyệt đơn, check-in và phục vụ khách hàng.
+              Cấp tài khoản đăng nhập cho đối tác Khách sạn / Homestay, Chủ nhà hàng và Đơn vị tour / Khu du lịch để họ tự quản lý cơ sở và xử lý đơn của khách.
             </p>
           </div>
 
@@ -343,7 +421,7 @@ export default function AdminPartners() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên người đại diện, email đối tác, số điện thoại, tên khách sạn hoặc homestay..."
+            placeholder="Tìm theo tên người đại diện, email đối tác, số điện thoại, tên khách sạn, nhà hàng hoặc tour..."
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all"
           />
           {search && (
@@ -426,9 +504,25 @@ export default function AdminPartners() {
                           </span>
                         </td>
 
-                        {/* Cơ sở lưu trú phụ trách */}
+                        {/* Cơ sở phụ trách */}
                         <td className="px-3 py-4 max-w-[280px]">
-                          {p.hotelName ? (
+                          {p.role !== 'HOTEL_MANAGER' ? (
+                            p.listings?.length ? (
+                              <div className="space-y-0.5">
+                                {p.listings.slice(0, 3).map((l) => (
+                                  <p key={l.id} className="truncate text-xs font-semibold text-slate-800" title={l.name}>
+                                    {p.role === 'RESTAURANT_OWNER' ? '🍽️' : '🧭'} {l.name}
+                                    <span className="font-normal text-slate-400"> · {l.city}</span>
+                                  </p>
+                                ))}
+                                {p.listings.length > 3 && (
+                                  <p className="text-[11px] text-slate-400">+{p.listings.length - 3} cơ sở khác</p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs italic text-amber-600">Chưa gán cơ sở</span>
+                            )
+                          ) : p.hotelName ? (
                             <div className="flex items-center gap-2">
                               <span className="text-base">{isHomestay ? '🏡' : '🏢'}</span>
                               <div className="truncate">
@@ -446,7 +540,13 @@ export default function AdminPartners() {
                         {/* Vai trò */}
                         <td className="px-3 py-4 text-center whitespace-nowrap">
                           <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
-                            {isHomestay ? '🏡 Đối tác Homestay' : '🏢 Đối tác Khách sạn'}
+                            {p.role === 'RESTAURANT_OWNER'
+                              ? '🍽️ Chủ nhà hàng'
+                              : p.role === 'TOUR_OPERATOR'
+                                ? '🧭 Đơn vị tour'
+                                : isHomestay
+                                  ? '🏡 Đối tác Homestay'
+                                  : '🏢 Đối tác Khách sạn'}
                           </span>
                         </td>
 
@@ -508,7 +608,7 @@ export default function AdminPartners() {
                 </span>
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-lg">Cấp tài khoản Đối tác Mới</h3>
-                  <p className="text-xs text-slate-500">Tạo tài khoản quản trị riêng cho Khách sạn / Homestay</p>
+                  <p className="text-xs text-slate-500">Khách sạn / Homestay, Chủ nhà hàng hoặc Đơn vị tour</p>
                 </div>
               </div>
               <button
@@ -523,6 +623,36 @@ export default function AdminPartners() {
             {formError && <ErrorBox message={formError} />}
 
             <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Loại đối tác <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, role: value, listingIds: [] }))}
+                      className={`rounded-xl border px-2 py-2 text-xs font-bold transition ${
+                        form.role === value
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {form.role !== 'HOTEL_MANAGER' ? (
+                <ListingPicker
+                  role={form.role}
+                  options={form.role === 'RESTAURANT_OWNER' ? restaurants : tours}
+                  selected={form.listingIds}
+                  onChange={(ids) => setForm((prev) => ({ ...prev, listingIds: ids }))}
+                />
+              ) : (
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Chọn Cơ sở lưu trú phụ trách <span className="text-rose-500">*</span>
@@ -542,6 +672,7 @@ export default function AdminPartners() {
                   ))}
                 </select>
               </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -642,6 +773,10 @@ export default function AdminPartners() {
             {formError && <ErrorBox message={formError} />}
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
+              <p className="text-xs font-semibold text-slate-500">
+                Loại đối tác: <strong className="text-slate-800">{ROLE_LABEL[form.role]}</strong>
+              </p>
+              {form.role === 'HOTEL_MANAGER' ? (
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Cơ sở lưu trú phụ trách
@@ -659,6 +794,15 @@ export default function AdminPartners() {
                   ))}
                 </select>
               </div>
+              ) : (
+                <ListingPicker
+                  role={form.role}
+                  options={form.role === 'RESTAURANT_OWNER' ? restaurants : tours}
+                  selected={form.listingIds}
+                  ownerId={editingPartner?.id}
+                  onChange={(ids) => setForm((prev) => ({ ...prev, listingIds: ids }))}
+                />
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -725,7 +869,7 @@ export default function AdminPartners() {
       <ConfirmModal
         isOpen={!!deletingPartner}
         title="Xác nhận xóa tài khoản đối tác"
-        message={`Bạn có chắc chắn muốn xóa tài khoản đối tác "${deletingPartner?.fullName}" (${deletingPartner?.email}) quản lý ${deletingPartner?.hotelName}? Người này sẽ không còn quyền đăng nhập để xác nhận đơn phòng.`}
+        message={`Bạn có chắc chắn muốn xóa tài khoản đối tác "${deletingPartner?.fullName}" (${deletingPartner?.email}) quản lý ${deletingPartner?.hotelName || (deletingPartner?.listings || []).map((l) => l.name).join(", ") || "chưa có cơ sở"}? Người này sẽ không còn quyền đăng nhập để xác nhận đơn.`}
         confirmText="Xác nhận xóa"
         cancelText="Hủy"
         danger={true}

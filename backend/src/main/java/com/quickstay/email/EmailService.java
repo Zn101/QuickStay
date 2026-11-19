@@ -230,6 +230,30 @@ public class EmailService {
         send(b.getUser().getEmail(), "[QuickStay] Cập nhật đơn đặt phòng #" + b.getId() + " - " + b.getStatus(), html, "BOOKING_STATUS");
     }
 
+    /**
+     * Email cho don dat ban / dat tour (tao moi hoac doi trang thai).
+     * rows: cap {nhan, gia tri} CHUA escape; ham tu escape.
+     */
+    public void sendVenueOrderEmail(String to, String guestName, String heading, String intro,
+                                    String[][] rows, String subject, String emailType) {
+        String[][] safe = new String[rows.length][];
+        for (int i = 0; i < rows.length; i++) {
+            safe[i] = new String[]{escape(rows[i][0]), escape(rows[i][1] == null ? "" : rows[i][1])};
+        }
+        String html = wrapTemplate(
+                escape(heading),
+                "<p>Xin chào <strong>" + escape(guestName == null || guestName.isBlank() ? "Quý khách" : guestName) + "</strong>,</p>"
+                + "<p>" + escape(intro) + "</p>"
+                + infoTable(safe)
+                + ctaButton(frontendUrl + "/my-bookings", "Xem đơn của tôi trên QuickStay", "#0284c7")
+        );
+        send(to, "[QuickStay] " + subject, html, emailType);
+    }
+
+    public static String vnd(BigDecimal amount) {
+        return formatVnd(amount);
+    }
+
     public void sendConciergeConfirmationEmail(String to, String guestName, String hotelName,
                                                    String serviceTypeLabel, String serviceTitle,
                                                    String serviceDate, String serviceTime, int guests,
