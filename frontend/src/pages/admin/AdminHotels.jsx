@@ -23,6 +23,9 @@ export default function AdminHotels() {
   const [search, setSearch] = useState('')
   const [selectedCity, setSelectedCity] = useState('ALL')
   const [aiBusy, setAiBusy] = useState(false)
+  const [aiTone, setAiTone] = useState('LUXURY')
+  const [aiLang, setAiLang] = useState('vi')
+  const [aiVariants, setAiVariants] = useState([])
 
   async function handleAiGenerate() {
     if (!form.name.trim()) {
@@ -31,17 +34,24 @@ export default function AdminHotels() {
     }
     setAiBusy(true)
     setFormError('')
+    setAiVariants([])
     try {
-      const res = await api('/ai/describe', {
+      const res = await api('/ai/describe/advanced', {
         method: 'POST',
         body: {
           type: 'hotel',
           name: form.name.trim(),
           city: form.city.trim(),
           amenities: form.amenities,
+          tone: aiTone,
+          language: aiLang,
+          variantCount: 3,
         },
       })
-      if (res?.description) {
+      if (res?.variants && res.variants.length > 0) {
+        setAiVariants(res.variants)
+        setForm((f) => ({ ...f, description: res.variants[0] }))
+      } else if (res?.description) {
         setForm((f) => ({ ...f, description: res.description }))
       }
     } catch (err) {
@@ -569,29 +579,80 @@ export default function AdminHotels() {
               </div>
 
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                     Mô tả giới thiệu
                   </label>
-                  <button
-                    type="button"
-                    disabled={aiBusy}
-                    onClick={handleAiGenerate}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-                  >
-                    {aiBusy ? (
-                      <>
-                        <span className="inline-block animate-spin">⏳</span>
-                        <span>Đang AI viết...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>✨</span>
-                        <span>Tạo mô tả bằng AI</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <select
+                      value={aiTone}
+                      onChange={(e) => setAiTone(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 shadow-2xs"
+                      title="Phong cách viết"
+                    >
+                      <option value="LUXURY">Sang trọng (Luxury)</option>
+                      <option value="WARM">Ấm cúng (Warm)</option>
+                      <option value="BUSINESS">Doanh nhân (Business)</option>
+                      <option value="TRENDY">Trẻ trung (Trendy)</option>
+                    </select>
+                    <select
+                      value={aiLang}
+                      onChange={(e) => setAiLang(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 shadow-2xs"
+                      title="Ngôn ngữ"
+                    >
+                      <option value="vi">Tiếng Việt</option>
+                      <option value="en">English</option>
+                    </select>
+                    <button
+                      type="button"
+                      disabled={aiBusy}
+                      onClick={handleAiGenerate}
+                      className="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                    >
+                      {aiBusy ? (
+                        <>
+                          <span className="inline-block animate-spin">⏳</span>
+                          <span>Đang viết...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨</span>
+                          <span>AI Sinh 3 bản</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* 3 Phiên bản lựa chọn */}
+                {aiVariants.length > 0 && (
+                  <div className="mb-2.5 space-y-1.5 rounded-xl border border-purple-100 bg-purple-50/60 p-2.5">
+                    <p className="text-[11px] font-bold text-purple-900">
+                      Chọn 1 trong các phiên bản do AI gợi ý ({aiTone} - {aiLang.toUpperCase()}):
+                    </p>
+                    <div className="space-y-1.5">
+                      {aiVariants.map((variantText, vIdx) => (
+                        <div
+                          key={vIdx}
+                          onClick={() => setForm((f) => ({ ...f, description: variantText }))}
+                          className={`cursor-pointer rounded-lg p-2 text-xs transition-all border ${
+                            form.description === variantText
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-purple-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between font-bold text-[10px] mb-1">
+                            <span>Phiên bản #{vIdx + 1}</span>
+                            {form.description === variantText && <span>✓ Đang chọn</span>}
+                          </div>
+                          <p className="line-clamp-2 leading-relaxed">{variantText}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <textarea
                   rows={4}
                   placeholder="Nhập mô tả không gian, điểm nhấn kiến trúc và dịch vụ nổi bật..."

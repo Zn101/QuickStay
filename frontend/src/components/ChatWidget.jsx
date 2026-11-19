@@ -12,6 +12,8 @@ const QUICK_PROMPTS = [
   'Giá phòng rẻ nhất hiện tại?',
   'Dịch vụ đưa đón sân bay thế nào?',
   'Chính sách hủy phòng và hoàn tiền?',
+  'Hotels in Da Nang under 800k?',
+  'Cheapest hotel in Hanoi?',
 ]
 
 export default function ChatWidget() {

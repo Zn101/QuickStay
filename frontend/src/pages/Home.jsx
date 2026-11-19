@@ -116,6 +116,45 @@ export default function Home() {
   const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') || '')
   const [activeSlide, setActiveSlide] = useState(0)
 
+  // AI Natural-Language Search States
+  const [searchMode, setSearchMode] = useState('STANDARD') // 'STANDARD' | 'AI'
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiSearching, setAiSearching] = useState(false)
+  const [aiSearchResult, setAiSearchResult] = useState(null)
+
+  async function handleAiSearch(e, customQuery) {
+    if (e) e.preventDefault()
+    const queryToUse = customQuery || aiQuery
+    if (!queryToUse.trim()) return
+    setAiSearching(true)
+    setError('')
+    try {
+      const res = await api('/ai/nl-search', {
+        method: 'POST',
+        body: { query: queryToUse.trim() },
+      })
+      setAiSearchResult(res)
+      if (res?.filters) {
+        const p = {}
+        if (res.filters.city) {
+          setCity(res.filters.city)
+          p.city = res.filters.city
+        }
+        if (res.filters.checkIn && res.filters.checkOut) {
+          setCheckIn(res.filters.checkIn)
+          setCheckOut(res.filters.checkOut)
+          p.checkIn = res.filters.checkIn
+          p.checkOut = res.filters.checkOut
+        }
+        setSearchParams(p)
+      }
+    } catch (err) {
+      setError(err.message || 'Không thể tìm kiếm bằng AI.')
+    } finally {
+      setAiSearching(false)
+    }
+  }
+
   // States bổ sung cho UI
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false)
   const [showAllCities, setShowAllCities] = useState(false)
@@ -407,11 +446,115 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Thanh Tìm Kiếm Glassmorphism với Custom UI */}
-              <form
-                onSubmit={handleSearch}
-                className="mt-7 rounded-3xl border border-white/20 bg-slate-900/60 p-4 sm:p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] backdrop-blur-xl"
-              >
+              {/* Chế độ Tìm kiếm: Tiêu chuẩn vs AI Tự nhiên (Natural Language Search) */}
+              <div className="mt-7 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSearchMode('STANDARD')}
+                  className={`rounded-2xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                    searchMode === 'STANDARD'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-1 ring-blue-400'
+                      : 'bg-slate-900/60 text-slate-300 hover:bg-slate-900/80 hover:text-white border border-white/10'
+                  }`}
+                >
+                  🔍 Tìm kiếm tiêu chuẩn
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchMode('AI')}
+                  className={`flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                    searchMode === 'AI'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/30 ring-1 ring-purple-400'
+                      : 'bg-slate-900/60 text-purple-200 hover:bg-slate-900/80 hover:text-white border border-purple-500/30'
+                  }`}
+                >
+                  <span className="text-amber-300">✨</span>
+                  <span>Tìm kiếm AI tự nhiên</span>
+                  <span className="rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold px-1.5 py-0.2">
+                    Mới
+                  </span>
+                </button>
+              </div>
+
+              {/* Giao diện Tìm kiếm AI Tự Nhiên (NL Search) */}
+              {searchMode === 'AI' ? (
+                <div className="mt-3 rounded-3xl border border-purple-400/30 bg-slate-900/80 p-4 sm:p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] backdrop-blur-xl space-y-3.5">
+                  <form onSubmit={handleAiSearch} className="flex flex-col sm:flex-row gap-2.5">
+                    <div className="relative flex-1">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-purple-300 text-sm">
+                        ✨
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="VD: '2 người, dưới 800k, cuối tuần này ở Đà Nẵng' hoặc 'Resort Phú Quốc cho 2 người'..."
+                        value={aiQuery}
+                        onChange={(e) => setAiQuery(e.target.value)}
+                        className="w-full rounded-2xl bg-white dark:bg-slate-800 py-3.5 pl-11 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition-all placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-purple-500 shadow-sm"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={aiSearching || !aiQuery.trim()}
+                      className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-purple-600/40 transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer shrink-0"
+                    >
+                      {aiSearching ? (
+                        <>
+                          <Spinner size="sm" />
+                          <span>AI đang phân tích...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>AI Tìm phòng</span>
+                          <span className="transition-transform group-hover:translate-x-1">→</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Gợi ý câu lệnh mẫu */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10 text-xs">
+                    <span className="text-[11px] font-semibold text-slate-300">Gợi ý mẫu:</span>
+                    {[
+                      '2 người, dưới 800k, cuối tuần này ở Đà Nẵng',
+                      'Resort Phú Quốc có hồ bơi cho 2 khách',
+                      'Khách sạn ở Hà Nội giá dưới 600k',
+                      'Villa Đà Lạt cho 4 người',
+                    ].map((sample) => (
+                      <button
+                        key={sample}
+                        type="button"
+                        onClick={() => {
+                          setAiQuery(sample)
+                          handleAiSearch(null, sample)
+                        }}
+                        className="rounded-full bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1 text-[11px] text-purple-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {sample}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Kết quả phân tích AI */}
+                  {aiSearchResult && (
+                    <div className="rounded-2xl border border-purple-500/30 bg-purple-950/40 p-3.5 text-xs text-purple-100 space-y-1.5 animate-fadeIn">
+                      <div className="flex items-center justify-between border-b border-purple-500/20 pb-1.5">
+                        <span className="font-bold text-amber-300">🤖 AI đã trích xuất bộ lọc & gọi search_rooms:</span>
+                        <span className="text-[10px] text-purple-300 font-mono">
+                          {aiSearchResult.results?.length || 0} phòng thỏa mãn
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-line leading-relaxed font-medium">
+                        {aiSearchResult.aiSummary}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Thanh Tìm Kiếm Glassmorphism với Custom UI */
+                <form
+                  onSubmit={handleSearch}
+                  className="mt-3 rounded-3xl border border-white/20 bg-slate-900/60 p-4 sm:p-5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] backdrop-blur-xl"
+                >
                 {/* Hàng 1: Từ khóa tìm kiếm & Tên thành phố */}
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <div className="relative flex-1">
@@ -655,7 +798,8 @@ export default function Home() {
                   })}
                 </div>
               </form>
-            </div>
+            )}
+          </div>
 
             {/* Cột phải: KHUNG ẢNH NỔI BẬT (Bigger, matching height with the left block, and wider) */}
             <div className="relative hidden lg:flex flex-col justify-stretch w-full h-full">

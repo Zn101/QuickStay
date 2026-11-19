@@ -23,6 +23,54 @@ export default function PartnerDashboard() {
   const [search, setSearch] = useState('')
   const [cancelTarget, setCancelTarget] = useState(null)
 
+  // AI Pricing Hints & Reply Draft States
+  const [pricingHints, setPricingHints] = useState(null)
+  const [loadingPricing, setLoadingPricing] = useState(false)
+  const [pricingError, setPricingError] = useState('')
+  const [replyDraftModal, setReplyDraftModal] = useState({ open: false, guestName: '', draft: '', busy: false, copied: false })
+
+  async function loadPricingHints() {
+    if (!hotel?.id) return
+    setLoadingPricing(true)
+    setPricingError('')
+    try {
+      const res = await api(`/ai/pricing-hints/${hotel.id}`)
+      setPricingHints(res)
+    } catch (err) {
+      setPricingError(err.message || 'Không thể tải phân tích định giá.')
+    } finally {
+      setLoadingPricing(false)
+    }
+  }
+
+  async function handleOpenReplyDraft(booking) {
+    setReplyDraftModal({
+      open: true,
+      guestName: booking.guestName || 'Quý khách',
+      draft: '',
+      busy: true,
+      copied: false,
+    })
+    try {
+      const res = await api('/ai/reply-draft', {
+        method: 'POST',
+        body: {
+          guestName: booking.guestName,
+          guestMessage: `Khách đặt phòng ${booking.roomType} từ ngày ${formatDate(booking.checkIn)} đến ${formatDate(booking.checkOut)}. Tổng thanh toán: ${formatVnd(booking.totalPrice)}.`,
+          hotelName: hotel?.name,
+          language: 'vi',
+        },
+      })
+      setReplyDraftModal((prev) => ({ ...prev, draft: res.draft, busy: false }))
+    } catch (err) {
+      setReplyDraftModal((prev) => ({
+        ...prev,
+        draft: `Kính gửi ${booking.guestName || 'Quý khách'},\n\nKhách sạn ${hotel?.name || 'QuickStay'} xin chân thành cảm ơn quý khách đã tin tưởng đặt phòng. Chúng tôi đã chuẩn bị chu đáo để đón tiếp quý khách. Nếu cần hỗ trợ thêm thông tin, xin vui lòng liên hệ với chúng tôi qua số điện thoại lễ tân. Trân trọng!`,
+        busy: false,
+      }))
+    }
+  }
+
   useEffect(() => {
     if (!user) {
       navigate('/login', { state: { from: '/partner' } })
@@ -207,6 +255,79 @@ export default function PartnerDashboard() {
           </div>
         </div>
 
+        {/* Thẻ Phân tích Định giá & Công suất AI (Pricing Hints) */}
+        <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-5 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-purple-100 dark:border-purple-900/50 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white text-base shadow-xs">
+                💡
+              </span>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  Gợi ý Định giá & Phân bổ Công suất Lưu trú (AI Pricing Hints)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Phân tích dữ liệu đặt phòng thực tế (ngày thường vs cuối tuần, lead time). AI giải thích số liệu thống kê.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={loadPricingHints}
+              disabled={loadingPricing || !hotel?.id}
+              className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer shrink-0"
+            >
+              {loadingPricing ? (
+                <>
+                  <Spinner size="sm" />
+                  <span>Đang tính toán...</span>
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  <span>Phân tích định giá AI</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {pricingError && <ErrorBox message={pricingError} />}
+
+          {pricingHints && (
+            <div className="space-y-3 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Tỷ lệ Ngày thường vs Cuối tuần</p>
+                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                    {pricingHints.stats?.weekdayBookings || 0} vs {pricingHints.stats?.weekendBookings || 0} đơn
+                  </p>
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
+                    {pricingHints.stats?.weekendSharePercent || 0}% đơn vào T6 - CN
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Thời gian đặt trước trung bình</p>
+                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                    ~{pricingHints.stats?.averageLeadTimeDays || 3} ngày
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Khoảng cách từ đặt tới nhận phòng</p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Tổng lượt giao dịch</p>
+                  <p className="mt-1 text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    {pricingHints.stats?.totalBookings || 0} đơn lưu trú
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Cơ sở dữ liệu mẫu khách sạn</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-white/80 dark:bg-slate-800/80 p-3.5 border border-purple-100 dark:border-purple-900/50 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-medium">
+                {pricingHints.pricingAdvice}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* KPI Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {/* Chờ xác nhận */}
@@ -294,6 +415,79 @@ export default function PartnerDashboard() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Thẻ Phân tích Định giá & Công suất AI (Pricing Hints) */}
+        <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-5 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-purple-100 dark:border-purple-900/50 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white text-base shadow-xs">
+                💡
+              </span>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  Gợi ý Định giá & Phân bổ Công suất Lưu trú (AI Pricing Hints)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Phân tích dữ liệu đặt phòng thực tế (ngày thường vs cuối tuần, lead time). AI giải thích số liệu thống kê.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={loadPricingHints}
+              disabled={loadingPricing || !hotel?.id}
+              className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer shrink-0"
+            >
+              {loadingPricing ? (
+                <>
+                  <Spinner size="sm" />
+                  <span>Đang tính toán...</span>
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  <span>Phân tích định giá AI</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {pricingError && <ErrorBox message={pricingError} />}
+
+          {pricingHints && (
+            <div className="space-y-3 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Tỷ lệ Ngày thường vs Cuối tuần</p>
+                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                    {pricingHints.stats?.weekdayBookings || 0} vs {pricingHints.stats?.weekendBookings || 0} đơn
+                  </p>
+                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
+                    {pricingHints.stats?.weekendSharePercent || 0}% đơn vào T6 - CN
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Thời gian đặt trước trung bình</p>
+                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                    ~{pricingHints.stats?.averageLeadTimeDays || 3} ngày
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Khoảng cách từ đặt tới nhận phòng</p>
+                </div>
+                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Tổng lượt giao dịch</p>
+                  <p className="mt-1 text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    {pricingHints.stats?.totalBookings || 0} đơn lưu trú
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Cơ sở dữ liệu mẫu khách sạn</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-white/80 dark:bg-slate-800/80 p-3.5 border border-purple-100 dark:border-purple-900/50 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-medium">
+                {pricingHints.pricingAdvice}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Thông báo kết quả thao tác */}
@@ -595,6 +789,15 @@ export default function PartnerDashboard() {
                                   Đã hủy đơn
                                 </span>
                               )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReplyDraft(b)}
+                                className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-2 text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-100 transition-colors cursor-pointer"
+                                title="Soạn tin nhắn phản hồi khách hàng bằng AI"
+                              >
+                                ✨ Nhắn tin
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -631,6 +834,73 @@ export default function PartnerDashboard() {
           onConfirm={handleConfirmCancel}
           onCancel={() => setCancelTarget(null)}
         />
+
+        {/* Modal Soạn tin nhắn trả lời bằng AI (AI Reply Draft) */}
+        {replyDraftModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-black">
+                    ✨
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                      Soạn tin nhắn cho khách (AI Reply Draft)
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Người nhận: <strong className="text-slate-700 dark:text-slate-200">{replyDraftModal.guestName}</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyDraftModal({ open: false, guestName: '', draft: '', busy: false, copied: false })}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {replyDraftModal.busy ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-2">
+                  <Spinner size="md" />
+                  <p className="text-xs text-slate-500">AI đang soạn bản thảo trả lời lịch thiệp...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">
+                      Nội dung bản thảo do AI tạo:
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={replyDraftModal.draft}
+                      onChange={(e) => setReplyDraftModal((prev) => ({ ...prev, draft: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs leading-relaxed text-slate-800 dark:text-slate-200 outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-slate-400">
+                      💡 Bạn có thể chỉnh sửa nội dung trước khi gửi.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(replyDraftModal.draft)
+                        setReplyDraftModal((prev) => ({ ...prev, copied: true }))
+                        setTimeout(() => setReplyDraftModal((prev) => ({ ...prev, copied: false })), 2000)
+                      }}
+                      className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700 transition-colors shadow-xs cursor-pointer"
+                    >
+                      {replyDraftModal.copied ? '✓ Đã sao chép' : 'Sao chép tin nhắn'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

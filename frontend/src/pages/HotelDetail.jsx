@@ -89,6 +89,13 @@ export default function HotelDetail() {
   const [revBusy, setRevBusy] = useState(false)
   const [revError, setRevError] = useState('')
 
+  // AI Review Summary & Grounded Q&A
+  const [aiSummary, setAiSummary] = useState(null)
+  const [loadingAiSummary, setLoadingAiSummary] = useState(false)
+  const [aiFastAnswer, setAiFastAnswer] = useState('')
+  const [aiFastAnswerBusy, setAiFastAnswerBusy] = useState(false)
+  const [draftingId, setDraftingId] = useState(null)
+
   // Q&A form
   const [qaName, setQaName] = useState('')
   const [qaText, setQaText] = useState('')
@@ -98,6 +105,67 @@ export default function HotelDetail() {
 
   // Active info tab
   const [serviceTab, setServiceTab] = useState('transfer') // transfer | dining | attractions | policies
+
+  async function loadAiReviewSummary() {
+    setLoadingAiSummary(true)
+    try {
+      const res = await api(`/ai/reviews/${id}/summary`)
+      setAiSummary(res)
+    } catch (e) {
+      console.warn('Cannot load review summary', e)
+    } finally {
+      setLoadingAiSummary(false)
+    }
+  }
+
+  async function handleFastAiAnswer() {
+    if (!qaText.trim()) {
+      setQaError('Vui lòng nhập câu hỏi để AI trả lời.')
+      return
+    }
+    setAiFastAnswerBusy(true)
+    setQaError('')
+    setAiFastAnswer('')
+    try {
+      const res = await api('/ai/hotel-qa', {
+        method: 'POST',
+        body: {
+          hotelId: Number(id),
+          question: qaText.trim(),
+          language: 'vi',
+        },
+      })
+      if (res?.answer) {
+        setAiFastAnswer(res.answer)
+      }
+    } catch (e) {
+      setQaError(e.message || 'Không thể giải đáp bằng AI.')
+    } finally {
+      setAiFastAnswerBusy(false)
+    }
+  }
+
+  async function handleGenerateReplyDraft(q) {
+    setDraftingId(q.id)
+    try {
+      const res = await api('/ai/reply-draft', {
+        method: 'POST',
+        body: {
+          guestName: q.authorName,
+          guestMessage: q.question,
+          hotelName: hotel?.name,
+          language: 'vi',
+        },
+      })
+      if (res?.draft) {
+        setReplyMap((m) => ({ ...m, [q.id]: res.draft }))
+      }
+    } catch (e) {
+      console.warn('Cannot generate draft', e)
+    } finally {
+      setDraftingId(null)
+    }
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -779,6 +847,41 @@ export default function HotelDetail() {
               ))}
             </div>
 
+            {/* Tóm tắt Đánh giá bằng AI (AI Review Summary) */}
+            <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-4.5 shadow-2xs space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-600 text-white text-xs font-black shadow-xs">
+                    ✨
+                  </span>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300">
+                      Tóm tắt đánh giá bằng AI (AI Review Summary)
+                    </h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                      Tổng hợp điểm khách thích, điểm cần lưu ý và nhận định tổng quan
+                    </p>
+                  </div>
+                </div>
+                {!aiSummary && (
+                  <button
+                    type="button"
+                    onClick={loadAiReviewSummary}
+                    disabled={loadingAiSummary}
+                    className="flex items-center gap-1 rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer shrink-0"
+                  >
+                    {loadingAiSummary ? 'Đang phân tích...' : 'Xem tóm tắt AI'}
+                  </button>
+                )}
+              </div>
+
+              {aiSummary && (
+                <div className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-medium bg-white/80 dark:bg-slate-800/80 p-3.5 rounded-xl border border-purple-100 dark:border-purple-900/50 shadow-2xs">
+                  {aiSummary.summaryText}
+                </div>
+              )}
+            </div>
+
             {/* Form viết đánh giá */}
             {user ? (
               <form onSubmit={submitReview} className="space-y-3.5 rounded-2xl border border-sky-100 dark:border-sky-900/60 bg-sky-50/40 dark:bg-sky-950/30 p-5">
@@ -1081,17 +1184,40 @@ export default function HotelDetail() {
                 <input
                   type="text"
                   value={qaText}
-                  onChange={(e) => setQaText(e.target.value)}
+                  onChange={(e) => {
+                    setQaText(e.target.value)
+                    setAiFastAnswer('')
+                  }}
                   placeholder="Đặt câu hỏi về phòng, đưa đón hoặc dịch vụ..."
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-2 text-xs outline-none focus:border-sky-500"
                 />
-                <button
-                  type="submit"
-                  disabled={qaBusy}
-                  className="w-full rounded-xl bg-slate-900 dark:bg-sky-600 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-sky-700 disabled:opacity-50 transition-colors cursor-pointer"
-                >
-                  {qaBusy ? 'Đang gửi...' : 'Gửi câu hỏi'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={qaBusy}
+                    className="flex-1 rounded-xl bg-slate-900 dark:bg-sky-600 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:hover:bg-sky-700 disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {qaBusy ? 'Đang gửi...' : 'Gửi cho khách sạn'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={aiFastAnswerBusy || !qaText.trim()}
+                    onClick={handleFastAiAnswer}
+                    className="flex items-center justify-center gap-1 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-3 py-2 text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-100 disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {aiFastAnswerBusy ? '⏳ AI đang nghĩ...' : '✨ Hỏi AI nhanh'}
+                  </button>
+                </div>
+
+                {/* Kết quả phản hồi AI có căn cứ (Grounded Q&A Answer) */}
+                {aiFastAnswer && (
+                  <div className="rounded-xl border border-purple-200/80 bg-purple-50/70 dark:bg-purple-950/50 p-2.5 text-xs text-slate-800 dark:text-slate-200 animate-fadeIn space-y-1">
+                    <span className="font-bold text-purple-900 dark:text-purple-300 block text-[11px]">
+                      🤖 AI giải đáp dựa trên dữ liệu khách sạn:
+                    </span>
+                    <p className="leading-relaxed">{aiFastAnswer}</p>
+                  </div>
+                )}
               </div>
             </form>
 
@@ -1110,21 +1236,31 @@ export default function HotelDetail() {
                     <p className="text-[11px] italic text-slate-400">Đang chờ quản lý phản hồi...</p>
                   )}
 
-                  {user?.role === 'ADMIN' && !q.answer && (
-                    <div className="flex gap-2 pt-1">
-                      <input
-                        type="text"
-                        placeholder="Nhập trả lời..."
-                        value={replyMap[q.id] || ''}
-                        onChange={(e) => setReplyMap((m) => ({ ...m, [q.id]: e.target.value }))}
-                        className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-1 text-xs outline-none"
-                      />
+                  {(user?.role === 'ADMIN' || user?.role === 'HOTEL_MANAGER') && !q.answer && (
+                    <div className="flex flex-col gap-1.5 pt-1">
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Nhập trả lời..."
+                          value={replyMap[q.id] || ''}
+                          onChange={(e) => setReplyMap((m) => ({ ...m, [q.id]: e.target.value }))}
+                          className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-2 py-1 text-xs outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => submitAnswer(q.id)}
+                          className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-sky-700 cursor-pointer"
+                        >
+                          Gửi
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => submitAnswer(q.id)}
-                        className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-sky-700 cursor-pointer"
+                        disabled={draftingId === q.id}
+                        onClick={() => handleGenerateReplyDraft(q)}
+                        className="self-start text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 cursor-pointer flex items-center gap-1"
                       >
-                        Gửi
+                        {draftingId === q.id ? '⏳ Đang soạn...' : '✨ Gợi ý soạn trả lời bằng AI'}
                       </button>
                     </div>
                   )}

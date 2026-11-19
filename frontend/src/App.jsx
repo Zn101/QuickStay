@@ -25,6 +25,7 @@ import AdminTours from './pages/admin/AdminTours'
 import AdminRestaurants from './pages/admin/AdminRestaurants'
 import AdminNews from './pages/admin/AdminNews'
 import AdminPartners from './pages/admin/AdminPartners'
+import AdminAi from './pages/admin/AdminAi'
 import PartnerDashboard from './pages/PartnerDashboard'
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="restaurants" element={<AdminRestaurants />} />
         <Route path="news" element={<AdminNews />} />
         <Route path="emails" element={<AdminEmails />} />
+        <Route path="ai" element={<AdminAi />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
