@@ -29,6 +29,116 @@ export default function PartnerDashboard() {
   const [pricingError, setPricingError] = useState('')
   const [replyDraftModal, setReplyDraftModal] = useState({ open: false, guestName: '', draft: '', busy: false, copied: false })
 
+  // Hotel Edit Modal & AI Copywriter States
+  const [editHotelModal, setEditHotelModal] = useState(false)
+  const [hotelForm, setHotelForm] = useState({
+    name: '',
+    city: '',
+    address: '',
+    description: '',
+    imageUrl: '',
+    amenities: '',
+  })
+  const [hotelFormBusy, setHotelFormBusy] = useState(false)
+  const [hotelFormError, setHotelFormError] = useState('')
+  const [aiDescribeBusy, setAiDescribeBusy] = useState(false)
+  const [aiTone, setAiTone] = useState('WARM')
+  const [aiLang, setAiLang] = useState('vi')
+  const [aiVariants, setAiVariants] = useState([])
+
+  const POPULAR_CITIES = ['Đà Nẵng', 'Hà Nội', 'Hội An', 'Đà Lạt', 'Phú Quốc', 'Nha Trang', 'Hồ Chí Minh', 'Huế', 'Sa Pa', 'Quy Nhơn', 'Vũng Tàu']
+  const COMMON_AMENITIES = ['Wifi tốc độ cao', 'Hồ bơi', 'Gần biển', 'Buffet sáng', 'Bếp nướng BBQ', 'Sân vườn', 'Săn mây', 'Chỗ đậu xe', 'Cho phép thú cưng', 'Điều hòa', 'Xe đưa đón']
+
+  function handleOpenEditHotel() {
+    if (!hotel) return
+    setHotelForm({
+      name: hotel.name || '',
+      city: hotel.city || '',
+      address: hotel.address || '',
+      description: hotel.description || '',
+      imageUrl: hotel.imageUrl || '',
+      amenities: hotel.amenities || '',
+    })
+    setHotelFormError('')
+    setAiVariants([])
+    setEditHotelModal(true)
+  }
+
+  function toggleAmenity(amenity) {
+    const current = hotelForm.amenities ? hotelForm.amenities.split(',').map((s) => s.trim()).filter(Boolean) : []
+    const exists = current.some((a) => a.toLowerCase() === amenity.toLowerCase())
+    let updated
+    if (exists) {
+      updated = current.filter((a) => a.toLowerCase() !== amenity.toLowerCase())
+    } else {
+      updated = [...current, amenity]
+    }
+    setHotelForm((prev) => ({ ...prev, amenities: updated.join(', ') }))
+  }
+
+  async function handleAiGenerateDescription() {
+    if (!hotelForm.name.trim()) {
+      setHotelFormError('Vui lòng nhập tên cơ sở lưu trú trước khi tạo mô tả bằng AI.')
+      return
+    }
+    setAiDescribeBusy(true)
+    setHotelFormError('')
+    setAiVariants([])
+    try {
+      const res = await api('/ai/describe/advanced', {
+        method: 'POST',
+        body: {
+          type: 'hotel',
+          name: hotelForm.name.trim(),
+          city: hotelForm.city.trim(),
+          amenities: hotelForm.amenities,
+          tone: aiTone,
+          language: aiLang,
+          variantCount: 3,
+        },
+      })
+      if (res?.variants && res.variants.length > 0) {
+        setAiVariants(res.variants)
+        setHotelForm((prev) => ({ ...prev, description: res.variants[0] }))
+      } else if (res?.description) {
+        setHotelForm((prev) => ({ ...prev, description: res.description }))
+      }
+    } catch (err) {
+      setHotelFormError(err.message || 'Không thể tạo mô tả bằng AI.')
+    } finally {
+      setAiDescribeBusy(false)
+    }
+  }
+
+  async function handleSaveHotel(e) {
+    e.preventDefault()
+    if (!hotelForm.name.trim()) {
+      setHotelFormError('Tên cơ sở lưu trú không được để trống.')
+      return
+    }
+    if (!hotelForm.city.trim()) {
+      setHotelFormError('Thành phố không được để trống.')
+      return
+    }
+
+    setHotelFormBusy(true)
+    setHotelFormError('')
+    try {
+      const updated = await api('/partner/hotel', {
+        method: 'PUT',
+        body: hotelForm,
+      })
+      setHotel(updated)
+      setSuccessMessage(`Đã cập nhật thông tin "${updated.name}" thành công!`)
+      setEditHotelModal(false)
+      setTimeout(() => setSuccessMessage(''), 4000)
+    } catch (err) {
+      setHotelFormError(err.message || 'Có lỗi xảy ra khi cập nhật thông tin cơ sở lưu trú.')
+    } finally {
+      setHotelFormBusy(false)
+    }
+  }
+
   async function loadPricingHints() {
     if (!hotel?.id) return
     setLoadingPricing(true)
@@ -231,6 +341,16 @@ export default function PartnerDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+              {hotel && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditHotel}
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-orange-500/25 active:scale-95 transition-all cursor-pointer"
+                >
+                  <span>✏️</span>
+                  <span>Chỉnh sửa thông tin {isHomestay ? 'Homestay' : 'Khách sạn'}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => loadData(true)}
@@ -254,6 +374,79 @@ export default function PartnerDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Thẻ Tổng quan Hồ sơ Cơ sở Lưu trú (Property Profile Card) */}
+        {hotel && (
+          <div className="rounded-3xl border border-slate-200/80 bg-white dark:bg-slate-900 dark:border-slate-800 p-5 sm:p-6 shadow-sm transition-all">
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* Ảnh đại diện */}
+              <div className="relative w-full lg:w-72 h-48 sm:h-52 rounded-2xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800 shadow-xs">
+                <img
+                  src={hotel.imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'}
+                  alt={hotel.name}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'
+                  }}
+                />
+                <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-slate-900/85 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white shadow-xs">
+                  <span>{isHomestay ? '🏡 Homestay' : '🏢 Khách sạn'}</span>
+                </span>
+              </div>
+
+              {/* Chi tiết thông tin */}
+              <div className="flex-1 space-y-3.5 w-full">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                        {hotel.name}
+                      </h2>
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                      <span>📍</span>
+                      <span>{hotel.address ? `${hotel.address}, ` : ''}{hotel.city}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenEditHotel}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-4 py-2.5 text-xs font-bold hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors cursor-pointer self-start shadow-xs active:scale-95"
+                  >
+                    <span>✏️</span>
+                    <span>Chỉnh sửa thông tin</span>
+                  </button>
+                </div>
+
+                {hotel.description && (
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal line-clamp-3">
+                    {hotel.description}
+                  </p>
+                )}
+
+                {/* Danh sách tiện nghi */}
+                {hotel.amenities && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                      Tiện nghi & Dịch vụ:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hotel.amenities.split(',').map((am, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 text-xs font-medium border border-slate-200/50 dark:border-slate-700/50"
+                        >
+                          <span className="text-[10px] text-sky-500 font-bold">✓</span>
+                          <span>{am.trim()}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Thẻ Phân tích Định giá & Công suất AI (Pricing Hints) */}
         <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-5 shadow-xs space-y-3">
@@ -898,6 +1091,303 @@ export default function PartnerDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Chỉnh sửa Thông tin Cơ sở Lưu trú (Homestay / Hotel) */}
+        {editHotelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto">
+            <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 my-auto">
+              {/* Header Modal */}
+              <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 text-xl font-bold shadow-xs">
+                    {isHomestay ? '🏡' : '🏢'}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>Chỉnh sửa thông tin {isHomestay ? 'Homestay' : 'Khách sạn'}</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Cập nhật thông tin chi tiết, địa chỉ, ảnh đại diện và mô tả để thu hút khách hàng trên QuickStay.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditHotelModal(false)}
+                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {hotelFormError && <ErrorBox message={hotelFormError} />}
+
+              {/* Form cập nhật */}
+              <form onSubmit={handleSaveHotel} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Cột 1: Tên, Thành phố, Địa chỉ, Ảnh */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Tên cơ sở lưu trú <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={hotelForm.name}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="Ví dụ: Mây Homestay & Coffee, Khách sạn Mường Thanh..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Thành phố / Khu vực <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={hotelForm.city}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, city: e.target.value }))}
+                        placeholder="Ví dụ: Đà Lạt, Đà Nẵng, Hội An..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span className="text-[10px] font-semibold text-slate-400 self-center mr-1">Gợi ý:</span>
+                        {POPULAR_CITIES.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setHotelForm((prev) => ({ ...prev, city: c }))}
+                            className={`rounded-lg px-2 py-0.5 text-[10px] font-medium transition-colors cursor-pointer ${
+                              hotelForm.city === c
+                                ? 'bg-sky-600 text-white font-bold'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Địa chỉ cụ thể
+                      </label>
+                      <input
+                        type="text"
+                        value={hotelForm.address}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, address: e.target.value }))}
+                        placeholder="Số nhà, đường, phường/xã..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        URL hình ảnh đại diện
+                      </label>
+                      <input
+                        type="text"
+                        value={hotelForm.imageUrl}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                      {/* Xem trước ảnh */}
+                      <div className="mt-2.5 relative h-36 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                        {hotelForm.imageUrl ? (
+                          <img
+                            src={hotelForm.imageUrl}
+                            alt="Xem trước ảnh"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">Chưa có liên kết ảnh</span>
+                        )}
+                        <span className="absolute bottom-2 right-2 rounded-md bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-white">
+                          Xem trước ảnh
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cột 2: Tiện nghi & Mô tả thông minh AI */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Tiện nghi & Dịch vụ (cách nhau bằng dấu phẩy)
+                      </label>
+                      <input
+                        type="text"
+                        value={hotelForm.amenities}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, amenities: e.target.value }))}
+                        placeholder="Wifi tốc độ cao, Hồ bơi, Bếp nướng BBQ..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {COMMON_AMENITIES.map((am) => {
+                          const currentList = hotelForm.amenities ? hotelForm.amenities.split(',').map((s) => s.trim().toLowerCase()) : []
+                          const active = currentList.includes(am.toLowerCase())
+                          return (
+                            <button
+                              key={am}
+                              type="button"
+                              onClick={() => toggleAmenity(am)}
+                              className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                                active
+                                  ? 'bg-sky-600 text-white font-bold shadow-xs'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              <span>{active ? '✓' : '+'}</span>
+                              <span>{am}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                          Mô tả chi tiết
+                        </label>
+                        <span className="text-[10px] text-slate-400">
+                          Tối đa 4,000 ký tự
+                        </span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        value={hotelForm.description}
+                        onChange={(e) => setHotelForm((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Mô tả không gian, phong cảnh xung quanh, trải nghiệm nổi bật..."
+                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs leading-relaxed text-slate-800 dark:text-slate-200 outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                      />
+
+                      {/* Trợ lý AI Viết mô tả đa phong cách */}
+                      <div className="mt-2.5 rounded-2xl border border-purple-200/80 dark:border-purple-900/50 bg-gradient-to-br from-purple-50/60 to-indigo-50/30 dark:from-purple-950/40 dark:to-slate-900 p-3.5 space-y-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-600 text-white text-xs">
+                              ✨
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">
+                              Trợ lý AI viết mô tả thông minh
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <select
+                              value={aiTone}
+                              onChange={(e) => setAiTone(e.target.value)}
+                              className="rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 outline-none"
+                            >
+                              <option value="WARM">🌿 Ấm cúng, mộc mạc (Homestay)</option>
+                              <option value="LUXURY">💎 Sang trọng, cao cấp</option>
+                              <option value="TRENDY">📸 Trẻ trung, check-in</option>
+                              <option value="BUSINESS">💼 Chuyên nghiệp, công tác</option>
+                            </select>
+                            <select
+                              value={aiLang}
+                              onChange={(e) => setAiLang(e.target.value)}
+                              className="rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 outline-none"
+                            >
+                              <option value="vi">Tiếng Việt</option>
+                              <option value="en">English</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={handleAiGenerateDescription}
+                              disabled={aiDescribeBusy}
+                              className="flex items-center gap-1 rounded-lg bg-purple-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
+                            >
+                              {aiDescribeBusy ? (
+                                <>
+                                  <Spinner size="xs" />
+                                  <span>Đang viết...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>✨</span>
+                                  <span>Viết bằng AI</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {aiVariants.length > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-purple-200/60 dark:border-purple-900/50">
+                            <p className="text-[10px] font-bold uppercase text-purple-700 dark:text-purple-300">
+                              Chọn 1 trong 3 phiên bản AI gợi ý:
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {aiVariants.map((v, idx) => (
+                                <div
+                                  key={idx}
+                                  onClick={() => setHotelForm((prev) => ({ ...prev, description: v }))}
+                                  className={`rounded-xl p-2.5 text-[11px] leading-relaxed cursor-pointer transition-all border ${
+                                    hotelForm.description === v
+                                      ? 'border-purple-600 bg-purple-100/70 dark:bg-purple-900/40 font-medium'
+                                      : 'border-purple-100 dark:border-purple-900/30 bg-white dark:bg-slate-800 hover:border-purple-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-purple-800 dark:text-purple-300">
+                                      Bản {idx + 1}
+                                    </span>
+                                    {hotelForm.description === v && (
+                                      <span className="text-purple-600 font-bold">✓ Đang chọn</span>
+                                    )}
+                                  </div>
+                                  <p className="text-slate-700 dark:text-slate-300 line-clamp-3">{v}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditHotelModal(false)}
+                    disabled={hotelFormBusy}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={hotelFormBusy}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-sky-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {hotelFormBusy ? (
+                      <>
+                        <Spinner size="sm" />
+                        <span>Đang lưu...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>💾</span>
+                        <span>Lưu thay đổi</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

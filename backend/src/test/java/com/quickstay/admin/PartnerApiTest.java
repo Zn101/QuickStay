@@ -167,4 +167,76 @@ class PartnerApiTest extends ApiTestBase {
                         Map.of("status", "CONFIRMED")))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void TC_PARTNER_03_partner_can_update_own_hotel_info_and_cannot_update_other_hotel() throws Exception {
+        String admin = adminToken();
+
+        // 1. Tao 2 co so luu tru: Hotel A (cua partner) va Hotel B (khac)
+        Hotel hotelA = new Hotel();
+        hotelA.setName("Mây Homestay Ban Dau");
+        hotelA.setCity("Da Lat");
+        hotelA.setAddress("123 Duong Ba Thang Tu");
+        hotelA.setDescription("Homestay go moc mac giua rung thong");
+        hotelA.setImageUrl("https://example.com/may1.jpg");
+        hotelA.setAmenities("Wifi, San vuon, BBQ");
+        hotels.save(hotelA);
+
+        Hotel hotelB = new Hotel();
+        hotelB.setName("Khach San B");
+        hotelB.setCity("Nha Trang");
+        hotels.save(hotelB);
+
+        String partnerEmail = "partner-" + UUID.randomUUID() + "@quickstay.test";
+        mvc.perform(withBody(post("/api/admin/partners"), admin, Map.of(
+                "email", partnerEmail,
+                "password", "Pass@123",
+                "fullName", "Chu Homestay May",
+                "hotelId", hotelA.getId()
+        ))).andExpect(status().isCreated());
+
+        String partnerJwt = partnerToken(partnerEmail, "Pass@123");
+
+        // 2. Partner cap nhat thong tin homestay cua minh qua PUT /api/partner/hotel
+        Map<String, Object> updateReq = Map.of(
+                "name", "Mây Homestay & Coffee Đà Lạt",
+                "city", "Đà Lạt",
+                "address", "123/4 Đường 3 Tháng 4, Phường 3",
+                "description", "Homestay gỗ thông mộc mạc phong cách vintage có view thung lũng săn mây tuyệt đẹp.",
+                "imageUrl", "https://images.unsplash.com/photo-1582719508461-905c673771fd",
+                "amenities", "Wifi tốc độ cao, Quán cafe sân vườn, Bếp nướng BBQ ngoài trời, Săn mây"
+        );
+
+        mvc.perform(withBody(put("/api/partner/hotel"), partnerJwt, updateReq))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(hotelA.getId()))
+                .andExpect(jsonPath("$.name").value("Mây Homestay & Coffee Đà Lạt"))
+                .andExpect(jsonPath("$.city").value("Đà Lạt"))
+                .andExpect(jsonPath("$.address").value("123/4 Đường 3 Tháng 4, Phường 3"))
+                .andExpect(jsonPath("$.description").value("Homestay gỗ thông mộc mạc phong cách vintage có view thung lũng săn mây tuyệt đẹp."))
+                .andExpect(jsonPath("$.amenities").value("Wifi tốc độ cao, Quán cafe sân vườn, Bếp nướng BBQ ngoài trời, Săn mây"));
+
+        // Kiem tra du lieu trong DB da duoc cap nhat
+        Hotel reloaded = hotels.findById(hotelA.getId()).orElseThrow();
+        assertEquals("Mây Homestay & Coffee Đà Lạt", reloaded.getName());
+        assertEquals("123/4 Đường 3 Tháng 4, Phường 3", reloaded.getAddress());
+
+        // 3. Partner cung co the cap nhat qua PUT /api/partner/hotel/{id} neu dung ID cua minh
+        Map<String, Object> updateReq2 = Map.of(
+                "name", "Mây Homestay & Coffee Đà Lạt (Update 2)",
+                "city", "Đà Lạt"
+        );
+        mvc.perform(withBody(put("/api/partner/hotel/" + hotelA.getId()), partnerJwt, updateReq2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Mây Homestay & Coffee Đà Lạt (Update 2)"));
+
+        // 4. Partner thu cap nhat Hotel B (khong phai cua minh) -> 403 Forbidden!
+        mvc.perform(withBody(put("/api/partner/hotel/" + hotelB.getId()), partnerJwt, updateReq))
+                .andExpect(status().isForbidden());
+
+        // 5. Khach hang thong thuong thu cap nhat -> 403 Forbidden!
+        String custJwt = registerCustomer(newCustomerEmail());
+        mvc.perform(withBody(put("/api/partner/hotel"), custJwt, updateReq))
+                .andExpect(status().isForbidden());
+    }
 }
