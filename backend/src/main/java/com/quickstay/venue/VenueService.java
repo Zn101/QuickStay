@@ -37,19 +37,21 @@ public class VenueService {
     private final TourRepository tours;
     private final RestaurantReservationRepository reservations;
     private final TourBookingRepository tourBookings;
+    private final VenueReviewRepository reviews;
     private final UserRepository users;
     private final EmailVerificationPolicy verification;
     private final Clock clock;
     private final EmailService emails;
 
     public VenueService(RestaurantRepository restaurants, TourRepository tours,
-                        RestaurantReservationRepository reservations, TourBookingRepository tourBookings,
+                        RestaurantReservationRepository reservations, TourBookingRepository tourBookings, VenueReviewRepository reviews,
                         UserRepository users, EmailVerificationPolicy verification, Clock clock,
                         @Autowired(required = false) EmailService emails) {
         this.restaurants = restaurants;
         this.tours = tours;
         this.reservations = reservations;
         this.tourBookings = tourBookings;
+        this.reviews = reviews;
         this.users = users;
         this.verification = verification;
         this.clock = clock;
@@ -62,12 +64,12 @@ public class VenueService {
 
     @Transactional(readOnly = true)
     public List<RestaurantView> listRestaurants() {
-        return restaurants.findAllByOrderByIdAsc().stream().map(RestaurantView::of).toList();
+        return rViews(restaurants.findAllByOrderByIdAsc());
     }
 
     @Transactional(readOnly = true)
     public List<TourView> listTours() {
-        return tours.findAllByOrderByIdAsc().stream().map(TourView::of).toList();
+        return tViews(tours.findAllByOrderByIdAsc());
     }
 
     // =====================================================================
@@ -78,14 +80,14 @@ public class VenueService {
     public RestaurantView createRestaurant(RestaurantRequest req) {
         Restaurant r = new Restaurant();
         apply(r, req);
-        return RestaurantView.of(restaurants.save(r));
+        return rView(restaurants.save(r));
     }
 
     @Transactional
     public RestaurantView updateRestaurant(Long id, RestaurantRequest req) {
         Restaurant r = findRestaurant(id);
         apply(r, req);
-        return RestaurantView.of(r);
+        return rView(r);
     }
 
     @Transactional
@@ -101,14 +103,14 @@ public class VenueService {
     public TourView createTour(TourRequest req) {
         Tour t = new Tour();
         apply(t, req);
-        return TourView.of(tours.save(t));
+        return tView(tours.save(t));
     }
 
     @Transactional
     public TourView updateTour(Long id, TourRequest req) {
         Tour t = findTour(id);
         apply(t, req);
-        return TourView.of(t);
+        return tView(t);
     }
 
     @Transactional
@@ -183,6 +185,107 @@ public class VenueService {
     public record Listing(Long id, String name, String city) {}
 
     // =====================================================================
+    // Chi tiet, theo thanh pho, so cho, danh gia
+    // =====================================================================
+
+    @Transactional(readOnly = true)
+    public RestaurantView getRestaurant(Long id) {
+        return rView(findRestaurant(id));
+    }
+
+    @Transactional(readOnly = true)
+    public TourView getTour(Long id) {
+        return tView(findTour(id));
+    }
+
+    /** Nha hang / tour cung thanh pho (khong phan biet hoa thuong), de goi y tren trang khach san. */
+    @Transactional(readOnly = true)
+    public List<RestaurantView> restaurantsInCity(String city, int limit) {
+        return rViews(restaurants.findAllByOrderByIdAsc().stream()
+                .filter(r -> sameCity(r.getCity(), city)).limit(limit).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TourView> toursInCity(String city, int limit) {
+        return tViews(tours.findAllByOrderByIdAsc().stream()
+                .filter(t -> sameCity(t.getCity(), city)).limit(limit).toList());
+    }
+
+    static boolean sameCity(String a, String b) {
+        if (a == null || b == null) return false;
+        String x = a.trim().toLowerCase(java.util.Locale.ROOT);
+        String y = b.trim().toLowerCase(java.util.Locale.ROOT);
+        return !x.isEmpty() && !y.isEmpty() && (x.equals(y) || x.contains(y) || y.contains(x));
+    }
+
+    @Transactional(readOnly = true)
+    public Availability tourAvailability(Long tourId, LocalDate date) {
+        Tour t = findTour(tourId);
+        long booked = tourBookings.sumGuestsOnDate(tourId, date);
+        return new Availability(date, t.getMaxGuestsPerDay(), booked, Math.max(0, t.getMaxGuestsPerDay() - booked));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewView> reviewsOf(String type, Long venueId) {
+        if (VenueReview.RESTAURANT.equals(type)) findRestaurant(venueId);
+        else findTour(venueId);
+        return reviews.findByVenueTypeAndVenueIdOrderByCreatedAtDescIdDesc(type, venueId).stream()
+                .map(ReviewView::of).toList();
+    }
+
+    /** Chi khach da hoan tat don (dung bua / di tour) moi duoc danh gia, moi nguoi mot lan moi co so. */
+    @Transactional
+    public ReviewView addReview(String email, String type, Long venueId, ReviewRequest req) {
+        User u = currentUser(email);
+        verification.requireVerified(u);
+        boolean eligible = VenueReview.RESTAURANT.equals(type)
+                ? reservations.existsByUserIdAndRestaurantIdAndStatus(u.getId(), findRestaurant(venueId).getId(), OrderStatus.COMPLETED)
+                : tourBookings.existsByUserIdAndTourIdAndStatus(u.getId(), findTour(venueId).getId(), OrderStatus.COMPLETED);
+        if (!eligible) {
+            throw ApiException.forbidden(VenueReview.RESTAURANT.equals(type)
+                    ? "Ban can co don dat ban da hoan tat tai nha hang nay truoc khi danh gia"
+                    : "Ban can hoan tat tour nay truoc khi danh gia");
+        }
+        if (reviews.existsByVenueTypeAndVenueIdAndUserId(type, venueId, u.getId())) {
+            throw ApiException.conflict("Ban da danh gia co so nay");
+        }
+        VenueReview r = new VenueReview();
+        r.setVenueType(type);
+        r.setVenueId(venueId);
+        r.setUserId(u.getId());
+        r.setAuthorName(u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName() : u.getEmail());
+        r.setRating(req.rating());
+        r.setComment(req.comment().trim());
+        return ReviewView.of(reviews.save(r));
+    }
+
+    private java.util.Map<Long, Stats> stats(String type) {
+        java.util.Map<Long, Stats> m = new java.util.HashMap<>();
+        for (Object[] row : reviews.statsByType(type)) {
+            m.put(((Number) row[0]).longValue(), Stats.of(row));
+        }
+        return m;
+    }
+
+    private List<RestaurantView> rViews(List<Restaurant> list) {
+        var s = stats(VenueReview.RESTAURANT);
+        return list.stream().map(r -> RestaurantView.of(r, s.getOrDefault(r.getId(), Stats.NONE))).toList();
+    }
+
+    private List<TourView> tViews(List<Tour> list) {
+        var s = stats(VenueReview.TOUR);
+        return list.stream().map(t -> TourView.of(t, s.getOrDefault(t.getId(), Stats.NONE))).toList();
+    }
+
+    private RestaurantView rView(Restaurant r) {
+        return rViews(List.of(r)).get(0);
+    }
+
+    private TourView tView(Tour t) {
+        return tViews(List.of(t)).get(0);
+    }
+
+    // =====================================================================
     // Chu co so
     // =====================================================================
 
@@ -190,14 +293,14 @@ public class VenueService {
     public List<RestaurantView> myRestaurants(String email) {
         User u = currentUser(email);
         if (u.getRole() == Role.ADMIN) return listRestaurants();
-        return restaurants.findByOwnerIdOrderByIdAsc(u.getId()).stream().map(RestaurantView::of).toList();
+        return rViews(restaurants.findByOwnerIdOrderByIdAsc(u.getId()));
     }
 
     @Transactional(readOnly = true)
     public List<TourView> myTours(String email) {
         User u = currentUser(email);
         if (u.getRole() == Role.ADMIN) return listTours();
-        return tours.findByOwnerIdOrderByIdAsc(u.getId()).stream().map(TourView::of).toList();
+        return tViews(tours.findByOwnerIdOrderByIdAsc(u.getId()));
     }
 
     @Transactional
@@ -206,7 +309,7 @@ public class VenueService {
         requireOwner(currentUser(email), r.getOwner());
         apply(r, req);
         log.info("Chu nha hang {} cap nhat nha hang #{}", email, id);
-        return RestaurantView.of(r);
+        return rView(r);
     }
 
     @Transactional
@@ -215,7 +318,7 @@ public class VenueService {
         requireOwner(currentUser(email), t.getOwner());
         apply(t, req);
         log.info("Chu tour {} cap nhat tour #{}", email, id);
-        return TourView.of(t);
+        return tView(t);
     }
 
     @Transactional(readOnly = true)
@@ -300,11 +403,19 @@ public class VenueService {
     public TourBookingView bookTour(String email, Long tourId, TourBookingRequest req) {
         User u = currentUser(email);
         verification.requireVerified(u);
-        Tour t = findTour(tourId);
+        // Khoa dong tour: hai don cung ngay xep hang, tong khach khong vuot so cho
+        Tour t = tours.findByIdForUpdate(tourId).orElseThrow(() -> ApiException.notFound("Khong tim thay tour"));
         LocalDate today = LocalDate.now(clock);
         if (!req.date().isAfter(today)) throw ApiException.badRequest("Ngay khoi hanh phai tu ngay mai tro di");
         if (req.date().isAfter(today.plusDays(MAX_DAYS_AHEAD))) {
             throw ApiException.badRequest("Chi nhan dat tour truoc toi da " + MAX_DAYS_AHEAD + " ngay");
+        }
+        long booked = tourBookings.sumGuestsOnDate(tourId, req.date());
+        long remaining = t.getMaxGuestsPerDay() - booked;
+        if (req.guests() > remaining) {
+            throw ApiException.conflict(remaining <= 0
+                    ? "Tour da het cho cho ngay khoi hanh nay"
+                    : "Tour chi con " + remaining + " cho cho ngay khoi hanh nay");
         }
         TourBooking b = new TourBooking();
         b.setTour(t);
@@ -411,6 +522,8 @@ public class VenueService {
         r.setPriceRange(VenueDtos.trimToNull(req.priceRange()));
         r.setSpecialties(VenueDtos.joinLines(req.specialties()));
         r.setDescription(VenueDtos.trimToNull(req.description()));
+        r.setPhone(VenueDtos.trimToNull(req.phone()));
+        r.setMenuItems(VenueDtos.menuToLines(req.menu()));
     }
 
     private static void apply(Tour t, TourRequest req) {
@@ -423,6 +536,11 @@ public class VenueService {
         t.setTransport(VenueDtos.trimToNull(req.transport()));
         t.setHighlights(VenueDtos.joinLines(req.highlights()));
         t.setDescription(VenueDtos.trimToNull(req.description()));
+        t.setItinerary(VenueDtos.itineraryToLines(req.itinerary()));
+        t.setIncludes(VenueDtos.joinLines(req.includes()));
+        t.setExcludes(VenueDtos.joinLines(req.excludes()));
+        t.setMeetingPoint(VenueDtos.trimToNull(req.meetingPoint()));
+        t.setMaxGuestsPerDay(req.maxGuestsPerDay() == null ? 30 : req.maxGuestsPerDay());
     }
 
     private void notifyReservation(RestaurantReservation r, String subject, String intro) {

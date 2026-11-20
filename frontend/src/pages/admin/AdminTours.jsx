@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { formatVnd } from '../../lib/format'
 import { ConfirmModal } from '../../components/ui'
-import { useAdminVenues } from '../../lib/venues'
+import { useAdminVenues, itineraryToText, textToItinerary, linesToText, textToLines } from '../../lib/venues'
 
 const EMPTY_TOUR = {
   title: '',
@@ -11,6 +11,11 @@ const EMPTY_TOUR = {
   price: 500000,
   transport: 'Xe 4-7 chỗ riêng tư',
   highlights: '',
+  itinerary: '',
+  includes: '',
+  excludes: '',
+  meetingPoint: '',
+  maxGuestsPerDay: 30,
   description: '',
   image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80',
 }
@@ -51,6 +56,11 @@ export default function AdminTours() {
       price: tour.price,
       transport: tour.transport,
       highlights: tour.highlights ? tour.highlights.join(', ') : '',
+      itinerary: itineraryToText(tour.itinerary),
+      includes: linesToText(tour.includes),
+      excludes: linesToText(tour.excludes),
+      meetingPoint: tour.meetingPoint || '',
+      maxGuestsPerDay: tour.maxGuestsPerDay || 30,
       description: tour.description || '',
       image: tour.image,
     })
@@ -71,6 +81,11 @@ export default function AdminTours() {
       price: Number(form.price),
       transport: form.transport,
       highlights: parsedHighlights,
+      itinerary: textToItinerary(form.itinerary),
+      includes: textToLines(form.includes),
+      excludes: textToLines(form.excludes),
+      meetingPoint: form.meetingPoint,
+      maxGuestsPerDay: Number(form.maxGuestsPerDay) || 30,
       description: form.description,
       image: form.image,
     })
@@ -271,6 +286,62 @@ export default function AdminTours() {
                   placeholder="Cầu Vàng, Làng Pháp, Cáp treo..."
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Điểm đón / tập trung</label>
+                  <input
+                    type="text"
+                    value={form.meetingPoint}
+                    onChange={(e) => setForm({ ...form, meetingPoint: e.target.value })}
+                    placeholder="Sảnh khách sạn trung tâm"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Số khách tối đa / ngày</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={form.maxGuestsPerDay}
+                    onChange={(e) => setForm({ ...form, maxGuestsPerDay: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Lịch trình (mỗi dòng: Giờ | Hoạt động)</label>
+                <textarea
+                  rows={4}
+                  value={form.itinerary}
+                  onChange={(e) => setForm({ ...form, itinerary: e.target.value })}
+                  placeholder={'07:30 | Đón khách tại khách sạn\n08:30 | Đi cáp treo'}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Giá đã bao gồm (mỗi dòng một ý)</label>
+                  <textarea
+                    rows={3}
+                    value={form.includes}
+                    onChange={(e) => setForm({ ...form, includes: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Chưa bao gồm (mỗi dòng một ý)</label>
+                  <textarea
+                    rows={3}
+                    value={form.excludes}
+                    onChange={(e) => setForm({ ...form, excludes: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">

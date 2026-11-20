@@ -3,7 +3,16 @@ import { Navigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatVnd } from '../lib/format'
 import { useAuth } from '../store/authStore'
-import { ORDER_STATUS_CLASS, ORDER_STATUS_LABEL } from '../lib/venues'
+import {
+  ORDER_STATUS_CLASS,
+  ORDER_STATUS_LABEL,
+  menuToText,
+  textToMenu,
+  itineraryToText,
+  textToItinerary,
+  linesToText,
+  textToLines,
+} from '../lib/venues'
 
 const KIND = {
   restaurants: {
@@ -19,8 +28,11 @@ const KIND = {
       ['hours', 'Giờ mở cửa'],
       ['priceRange', 'Khoảng giá'],
       ['image', 'URL ảnh'],
+      ['phone', 'Số điện thoại'],
     ],
     listField: ['specialties', 'Món đặc sắc (cách nhau bằng dấu phẩy)'],
+    // [trường, nhãn, chuyển dữ liệu -> chữ, chữ -> dữ liệu]
+    textareas: [['menu', 'Thực đơn (mỗi dòng: Tên món | Giá)', menuToText, textToMenu]],
     name: (x) => x.name,
   },
   tours: {
@@ -36,8 +48,15 @@ const KIND = {
       ['price', 'Giá mỗi khách (VND)', true, 'number'],
       ['transport', 'Phương tiện'],
       ['image', 'URL ảnh'],
+      ['meetingPoint', 'Điểm đón / tập trung'],
+      ['maxGuestsPerDay', 'Số khách tối đa / ngày', true, 'number'],
     ],
     listField: ['highlights', 'Điểm nổi bật (cách nhau bằng dấu phẩy)'],
+    textareas: [
+      ['itinerary', 'Lịch trình (mỗi dòng: Giờ | Hoạt động)', itineraryToText, textToItinerary],
+      ['includes', 'Giá đã bao gồm (mỗi dòng một ý)', linesToText, textToLines],
+      ['excludes', 'Chưa bao gồm (mỗi dòng một ý)', linesToText, textToLines],
+    ],
     name: (x) => x.title,
   },
 }
@@ -112,6 +131,9 @@ export default function OwnerDashboard() {
       f[key] = item[key] ?? ''
     })
     f[cfg.listField[0]] = (item[cfg.listField[0]] || []).join(', ')
+    cfg.textareas.forEach(([key, , toText]) => {
+      f[key] = toText(item[key])
+    })
     f.description = item.description || ''
     setForm(f)
     setFormError('')
@@ -127,7 +149,13 @@ export default function OwnerDashboard() {
       body[cfg.listField[0]] = form[cfg.listField[0]]
         ? form[cfg.listField[0]].split(',').map((s) => s.trim()).filter(Boolean)
         : []
-      if (kind === 'tours') body.price = Number(form.price)
+      cfg.textareas.forEach(([key, , , fromText]) => {
+        body[key] = fromText(form[key])
+      })
+      if (kind === 'tours') {
+        body.price = Number(form.price)
+        body.maxGuestsPerDay = Number(form.maxGuestsPerDay) || 30
+      }
       const updated = await api(`/owner/${kind}/${editing.id}`, { method: 'PUT', body })
       setListings((list) => list.map((x) => (x.id === editing.id ? updated : x)))
       setEditing(null)
@@ -307,6 +335,17 @@ export default function OwnerDashboard() {
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
               />
             </label>
+            {cfg.textareas.map(([key, label]) => (
+              <label key={key} className="block text-xs font-semibold text-slate-600">
+                {label}
+                <textarea
+                  rows={key === 'menu' || key === 'itinerary' ? 5 : 3}
+                  value={form[key] ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                />
+              </label>
+            ))}
             <label className="block text-xs font-semibold text-slate-600">
               Mô tả
               <textarea

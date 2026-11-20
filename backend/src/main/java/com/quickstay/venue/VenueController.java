@@ -2,10 +2,12 @@ package com.quickstay.venue;
 
 import com.quickstay.venue.VenueDtos.*;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -37,7 +39,46 @@ public class VenueController {
         return venues.listTours();
     }
 
+    @GetMapping("/restaurants/{id}")
+    public RestaurantView restaurant(@PathVariable Long id) {
+        return venues.getRestaurant(id);
+    }
+
+    @GetMapping("/tours/{id}")
+    public TourView tour(@PathVariable Long id) {
+        return venues.getTour(id);
+    }
+
+    /** So cho con lai cua tour trong mot ngay khoi hanh. */
+    @GetMapping("/tours/{id}/availability")
+    public Availability tourAvailability(@PathVariable Long id,
+                                         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return venues.tourAvailability(id, date);
+    }
+
+    @GetMapping("/restaurants/{id}/reviews")
+    public List<ReviewView> restaurantReviews(@PathVariable Long id) {
+        return venues.reviewsOf(VenueReview.RESTAURANT, id);
+    }
+
+    @GetMapping("/tours/{id}/reviews")
+    public List<ReviewView> tourReviews(@PathVariable Long id) {
+        return venues.reviewsOf(VenueReview.TOUR, id);
+    }
+
     // ---------- Khach hang ----------
+
+    @PostMapping("/restaurants/{id}/reviews")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ReviewView reviewRestaurant(Authentication auth, @PathVariable Long id, @Valid @RequestBody ReviewRequest req) {
+        return venues.addReview(auth.getName(), VenueReview.RESTAURANT, id, req);
+    }
+
+    @PostMapping("/tours/{id}/reviews")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ReviewView reviewTour(Authentication auth, @PathVariable Long id, @Valid @RequestBody ReviewRequest req) {
+        return venues.addReview(auth.getName(), VenueReview.TOUR, id, req);
+    }
 
     @PostMapping("/restaurants/{id}/reservations")
     @ResponseStatus(HttpStatus.CREATED)

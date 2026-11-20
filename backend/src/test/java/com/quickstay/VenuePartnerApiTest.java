@@ -157,6 +157,69 @@ class VenuePartnerApiTest extends ApiTestBase {
     }
 
     @Test
+    void detail_pages_capacity_reviews_and_hotel_links() throws Exception {
+        String admin = admin();
+        // Tour 2 cho / ngay
+        Map<String, Object> tourBody = new HashMap<>(Map.of("title", "Tour Cho It " + UUID.randomUUID(), "city", "Huế",
+                "price", 100000, "maxGuestsPerDay", 2, "meetingPoint", "Chùa Thiên Mụ"));
+        tourBody.put("itinerary", List.of(Map.of("time", "08:00", "activity", "Đón khách")));
+        tourBody.put("includes", List.of("Xe"));
+        long tour = read(mvc.perform(withBody(post("/api/admin/tours"), admin, tourBody))
+                .andExpect(status().isCreated()).andReturn()).get("id").asLong();
+        mvc.perform(get("/api/tours/" + tour))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itinerary[0].time").value("08:00"))
+                .andExpect(jsonPath("$.itinerary[0].activity").value("Đón khách"))
+                .andExpect(jsonPath("$.meetingPoint").value("Chùa Thiên Mụ"))
+                .andExpect(jsonPath("$.rating").doesNotExist())
+                .andExpect(jsonPath("$.reviewCount").value(0));
+
+        String customer = registerCustomer(newCustomerEmail());
+        String date = LocalDate.now(APP_ZONE).plusDays(9).toString();
+        Map<String, Object> two = Map.of("date", date, "guests", 2, "guestName", "K", "guestPhone", "09");
+        long bookingId = read(mvc.perform(withBody(post("/api/tours/" + tour + "/bookings"), customer, two))
+                .andExpect(status().isCreated()).andReturn()).get("id").asLong();
+        mvc.perform(get("/api/tours/" + tour + "/availability").param("date", date))
+                .andExpect(jsonPath("$.remaining").value(0));
+        mvc.perform(withBody(post("/api/tours/" + tour + "/bookings"), customer,
+                Map.of("date", date, "guests", 1, "guestName", "K", "guestPhone", "09")))
+                .andExpect(status().isConflict());
+
+        // Danh gia: chua hoan tat -> 403; hoan tat -> 201; lan hai -> 409; diem hien trong danh sach
+        Map<String, Object> review = Map.of("rating", 4, "comment", "Hướng dẫn viên nhiệt tình");
+        mvc.perform(withBody(post("/api/tours/" + tour + "/reviews"), customer, review)).andExpect(status().isForbidden());
+        for (String st : new String[]{"CONFIRMED", "COMPLETED"}) {
+            mvc.perform(withBody(patch("/api/owner/tours/bookings/" + bookingId + "/status"), admin, Map.of("status", st)))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(withBody(post("/api/tours/" + tour + "/reviews"), customer, review)).andExpect(status().isCreated());
+        mvc.perform(withBody(post("/api/tours/" + tour + "/reviews"), customer, review)).andExpect(status().isConflict());
+        mvc.perform(get("/api/tours/" + tour + "/reviews")).andExpect(jsonPath("$", hasSize(1)));
+        mvc.perform(get("/api/tours/" + tour)).andExpect(jsonPath("$.rating").value(4.0)).andExpect(jsonPath("$.reviewCount").value(1));
+
+        // Nha hang co thuc don
+        Map<String, Object> restBody = new HashMap<>(Map.of("name", "Quan Hue " + UUID.randomUUID(), "city", "Huế", "phone", "0234 111"));
+        restBody.put("menu", List.of(Map.of("name", "Bún bò", "price", 85000)));
+        long rest = read(mvc.perform(withBody(post("/api/admin/restaurants"), admin, restBody))
+                .andExpect(status().isCreated()).andReturn()).get("id").asLong();
+        mvc.perform(get("/api/restaurants/" + rest))
+                .andExpect(jsonPath("$.menu[0].name").value("Bún bò"))
+                .andExpect(jsonPath("$.menu[0].price").value(85000));
+
+        // Trang khach san o Hue goi y nha hang & tour cung thanh pho
+        Long hueHotel = null;
+        for (JsonNode h : read(mvc.perform(get("/api/hotels")).andReturn())) {
+            if (h.get("city").asText().contains("Huế")) hueHotel = h.get("id").asLong();
+        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(hueHotel != null, "can khach san mau o Hue");
+        mvc.perform(get("/api/hotels/" + hueHotel + "/extras"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nearbyRestaurants", not(empty())))
+                .andExpect(jsonPath("$.nearbyRestaurants[0].city", containsString("Huế")))
+                .andExpect(jsonPath("$.nearbyTours", not(empty())));
+    }
+
+    @Test
     void partner_creation_validates_role_and_listings() throws Exception {
         String admin = admin();
         Map<String, Object> base = new HashMap<>(Map.of("email", "v-" + UUID.randomUUID() + "@test.com",

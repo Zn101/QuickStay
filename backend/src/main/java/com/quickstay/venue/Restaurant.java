@@ -34,6 +34,13 @@ public class Restaurant {
     @Column(length = 1000)
     private String specialties;
 
+    @Column(length = 30)
+    private String phone;
+
+    /** Thuc don, moi dong "Ten mon|Gia". */
+    @Column(length = 2000)
+    private String menuItems;
+
     @Column(length = 4000)
     private String description;
 
@@ -60,6 +67,10 @@ public class Restaurant {
     public void setSpecialties(String specialties) { this.specialties = specialties; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getMenuItems() { return menuItems; }
+    public void setMenuItems(String menuItems) { this.menuItems = menuItems; }
     public User getOwner() { return owner; }
     public void setOwner(User owner) { this.owner = owner; }
 }

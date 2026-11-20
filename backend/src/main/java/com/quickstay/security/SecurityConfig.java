@@ -49,8 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/content/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/restaurants", "/api/tours").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/restaurants/*/reservations", "/api/tours/*/bookings").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.GET, "/api/restaurants", "/api/restaurants/**", "/api/tours", "/api/tours/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/restaurants/*/reservations", "/api/tours/*/bookings",
+                                "/api/restaurants/*/reviews", "/api/tours/*/reviews").hasRole("CUSTOMER")
                         // Cổng chủ nhà hàng / chủ tour
                         .requestMatchers("/api/owner/restaurants/**").hasAnyRole("RESTAURANT_OWNER", "ADMIN")
                         .requestMatchers("/api/owner/tours/**").hasAnyRole("TOUR_OPERATOR", "ADMIN")

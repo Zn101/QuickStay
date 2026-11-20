@@ -28,6 +28,8 @@ import AdminPartners from './pages/admin/AdminPartners'
 import AdminAi from './pages/admin/AdminAi'
 import PartnerDashboard from './pages/PartnerDashboard'
 import OwnerDashboard from './pages/OwnerDashboard'
+import RestaurantDetail from './pages/RestaurantDetail'
+import TourDetail from './pages/TourDetail'
 
 export default function App() {
   return (
@@ -37,7 +39,9 @@ export default function App() {
         <Route path="/hotels/:id" element={<HotelDetail />} />
         <Route path="/hotels/:hotelId/rooms/:roomId" element={<RoomDetail />} />
         <Route path="/tours" element={<Tours />} />
+        <Route path="/tours/:id" element={<TourDetail />} />
         <Route path="/restaurants" element={<Restaurants />} />
+        <Route path="/restaurants/:id" element={<RestaurantDetail />} />
         <Route path="/news" element={<News />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

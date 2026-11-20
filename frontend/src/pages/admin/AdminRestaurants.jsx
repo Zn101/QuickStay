@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { ConfirmModal } from '../../components/ui'
-import { useAdminVenues } from '../../lib/venues'
+import { useAdminVenues, menuToText, textToMenu } from '../../lib/venues'
 
 const EMPTY_REST = {
   name: '',
@@ -10,6 +10,8 @@ const EMPTY_REST = {
   hours: '11:00 – 22:30',
   priceRange: '200.000 ₫ - 500.000 ₫/khách',
   specialties: '',
+  phone: '',
+  menu: '',
   description: '',
   image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
 }
@@ -50,6 +52,8 @@ export default function AdminRestaurants() {
       hours: r.hours,
       priceRange: r.priceRange,
       specialties: r.specialties ? r.specialties.join(', ') : '',
+      phone: r.phone || '',
+      menu: menuToText(r.menu),
       description: r.description || '',
       image: r.image,
     })
@@ -71,6 +75,8 @@ export default function AdminRestaurants() {
       hours: form.hours,
       priceRange: form.priceRange,
       specialties: parsedSpecialties,
+      phone: form.phone,
+      menu: textToMenu(form.menu),
       description: form.description,
       image: form.image,
     })
@@ -269,6 +275,28 @@ export default function AdminRestaurants() {
                   value={form.specialties}
                   onChange={(e) => setForm({ ...form, specialties: e.target.value })}
                   placeholder="Tôm hùm nướng, Bò Wagyu, Nem cua bể..."
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Số điện thoại nhà hàng</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="0236 3888 111"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Thực đơn (mỗi dòng: Tên món | Giá)</label>
+                <textarea
+                  rows={4}
+                  value={form.menu}
+                  onChange={(e) => setForm({ ...form, menu: e.target.value })}
+                  placeholder={'Cao lầu Hội An | 65000\nCơm gà | 75000'}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-sky-500"
                 />
               </div>

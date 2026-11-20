@@ -44,7 +44,10 @@ public class HotelExtrasService {
             List<DiningOption> diningOptions,
             List<AttractionItem> attractionTransports,
             List<AmenityCategory> categorizedAmenities,
-            List<PolicyItem> policies) {}
+            List<PolicyItem> policies,
+            /** Nha hang & tour that (trang /restaurants, /tours) cung thanh pho voi khach san. */
+            List<com.quickstay.venue.VenueDtos.RestaurantView> nearbyRestaurants,
+            List<com.quickstay.venue.VenueDtos.TourView> nearbyTours) {}
 
     public record ReviewView(Long id, String authorName, int rating, String comment, String stayType, Instant createdAt) {
         static ReviewView of(HotelReview r) {
@@ -100,11 +103,14 @@ public class HotelExtrasService {
     private final BookingRepository bookings;
     private final EmailVerificationPolicy verification;
     private final Clock clock;
+    private final com.quickstay.venue.VenueService venues;
 
     public HotelExtrasService(HotelRepository hotels, HotelReviewRepository reviews,
                               HotelQuestionRepository questions, ConciergeRequestRepository concierges,
                               UserRepository users, @Autowired(required = false) EmailService emails,
-                              BookingRepository bookings, EmailVerificationPolicy verification, Clock clock) {
+                              BookingRepository bookings, EmailVerificationPolicy verification, Clock clock,
+                              com.quickstay.venue.VenueService venues) {
+        this.venues = venues;
         this.bookings = bookings;
         this.verification = verification;
         this.clock = clock;
@@ -148,7 +154,8 @@ public class HotelExtrasService {
                 new PolicyItem("Quy định lưu trú", "Không hút thuốc trong phòng kín. Vui lòng xuất trình CCCD/Hộ chiếu hợp lệ khi nhận phòng.")
         );
 
-        return new HotelExtrasView(hotelId, avg, (int) revCount, photos, airportName, transfers, dining, attractions, amenities, policies);
+        return new HotelExtrasView(hotelId, avg, (int) revCount, photos, airportName, transfers, dining, attractions, amenities, policies,
+                venues.restaurantsInCity(h.getCity(), 4), venues.toursInCity(h.getCity(), 4));
     }
 
     /** Bang gia dua don san bay: nguon duy nhat cho ca hien thi va tinh phi (khong tin phi do client gui). */

@@ -23,6 +23,9 @@ public interface RestaurantReservationRepository extends JpaRepository<Restauran
 
     boolean existsByRestaurantId(Long restaurantId);
 
+    /** Khach da dung bua (don hoan tat) tai nha hang: dieu kien de danh gia. */
+    boolean existsByUserIdAndRestaurantIdAndStatus(Long userId, Long restaurantId, OrderStatus status);
+
     /** Khoa dong don: chu nha hang xac nhan va khach huy cung luc phai xep hang. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from RestaurantReservation r join fetch r.restaurant join fetch r.user where r.id = :id")

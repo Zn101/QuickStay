@@ -609,14 +609,14 @@ export default function HotelDetail() {
             <section className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
               <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Dịch vụ đưa đón & Trải nghiệm bổ trợ</h2>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Đặt trước xe đưa đón sân bay, nhà hàng ẩm thực tại chỗ và tour/xe đi các điểm tham quan nổi tiếng.
+                Đặt trước xe đưa đón sân bay, đặt bàn nhà hàng và tour tham quan quanh khách sạn.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 {[
                   { id: 'transfer', label: '✈️ Đưa đón sân bay' },
                   { id: 'dining', label: '🍽️ Ẩm thực & Nhà hàng' },
-                  { id: 'attractions', label: '🗺️ Xe đi điểm tham quan' },
+                  { id: 'attractions', label: '🗺️ Tour & Tham quan' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -665,7 +665,43 @@ export default function HotelDetail() {
               )}
 
               {serviceTab === 'dining' && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 space-y-5">
+                  <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Nhà hàng gần đây tại {hotel.city}</h3>
+                      <Link to={`/restaurants?city=${encodeURIComponent(hotel.city)}`} className="text-xs font-bold text-sky-600 hover:underline">
+                        Xem tất cả →
+                      </Link>
+                    </div>
+                    {(extras.nearbyRestaurants || []).length === 0 ? (
+                      <p className="rounded-xl bg-slate-50 px-3.5 py-3 text-xs text-slate-500 dark:bg-slate-800/60">
+                        Chưa có nhà hàng đối tác tại {hotel.city}.{' '}
+                        <Link to="/restaurants" className="font-bold text-sky-600">Khám phá nhà hàng ở nơi khác</Link>
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {extras.nearbyRestaurants.map((r) => (
+                          <Link
+                            key={r.id}
+                            to={`/restaurants/${r.id}`}
+                            className="group flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-sky-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-800/80"
+                          >
+                            {r.image && <img src={r.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-xl object-cover" />}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-extrabold text-slate-900 group-hover:text-sky-600 dark:text-white">{r.name}</p>
+                              <p className="truncate text-xs font-semibold text-sky-700 dark:text-sky-400">{r.cuisine}</p>
+                              <p className="mt-0.5 truncate text-[11px] text-slate-500">{r.hours ? `🕒 ${r.hours}` : r.address}</p>
+                              <p className="mt-1 text-[11px] font-bold text-amber-600">
+                                {r.reviewCount > 0 ? `★ ${r.rating.toFixed(1)} · ${r.reviewCount} đánh giá` : 'Đặt bàn trực tuyến →'}
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Ẩm thực tại khách sạn</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
                   {extras.diningOptions.map((d) => (
                     <div key={d.name} className="flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 p-4">
                       <div>
@@ -693,10 +729,41 @@ export default function HotelDetail() {
                     </div>
                   ))}
                 </div>
+                </div>
               )}
 
               {serviceTab === 'attractions' && (
                 <div className="mt-4 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Tour khởi hành tại {hotel.city}</h3>
+                    <Link to={`/tours?city=${encodeURIComponent(hotel.city)}`} className="text-xs font-bold text-sky-600 hover:underline">
+                      Xem tất cả →
+                    </Link>
+                  </div>
+                  {(extras.nearbyTours || []).length === 0 ? (
+                    <p className="rounded-xl bg-slate-50 px-3.5 py-3 text-xs text-slate-500 dark:bg-slate-800/60">
+                      Chưa có tour đối tác tại {hotel.city}.{' '}
+                      <Link to="/tours" className="font-bold text-sky-600">Khám phá tour ở nơi khác</Link>
+                    </p>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {extras.nearbyTours.map((t) => (
+                        <Link
+                          key={t.id}
+                          to={`/tours/${t.id}`}
+                          className="group flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-sky-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-800/80"
+                        >
+                          {t.image && <img src={t.image} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-xl object-cover" />}
+                          <div className="min-w-0">
+                            <p className="line-clamp-2 text-sm font-extrabold text-slate-900 group-hover:text-sky-600 dark:text-white">{t.title}</p>
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500">{t.duration ? `⏱ ${t.duration}` : t.category}</p>
+                            <p className="mt-1 text-xs font-black text-sky-700 dark:text-sky-400">{formatVnd(t.price)} / khách</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  <h3 className="pt-2 text-sm font-extrabold text-slate-900 dark:text-white">Xe đưa đón đi điểm tham quan</h3>
                   {extras.attractionTransports.map((a) => (
                     <div
                       key={a.name}
@@ -1077,13 +1144,17 @@ export default function HotelDetail() {
                   <svg className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                  {extras.diningOptions.length} ẩm thực & buffet sáng
+                  <Link to={`/restaurants?city=${encodeURIComponent(hotel.city)}`} className="hover:text-sky-600 hover:underline">
+                    {(extras.nearbyRestaurants || []).length} nhà hàng gần đây · {extras.diningOptions.length} ẩm thực tại khách sạn
+                  </Link>
                 </p>
                 <p className="flex items-center gap-1.5">
                   <svg className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
-                  Hỗ trợ xe {extras.attractionTransports.length} điểm tham quan
+                  <Link to={`/tours?city=${encodeURIComponent(hotel.city)}`} className="hover:text-sky-600 hover:underline">
+                    {(extras.nearbyTours || []).length} tour tại {hotel.city} · xe tới {extras.attractionTransports.length} điểm tham quan
+                  </Link>
                 </p>
               </div>
             )}
