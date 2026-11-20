@@ -5,6 +5,7 @@ import com.quickstay.admin.RoomAdminDtos.RoomResponse;
 import com.quickstay.booking.Booking;
 import com.quickstay.booking.BookingRepository;
 import com.quickstay.config.ApiException;
+import com.quickstay.hotel.ContentLines;
 import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
 import com.quickstay.hotel.Room;
@@ -101,6 +102,9 @@ public class RoomAdminService {
      */
     @Transactional
     public RoomResponse create(RoomRequest req) {
+        if (req.hotelId() == null) {
+            throw ApiException.badRequest("hotelId khong duoc de trong");
+        }
         Hotel hotel = hotelRepository.findById(req.hotelId())
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay khach san voi id=" + req.hotelId()));
 
@@ -124,6 +128,9 @@ public class RoomAdminService {
     public RoomResponse update(Long id, RoomRequest req) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay loai phong voi id=" + id));
+        if (req.hotelId() == null) {
+            throw ApiException.badRequest("hotelId khong duoc de trong");
+        }
 
         Hotel hotel = hotelRepository.findById(req.hotelId())
                 .orElseThrow(() -> ApiException.notFound("Khong tim thay khach san voi id=" + req.hotelId()));
@@ -162,13 +169,62 @@ public class RoomAdminService {
         return peak;
     }
 
+    // ------------------------------------------------------------------
+    // Doi tac khach san (HOTEL_MANAGER): chi thao tac tren loai phong cua co so duoc gan
+    // ------------------------------------------------------------------
+
+    @Transactional(readOnly = true)
+    public List<RoomResponse> listForHotel(Long hotelId) {
+        return list(hotelId);
+    }
+
+    @Transactional
+    public RoomResponse createForHotel(Long hotelId, RoomRequest req) {
+        return create(withHotel(hotelId, req));
+    }
+
+    @Transactional
+    public RoomResponse updateForHotel(Long hotelId, Long roomId, RoomRequest req) {
+        requireOwned(hotelId, roomId);
+        return update(roomId, withHotel(hotelId, req));
+    }
+
+    @Transactional
+    public void deleteForHotel(Long hotelId, Long roomId) {
+        requireOwned(hotelId, roomId);
+        delete(roomId);
+    }
+
+    private void requireOwned(Long hotelId, Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> ApiException.notFound("Khong tim thay loai phong voi id=" + roomId));
+        if (!room.getHotel().getId().equals(hotelId)) {
+            throw ApiException.forbidden("Ban chi quan ly duoc loai phong thuoc co so cua minh");
+        }
+    }
+
+    /** Doi tac khong duoc chuyen loai phong sang co so khac: luon gan co so cua minh. */
+    private static RoomRequest withHotel(Long hotelId, RoomRequest r) {
+        return new RoomRequest(hotelId, r.roomType(), r.pricePerNight(), r.capacity(), r.quantity(),
+                r.description(), r.areaSqm(), r.bedInfo(), r.amenities(), r.imageUrls());
+    }
+
     /** Ap dung du lieu tu request len entity (dung chung cho create va update). */
     private void applyRequest(Room room, Hotel hotel, RoomRequest req) {
+        ContentLines.requireImageLines(req.imageUrls(), "Anh loai phong");
         room.setHotel(hotel);
         room.setRoomType(req.roomType());
         room.setPricePerNight(req.pricePerNight());
         room.setCapacity(req.capacity());
         room.setQuantity(req.quantity());
         room.setDescription(req.description());
+        // null = giu nguyen (form cu khong gui), chuoi rong = xoa
+        if (req.areaSqm() != null) room.setAreaSqm(req.areaSqm());
+        if (req.bedInfo() != null) room.setBedInfo(req.bedInfo().isBlank() ? null : req.bedInfo());
+        if (req.amenities() != null) room.setAmenities(req.amenities().isBlank() ? null : req.amenities());
+        if (req.imageUrls() != null) {
+            String urls = ContentLines.normalize(req.imageUrls());
+            room.setImageUrls(urls.isBlank() ? null : urls);
+        }
     }
 }

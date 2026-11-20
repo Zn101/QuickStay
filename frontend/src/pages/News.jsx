@@ -39,7 +39,7 @@ Huế mùa thu bớt đi cái nắng gay gắt của miền Trung, nhường ch�
     content: `Để có chuyến du lịch trọn vẹn mà vẫn tối ưu chi phí, việc săn phòng khách sạn đòi hỏi bạn phải có một số chiến lược thông minh:
 
 - Đặt phòng sớm tối thiểu 3 - 4 tuần trước chuyến đi: Các khách sạn và resort thường có chính sách Early Bird với mức giá ưu đãi hơn từ 20-30%.
-- Kiểm tra chính sách hủy linh hoạt: Luôn ưu tiên các phòng có chính sách "Miễn phí hủy trước 24 giờ" trên QuickStay để phòng ngừa thay đổi lịch trình bất ngờ.
+- Kiểm tra chính sách hủy linh hoạt: Trên QuickStay bạn được hủy miễn phí đến trước ngày nhận phòng để phòng ngừa thay đổi lịch trình bất ngờ.
 - Đặt gói dịch vụ kết hợp (Hotel + Xe đưa đón): Đặt kèm xe đón tiễn sân bay tại QuickStay giúp tiết kiệm hơn nhiều so với việc gọi taxi trực tiếp tại sân bay.`,
     author: 'Minh Trí',
     publishDate: '14/11/2026',

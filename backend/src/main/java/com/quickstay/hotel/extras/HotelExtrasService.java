@@ -4,6 +4,7 @@ import com.quickstay.booking.BookingRepository;
 import com.quickstay.booking.BookingStatus;
 import com.quickstay.config.ApiException;
 import com.quickstay.email.EmailService;
+import com.quickstay.hotel.ContentLines;
 import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
 import com.quickstay.user.EmailVerificationPolicy;
@@ -139,31 +140,22 @@ public class HotelExtrasService {
             }
         }
 
+        // Toan bo noi dung duoi day do doi tac / admin nhap (trang Doi tac > Trang khach san); muc trong thi an.
         String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
-        String airportName = airportForCity(cityLower);
-        List<PhotoItem> photos = buildPhotos(h);
-        List<TransferOption> transfers = TRANSFERS;
-        List<DiningOption> dining = diningForHotel(h);
-        List<AttractionItem> attractions = attractionsForCity(cityLower);
-        List<AmenityCategory> amenities = buildAmenities(h);
-        List<PolicyItem> policies = List.of(
-                new PolicyItem("Nhận phòng & Trả phòng", "Nhận phòng từ 14:00 · Trả phòng trước 12:00. Hỗ trợ giữ hành lý miễn phí 24/7 và nhận phòng sớm tùy tình trạng phòng trống."),
-                new PolicyItem("Chính sách hủy & Hoàn tiền", "Miễn phí hủy phòng trước 24 giờ so với ngày nhận phòng. Đơn đã thanh toán trực tuyến sẽ được tự động hoàn tiền khi hủy hợp lệ ở trạng thái Chờ xác nhận."),
-                new PolicyItem("Trẻ em & Giường phụ", "Miễn phí tối đa 1 trẻ em dưới 6 tuổi ngủ chung giường với bố mẹ. Giường phụ có thể yêu cầu thêm tại quầy lễ tân."),
-                new PolicyItem("Thanh toán & Đặt cọc", "Chấp nhận thanh toán tại khách sạn, chuyển khoản VietQR, thẻ Visa/Mastercard và ví điện tử MoMo/VNPay."),
-                new PolicyItem("Quy định lưu trú", "Không hút thuốc trong phòng kín. Vui lòng xuất trình CCCD/Hộ chiếu hợp lệ khi nhận phòng.")
-        );
+        List<PhotoItem> photos = photosOf(h);
+        List<TransferOption> transfers = transfersOf(h);
+        String airportName = h.getAirportName() != null ? h.getAirportName()
+                : transfers.isEmpty() ? null : airportForCity(cityLower);
+        List<DiningOption> dining = diningOf(h);
+        List<AttractionItem> attractions = attractionsOf(h);
+        List<String> amenityList = ContentLines.csv(h.getAmenities());
+        List<AmenityCategory> amenities = amenityList.isEmpty() ? List.of()
+                : List.of(new AmenityCategory("Tiện nghi tại cơ sở", amenityList));
+        List<PolicyItem> policies = policiesOf(h);
 
         return new HotelExtrasView(hotelId, avg, (int) revCount, photos, airportName, transfers, dining, attractions, amenities, policies,
                 venues.restaurantsInCity(h.getCity(), 4), venues.toursInCity(h.getCity(), 4));
     }
-
-    /** Bang gia dua don san bay: nguon duy nhat cho ca hien thi va tinh phi (khong tin phi do client gui). */
-    static final List<TransferOption> TRANSFERS = List.of(
-            new TransferOption("SEDAN_4", "Xe Sedan 4 chỗ riêng tư", "Toyota Vios / Mazda 3", 3, "20 - 30 phút", BigDecimal.valueOf(250_000)),
-            new TransferOption("SUV_7", "Xe SUV 7 chỗ gia đình", "Toyota Fortuner / Innova", 6, "20 - 30 phút", BigDecimal.valueOf(380_000)),
-            new TransferOption("LIMO_VIP", "Limousine DCar VIP đón bảng tên", "Ford Transit Limousine", 9, "20 - 30 phút", BigDecimal.valueOf(650_000))
-    );
 
     @Transactional(readOnly = true)
     public List<ReviewView> reviewsOf(Long hotelId) {
@@ -265,15 +257,14 @@ public class HotelExtrasService {
         if (req.serviceDate().isAfter(LocalDate.now(clock).plusDays(365))) {
             throw ApiException.badRequest("Chi nhan dat dich vu truoc toi da 365 ngay");
         }
-        // Phi tinh tu bang gia cua he thong, bo qua estimatedFee client gui len.
+        // Phi tinh tu bang gia doi tac da cong bo tren trang co so, bo qua estimatedFee client gui len.
         // Dich vu ngoai danh muc: cho co so bao gia (PENDING, phi 0).
         String title = req.serviceTitle().trim();
-        String cityLower = h.getCity() == null ? "" : h.getCity().toLowerCase(Locale.ROOT);
         Optional<BigDecimal> catalogFee = switch (type) {
-            case "AIRPORT_TRANSFER" -> TRANSFERS.stream()
+            case "AIRPORT_TRANSFER" -> transfersOf(h).stream()
                     .filter(t -> t.title().equalsIgnoreCase(title) || t.code().equalsIgnoreCase(title))
                     .map(TransferOption::price).findFirst();
-            case "ATTRACTION_TRANSPORT" -> attractionsForCity(cityLower).stream()
+            case "ATTRACTION_TRANSPORT" -> attractionsOf(h).stream()
                     .filter(a -> a.name().equalsIgnoreCase(title))
                     .map(AttractionItem::price).findFirst();
             default -> Optional.of(BigDecimal.ZERO); // Am thuc: thanh toan tai nha hang
@@ -322,21 +313,80 @@ public class HotelExtrasService {
         return hotels.findById(id).orElseThrow(() -> ApiException.notFound("Khong tim thay khach san"));
     }
 
-    private static List<PhotoItem> buildPhotos(Hotel h) {
+    /** Chinh sach chung cua nen tang, hien thi tren moi co so (khop logic huy / hoan tien trong BookingService). */
+    static final List<PolicyItem> PLATFORM_POLICIES = List.of(
+            new PolicyItem("Hủy phòng & Hoàn tiền (QuickStay)",
+                    "Hủy miễn phí trên QuickStay đến hết ngày trước ngày nhận phòng, áp dụng cho đơn Chờ xác nhận và Đã xác nhận. "
+                            + "Đơn đã thanh toán trực tuyến được hoàn 100%. Từ ngày nhận phòng, vui lòng liên hệ trực tiếp cơ sở."),
+            new PolicyItem("Thanh toán",
+                    "Thanh toán tại cơ sở khi nhận phòng hoặc thanh toán trực tuyến trên QuickStay. Giá hiển thị là tổng tiền phòng theo số đêm, "
+                            + "QuickStay không thu thêm phí đặt phòng. Dịch vụ đưa đón, ăn uống thanh toán trực tiếp với cơ sở.")
+    );
+
+    private static List<PolicyItem> policiesOf(Hotel h) {
+        List<PolicyItem> list = new ArrayList<>();
+        String in = h.getCheckInTime() == null ? "14:00" : h.getCheckInTime();
+        String out = h.getCheckOutTime() == null ? "12:00" : h.getCheckOutTime();
+        list.add(new PolicyItem("Nhận phòng & Trả phòng", "Nhận phòng từ " + in + " · Trả phòng trước " + out + "."));
+        for (String line : ContentLines.lines(h.getHouseRules())) {
+            String[] c = ContentLines.cells(line, 2);
+            list.add(c[1].isEmpty() ? new PolicyItem("Quy định của cơ sở", c[0]) : new PolicyItem(c[0], c[1]));
+        }
+        list.addAll(PLATFORM_POLICIES);
+        return list;
+    }
+
+    private static List<PhotoItem> photosOf(Hotel h) {
         List<PhotoItem> list = new ArrayList<>();
         if (h.getImageUrl() != null && !h.getImageUrl().isBlank()) {
-            list.add(new PhotoItem(h.getImageUrl(), "Mặt tiền & Toàn cảnh khuôn viên " + h.getName()));
+            list.add(new PhotoItem(h.getImageUrl(), h.getName()));
         }
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80", "Phòng ngủ Master King Bed cao cấp ngập tràn ánh sáng"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80", "Không gian phòng khách Suite rộng rãi & Ban công ngắm cảnh"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80", "Phòng tắm đá cẩm thạch sang trọng với bồn tắm ngâm thảo mộc"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80", "Hồ bơi ngoài trời với ghế tắm nắng & view toàn cảnh"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80", "Nhà hàng buffet Á - Âu & Không gian ẩm thực thượng lưu"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80", "Khuôn viên vườn nhiệt đới & Lối dạo bộ thư thái"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80", "Khu trị liệu Spa chăm sóc sức khỏe & Phòng xông hơi khô"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80", "Trung tâm thể hình Gym & Yoga trang thiết bị hiện đại"));
-        list.add(new PhotoItem("https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80", "Đại sảnh đón tiếp sang trọng & Quầy lễ tân phục vụ 24/7"));
+        for (String line : ContentLines.lines(h.getGallery())) {
+            String[] c = ContentLines.cells(line, 2);
+            if (ContentLines.isUrl(c[0]) && list.stream().noneMatch(p -> p.url().equals(c[0]))) {
+                list.add(new PhotoItem(c[0], c[1].isEmpty() ? h.getName() : c[1]));
+            }
+        }
         return list;
+    }
+
+    static List<TransferOption> transfersOf(Hotel h) {
+        List<TransferOption> list = new ArrayList<>();
+        int i = 0;
+        for (String line : ContentLines.lines(h.getTransfers())) {
+            String[] c = ContentLines.cells(line, 5);
+            i++;
+            int seats;
+            try {
+                seats = c[2].isEmpty() ? 0 : Integer.parseInt(c[2].replaceAll("\\D", ""));
+            } catch (NumberFormatException e) {
+                seats = 0;
+            }
+            list.add(new TransferOption("T" + i, c[0], c[1], seats, c[3], safePrice(c[4])));
+        }
+        return list;
+    }
+
+    private static List<DiningOption> diningOf(Hotel h) {
+        return ContentLines.lines(h.getDining()).stream().map(line -> {
+            String[] c = ContentLines.cells(line, 5);
+            return new DiningOption(c[0], c[1], c[2], c[3], c[4]);
+        }).toList();
+    }
+
+    static List<AttractionItem> attractionsOf(Hotel h) {
+        return ContentLines.lines(h.getAttractions()).stream().map(line -> {
+            String[] c = ContentLines.cells(line, 5);
+            return new AttractionItem(c[0], c[1], c[2], c[3], safePrice(c[4]));
+        }).toList();
+    }
+
+    private static BigDecimal safePrice(String cell) {
+        try {
+            return ContentLines.price(cell);
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
     }
 
     private static String airportForCity(String city) {
@@ -348,100 +398,5 @@ public class HotelExtrasService {
         if (city.contains("đà lạt")) return "Sân bay Liên Khương (DLI)";
         if (city.contains("huế")) return "Sân bay Quốc tế Phú Bài (HUI)";
         return "Sân bay nội địa / Quốc tế gần nhất";
-    }
-
-    private static List<DiningOption> diningForHotel(Hotel h) {
-        return List.of(
-                new DiningOption("Buffet Sáng QuickStay Bistro", "Á - Âu & Đặc sản địa phương", "06:30 – 10:00",
-                        "Hơn 40 món nóng, quầy phở/bún đặc sản, bánh ngọt & trái cây tươi", "Miễn phí theo hạng phòng hoặc 180.000 ₫/khách"),
-                new DiningOption("Nhà hàng " + h.getCity() + " Kitchen", "Ẩm thực bản địa & Hải sản", "11:00 – 22:00",
-                        "Thực đơn gọi món theo mùa, không gian ấm cúng phù hợp gia đình & đối tác", "Từ 150.000 ₫/món"),
-                new DiningOption("Sky Lounge & Coffee Bar", "Đồ uống & Bánh ngọt", "08:00 – 23:00",
-                        "Cà phê pha máy, cocktail hoàng hôn & trà chiều", "Từ 55.000 ₫"),
-                new DiningOption("Phục vụ tại phòng (In-room Dining)", "Thực đơn nhanh 24/7", "24/7",
-                        "Giao đồ ăn nóng tận cửa phòng trong 25 phút", "Phục vụ mọi khung giờ")
-        );
-    }
-
-    private static List<AttractionItem> attractionsForCity(String city) {
-        if (city.contains("đà nẵng")) {
-            return List.of(
-                    new AttractionItem("Bà Nà Hills & Cầu Vàng", "25 km", "Xe riêng 4-7 chỗ có tài xế", "45 phút", BigDecimal.valueOf(550_000)),
-                    new AttractionItem("Danh thắng Ngũ Hành Sơn", "8 km", "Taxi / Xe công nghệ / Xe máy", "15 phút", BigDecimal.valueOf(150_000)),
-                    new AttractionItem("Bán đảo Sơn Trà & Chùa Linh Ứng", "10 km", "Xe máy thuê hoặc xe 4 chỗ", "20 phút", BigDecimal.valueOf(180_000)),
-                    new AttractionItem("Phố cổ Hội An (Xe ghép/Riêng)", "28 km", "Shuttle bus hoặc Xe riêng", "40 phút", BigDecimal.valueOf(350_000))
-            );
-        }
-        if (city.contains("hà nội")) {
-            return List.of(
-                    new AttractionItem("Hồ Hoàn Kiếm & Đền Ngọc Sơn", "500 m", "Đi bộ hoặc Xích lô phố cổ", "5 phút", BigDecimal.ZERO),
-                    new AttractionItem("Lăng Chủ tịch Hồ Chí Minh & Chùa Một Cột", "2.8 km", "Xe điện / Taxi đặt tại lễ tân", "10 phút", BigDecimal.valueOf(90_000)),
-                    new AttractionItem("Văn Miếu - Quốc Tử Giám", "2.5 km", "Xe điện du lịch / Grab", "10 phút", BigDecimal.valueOf(80_000)),
-                    new AttractionItem("Tour Làng gốm Bát Tràng / Tràng An", "15 - 90 km", "Xe du lịch riêng theo ngày", "30 - 90 phút", BigDecimal.valueOf(650_000))
-            );
-        }
-        if (city.contains("hồ chí minh")) {
-            return List.of(
-                    new AttractionItem("Chợ Bến Thành & Phố đi bộ Nguyễn Huệ", "400 m", "Đi bộ trực tiếp từ khách sạn", "5 phút", BigDecimal.ZERO),
-                    new AttractionItem("Dinh Độc Lập & Nhà thờ Đức Bà", "1.1 km", "Xe đạp / Taxi / Đi bộ", "6 phút", BigDecimal.valueOf(60_000)),
-                    new AttractionItem("Bến Bạch Đằng & Waterbus sông Sài Gòn", "900 m", "Đi bộ / Xe điện", "5 phút", BigDecimal.valueOf(50_000)),
-                    new AttractionItem("Địa đạo Củ Chi (Nửa ngày)", "55 km", "Xe riêng 4-7 chỗ đón tận sảnh", "75 phút", BigDecimal.valueOf(950_000))
-            );
-        }
-        if (city.contains("hội an")) {
-            return List.of(
-                    new AttractionItem("Phố cổ Hội An & Chùa Cầu", "600 m", "Xe đạp miễn phí của homestay / Đi bộ", "5 phút", BigDecimal.ZERO),
-                    new AttractionItem("Rừng dừa Bảy Mẫu (Thúng chai)", "4.5 km", "Xe điện / Xe máy / Taxi", "12 phút", BigDecimal.valueOf(120_000)),
-                    new AttractionItem("Biển An Bàng", "4.8 km", "Xe đạp hoặc Shuttle miễn phí", "15 phút", BigDecimal.ZERO),
-                    new AttractionItem("Thánh địa Mỹ Sơn", "40 km", "Xe riêng khứ hồi đón tại sảnh", "60 phút", BigDecimal.valueOf(600_000))
-            );
-        }
-        if (city.contains("phú quốc")) {
-            return List.of(
-                    new AttractionItem("Cáp treo Hòn Thơm & Thị trấn Hoàng Hôn", "12 km", "Xe riêng 4-7 chỗ", "20 phút", BigDecimal.valueOf(280_000)),
-                    new AttractionItem("Grand World & Thành phố không ngủ", "28 km", "Shuttle bus hoặc Xe riêng", "35 phút", BigDecimal.valueOf(350_000)),
-                    new AttractionItem("VinWonders & Vinpearl Safari Phú Quốc", "30 km", "Xe riêng khứ hồi", "40 phút", BigDecimal.valueOf(450_000)),
-                    new AttractionItem("Bãi Sao & Làng chài Hàm Ninh thưởng thức hải sản", "18 km", "Xe riêng đón tại sảnh", "25 phút", BigDecimal.valueOf(300_000))
-            );
-        }
-        if (city.contains("nha trang")) {
-            return List.of(
-                    new AttractionItem("VinWonders Nha Trang & Cáp treo vượt biển", "6 km", "Taxi / Xe riêng đón tại sảnh", "12 phút", BigDecimal.valueOf(120_000)),
-                    new AttractionItem("Tháp Bà Ponagar & Khu tắm bùn khoáng I-Resort", "4.5 km", "Xe điện du lịch / Taxi", "10 phút", BigDecimal.valueOf(80_000)),
-                    new AttractionItem("Viện Hải dương học & Cảng Cầu Đá", "7 km", "Taxi / Xe đưa đón", "15 phút", BigDecimal.valueOf(90_000)),
-                    new AttractionItem("Tour 4 đảo vịnh Nha Trang lặn ngắm san hô", "Khởi hành tại cảng", "Xe đưa đón ra bến tàu", "20 phút", BigDecimal.valueOf(450_000))
-            );
-        }
-        if (city.contains("đà lạt")) {
-            return List.of(
-                    new AttractionItem("Quảng trường Lâm Viên & Hồ Xuân Hương", "1.8 km", "Đi bộ hoặc Xe máy ngắm cảnh", "5 phút", BigDecimal.ZERO),
-                    new AttractionItem("Thung lũng Tình Yêu & Đồi Mộng Mơ", "6 km", "Taxi / Xe máy thuê", "15 phút", BigDecimal.valueOf(100_000)),
-                    new AttractionItem("Đỉnh Langbiang (Xe jeep chinh phục đỉnh)", "14 km", "Xe riêng 4-7 chỗ", "25 phút", BigDecimal.valueOf(280_000)),
-                    new AttractionItem("Ga xe lửa cổ Đà Lạt & Chùa Ve Chai Linh Phước", "7 km", "Xe taxi hoặc Tàu hỏa du lịch", "15 phút", BigDecimal.valueOf(110_000))
-            );
-        }
-        if (city.contains("huế")) {
-            return List.of(
-                    new AttractionItem("Đại Nội Huế (Hoàng thành triều Nguyễn)", "1.2 km", "Đi bộ hoặc Xích lô ngắm cảnh", "5 phút", BigDecimal.valueOf(50_000)),
-                    new AttractionItem("Chùa Thiên Mụ & Thuyền rồng Ca Huế sông Hương", "4.5 km", "Thuyền rồng đón tại bến khách sạn", "15 phút", BigDecimal.valueOf(150_000)),
-                    new AttractionItem("Lăng Khải Định & Lăng Tự Đức", "9 km", "Xe riêng tham quan các lăng tẩm", "20 phút", BigDecimal.valueOf(320_000)),
-                    new AttractionItem("Chợ Đông Ba & Phố đêm Hoàng Thành", "1.5 km", "Đi bộ hoặc Xích lô", "5 phút", BigDecimal.valueOf(40_000))
-            );
-        }
-        return List.of(
-                new AttractionItem("Trung tâm thành phố & Khu ẩm thực đêm", "1.5 km", "Xe điện / Taxi đặt tại quầy lễ tân", "10 phút", BigDecimal.valueOf(70_000)),
-                new AttractionItem("Điểm tham quan văn hóa nổi bật", "5 - 12 km", "Xe riêng 4-7 chỗ theo lịch trình", "20 phút", BigDecimal.valueOf(250_000))
-        );
-    }
-
-    private static List<AmenityCategory> buildAmenities(Hotel h) {
-        List<String> basic = h.getAmenities() == null ? List.of("Wifi miễn phí", "Điều hòa")
-                : List.of(h.getAmenities().split(",")).stream().map(String::trim).filter(s -> !s.isEmpty()).toList();
-        return List.of(
-                new AmenityCategory("Tiện nghi nổi bật tại khách sạn", basic),
-                new AmenityCategory("Phòng nghỉ & Làm việc", List.of("Wifi tốc độ cao miễn phí", "Smart TV màn hình phẳng", "Bàn làm việc & ổ cắm đa năng", "Ấm đun nước & trà/cà phê miễn phí", "Két an toàn cá nhân")),
-                new AmenityCategory("Ẩm thực & Thư giãn", List.of("Nhà hàng & Buffet sáng", "Phục vụ đồ ăn tại phòng 24/7", "Khu vực Lounge / Quầy bar")),
-                new AmenityCategory("Di chuyển & Hỗ trợ", List.of("Đưa đón sân bay theo yêu cầu", "Hỗ trợ đặt xe đi điểm tham quan", "Gửi hành lý miễn phí", "Lễ tân hỗ trợ 24/7"))
-        );
     }
 }

@@ -63,6 +63,14 @@ public class BookingService {
         this.emails = emails;
     }
 
+    /** Lich dong phong do doi tac khai bao; tuy chon de cac unit test cu khong can mock them. */
+    private com.quickstay.hotel.RoomClosureRepository closures;
+
+    @Autowired(required = false)
+    void setClosures(com.quickstay.hotel.RoomClosureRepository closures) {
+        this.closures = closures;
+    }
+
     /**
      * POST /api/bookings: tao don PENDING cho khach dang dang nhap.
      * T087 kiem tra ngay, T088 tinh tong tien theo so dem, T089 kiem tra suc chua,
@@ -78,7 +86,8 @@ public class BookingService {
         if (req.guests() > room.getCapacity()) {
             throw ApiException.badRequest("Phong chi chua toi da " + room.getCapacity() + " khach");
         }
-        long booked = bookings.countOverlapping(room.getId(), req.checkIn(), req.checkOut());
+        long booked = bookings.countOverlapping(room.getId(), req.checkIn(), req.checkOut())
+                + (closures == null ? 0 : closures.sumOverlapping(room.getId(), req.checkIn(), req.checkOut()));
         if (room.remaining(booked) < 1) {
             log.info("Het phong: roomId={} {} -> {}", room.getId(), req.checkIn(), req.checkOut());
             throw ApiException.conflict("Phong da het trong khoang ngay da chon");
@@ -152,7 +161,9 @@ public class BookingService {
     }
 
     /**
-     * PATCH /api/bookings/{id}/cancel (T112): chi chu don, chi khi con PENDING.
+     * PATCH /api/bookings/{id}/cancel (T112): chi chu don.
+     * Chinh sach huy mien phi: don PENDING hoac CONFIRMED, cham nhat het ngay truoc ngay nhan phong;
+     * don da thanh toan duoc hoan toan bo. Tu ngay nhan phong tro di khach lien he co so.
      * Khoa dong don truoc khi doc trang thai de khong ghi de khi admin dang xac nhan cung luc.
      */
     @Transactional
@@ -162,8 +173,11 @@ public class BookingService {
         if (!b.getUser().getEmail().equals(email)) {
             throw ApiException.forbidden("Ban khong co quyen huy don dat phong nay");
         }
-        if (b.getStatus() != BookingStatus.PENDING) {
-            throw ApiException.conflict("Chi huy duoc dat phong dang cho xac nhan (PENDING)");
+        if (b.getStatus() != BookingStatus.PENDING && b.getStatus() != BookingStatus.CONFIRMED) {
+            throw ApiException.conflict("Chi huy duoc don dang cho xac nhan hoac da xac nhan");
+        }
+        if (!LocalDate.now(clock).isBefore(b.getCheckIn())) {
+            throw ApiException.conflict("Da den ngay nhan phong, vui long lien he co so luu tru de duoc ho tro");
         }
         b.setStatus(BookingStatus.CANCELLED);
         if (b.getPaymentStatus() == PaymentStatus.PAID) {

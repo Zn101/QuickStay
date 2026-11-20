@@ -417,7 +417,7 @@ export default function PaymentModal({ booking, initialMethod = 'BANK_TRANSFER',
                 )}
               </button>
               <p className="text-center text-[10px] text-slate-400">
-                🔒 Giao dịch mã hóa SSL 256-bit chuẩn PCI-DSS · Xác nhận tự động tức thì
+                🧪 Cổng thanh toán thử nghiệm: không trừ tiền thật
               </p>
             </div>
           </div>

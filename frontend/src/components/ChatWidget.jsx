@@ -84,7 +84,7 @@ export default function ChatWidget() {
                 </div>
                 <div className="mt-1 flex items-center gap-1.5 text-[11px] text-sky-100/90 leading-none">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Trực tuyến · Hỗ trợ 24/7</span>
+                  <span>Trợ lý AI · trả lời tự động</span>
                 </div>
               </div>
             </div>

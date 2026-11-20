@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
 import { api } from '../lib/api'
 import PartnerQuestions from '../components/PartnerQuestions'
+import PartnerRooms from '../components/partner/PartnerRooms'
+import PartnerCalendar from '../components/partner/PartnerCalendar'
+import PartnerHotelContent from '../components/partner/PartnerHotelContent'
 import { formatVnd, formatDate, nightsBetween, STATUS_LABEL, STATUS_STYLE, PAYMENT_METHOD_LABEL } from '../lib/format'
 import { StatusBadge, PaymentBadge, ErrorBox, Spinner, ConfirmModal } from '../components/ui'
 
@@ -11,6 +14,7 @@ export default function PartnerDashboard() {
   const navigate = useNavigate()
 
   const [hotel, setHotel] = useState(null)
+  const [inventoryKey, setInventoryKey] = useState(0)
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -613,79 +617,6 @@ export default function PartnerDashboard() {
           </div>
         </div>
 
-        {/* Thẻ Phân tích Định giá & Công suất AI (Pricing Hints) */}
-        <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-5 shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-purple-100 dark:border-purple-900/50 pb-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white text-base shadow-xs">
-                💡
-              </span>
-              <div>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                  Gợi ý Định giá & Phân bổ Công suất Lưu trú (AI Pricing Hints)
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Phân tích dữ liệu đặt phòng thực tế (ngày thường vs cuối tuần, lead time). AI giải thích số liệu thống kê.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={loadPricingHints}
-              disabled={loadingPricing || !hotel?.id}
-              className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer shrink-0"
-            >
-              {loadingPricing ? (
-                <>
-                  <Spinner size="sm" />
-                  <span>Đang tính toán...</span>
-                </>
-              ) : (
-                <>
-                  <span>✨</span>
-                  <span>Phân tích định giá AI</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {pricingError && <ErrorBox message={pricingError} />}
-
-          {pricingHints && (
-            <div className="space-y-3 animate-fadeIn">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Tỷ lệ Ngày thường vs Cuối tuần</p>
-                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
-                    {pricingHints.stats?.weekdayBookings || 0} vs {pricingHints.stats?.weekendBookings || 0} đơn
-                  </p>
-                  <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5">
-                    {pricingHints.stats?.weekendSharePercent || 0}% đơn vào T6 - CN
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Thời gian đặt trước trung bình</p>
-                  <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
-                    ~{pricingHints.stats?.averageLeadTimeDays || 3} ngày
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Khoảng cách từ đặt tới nhận phòng</p>
-                </div>
-                <div className="rounded-xl bg-white dark:bg-slate-800 p-3 border border-purple-100 dark:border-purple-900/40 shadow-2xs">
-                  <p className="text-[10px] font-bold uppercase text-slate-400">Tổng lượt giao dịch</p>
-                  <p className="mt-1 text-sm font-black text-emerald-600 dark:text-emerald-400">
-                    {pricingHints.stats?.totalBookings || 0} đơn lưu trú
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Cơ sở dữ liệu mẫu khách sạn</p>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-white/80 dark:bg-slate-800/80 p-3.5 border border-purple-100 dark:border-purple-900/50 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-medium">
-                {pricingHints.pricingAdvice}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Thông báo kết quả thao tác */}
         {successMessage && (
           <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/70 dark:border-emerald-800 px-4 py-3 text-sm font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs animate-fadeIn">
@@ -1016,6 +947,30 @@ export default function PartnerDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Đối tác tự quản lý dữ liệu hiển thị trên trang khách: loại phòng, lịch phòng, nội dung trang */}
+        {hotel && (
+          <>
+            <nav aria-label="Quản lý cơ sở" className="flex flex-wrap gap-2">
+              {[
+                ['#loai-phong', 'Loại phòng & Giá'],
+                ['#lich-phong', 'Lịch phòng trống'],
+                ['#noi-dung', 'Nội dung trang khách sạn'],
+              ].map(([href, label]) => (
+                <a
+                  key={href}
+                  href={href}
+                  className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+            <PartnerRooms hotelId={hotel.id} onChanged={() => setInventoryKey((k) => k + 1)} />
+            <PartnerCalendar hotelId={hotel.id} refreshKey={inventoryKey} />
+            <PartnerHotelContent hotel={hotel} onSaved={setHotel} />
+          </>
         )}
 
         {/* Hỏi đáp của khách (đối tác trả lời câu hỏi của cơ sở mình) */}

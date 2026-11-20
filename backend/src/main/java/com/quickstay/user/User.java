@@ -34,6 +34,13 @@ public class User {
     @Column(name = "hotel_id")
     private Long hotelId;
 
+    /** Thoi diem dong y Dieu khoan & Chinh sach khi dang ky. */
+    @Column(name = "terms_accepted_at")
+    private java.time.Instant termsAcceptedAt;
+
+    @Column(name = "terms_version", length = 20)
+    private String termsVersion;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -105,4 +112,9 @@ public class User {
     public void setNotifyPromo(boolean notifyPromo) { this.notifyPromo = notifyPromo; }
     public boolean isCompactMode() { return compactMode; }
     public void setCompactMode(boolean compactMode) { this.compactMode = compactMode; }
+
+    public java.time.Instant getTermsAcceptedAt() { return termsAcceptedAt; }
+    public void setTermsAcceptedAt(java.time.Instant termsAcceptedAt) { this.termsAcceptedAt = termsAcceptedAt; }
+    public String getTermsVersion() { return termsVersion; }
+    public void setTermsVersion(String termsVersion) { this.termsVersion = termsVersion; }
 }

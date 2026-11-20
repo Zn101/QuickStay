@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
@@ -5,6 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Một màu thương hiệu duy nhất: trước đây giao diện trộn sky-* (#0284C7) và blue-* (#2563EB)
+        // làm nút, liên kết, giá tiền lệch tông giữa các trang. Ánh xạ sky sang blue để toàn site đồng nhất.
+        sky: colors.blue,
         brand: {
           50: '#eff6ff',
           100: '#dbeafe',

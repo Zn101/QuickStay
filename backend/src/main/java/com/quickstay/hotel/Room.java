@@ -34,6 +34,21 @@ public class Room {
     @Column(length = 2000)
     private String description;
 
+    /** Dien tich m2. */
+    @Column(name = "area_sqm")
+    private Integer areaSqm;
+
+    @Column(name = "bed_info", length = 255)
+    private String bedInfo;
+
+    /** Tien nghi phong, cach nhau dau phay. */
+    @Column(name = "amenities", length = 1000)
+    private String amenities;
+
+    /** Anh loai phong: moi dong mot URL. */
+    @Column(name = "image_urls", length = 4000)
+    private String imageUrls;
+
     /**
      * So phong con trong khi da co {@code booked} don chong lan; khong am
      * (admin co the giam quantity xuong duoi so don dang co).
@@ -55,4 +70,13 @@ public class Room {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public Integer getAreaSqm() { return areaSqm; }
+    public void setAreaSqm(Integer areaSqm) { this.areaSqm = areaSqm; }
+    public String getBedInfo() { return bedInfo; }
+    public void setBedInfo(String bedInfo) { this.bedInfo = bedInfo; }
+    public String getAmenities() { return amenities; }
+    public void setAmenities(String amenities) { this.amenities = amenities; }
+    public String getImageUrls() { return imageUrls; }
+    public void setImageUrls(String imageUrls) { this.imageUrls = imageUrls; }
 }

@@ -70,7 +70,7 @@ class PaymentEmailRecoveryApiTest extends ApiTestBase {
     void register_sends_verification_email_and_verify_endpoint_marks_verified() throws Exception {
         String email = newCustomerEmail();
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", email, "password", "secret123", "fullName", "Minh Thu", "phone", "0901234567")))
+                        Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "Minh Thu", "phone", "0901234567")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.user.emailVerified").value(false));
 

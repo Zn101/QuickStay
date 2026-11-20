@@ -6,31 +6,31 @@ import { ErrorBox, FieldError, SuccessModal } from '../components/ui'
 const SLIDES = [
   {
     url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1600&q=85',
-    title: 'Amanoi Ocean Pool Villa',
-    location: 'Vịnh Vĩnh Hy, Ninh Thuận',
-    rating: '4.98',
-    tag: 'Biệt thự hướng biển',
+    title: 'Biển Vĩnh Hy',
+    location: 'Ninh Thuận',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Nghỉ dưỡng ven biển',
   },
   {
     url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1600&q=85',
-    title: 'Six Senses Ninh Van Bay',
-    location: 'Ninh Hòa, Khánh Hòa',
-    rating: '4.95',
-    tag: 'Khu nghỉ dưỡng sinh thái',
+    title: 'Vịnh Nha Trang',
+    location: 'Khánh Hòa',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Biển & đảo',
   },
   {
     url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=85',
-    title: 'Regent Phu Quoc Resort',
-    location: 'Bãi Trường, Phú Quốc',
-    rating: '4.99',
-    tag: 'Sang trọng bậc nhất',
+    title: 'Đảo ngọc Phú Quốc',
+    location: 'Kiên Giang',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Resort biển',
   },
   {
     url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1600&q=85',
-    title: 'InterContinental Danang',
-    location: 'Bán đảo Sơn Trà, Đà Nẵng',
-    rating: '4.97',
-    tag: 'Tuyệt tác kiến trúc',
+    title: 'Bán đảo Sơn Trà',
+    location: 'Đà Nẵng',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Thành phố biển',
   },
 ]
 
@@ -65,6 +65,7 @@ export default function Register() {
   const register = useAuth((s) => s.register)
   const navigate = useNavigate()
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' })
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -113,9 +114,8 @@ export default function Register() {
       errs.email = 'Địa chỉ email không đúng định dạng'
     }
 
-    if (!phoneTrimmed) {
-      errs.phone = 'Vui lòng nhập số điện thoại'
-    } else if (phoneTrimmed && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phoneTrimmed.replace(/\s+/g, ''))) {
+    // Số điện thoại tuỳ chọn (khớp nhãn "Tùy chọn" và backend); nhập thì phải đúng định dạng
+    if (phoneTrimmed && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phoneTrimmed.replace(/\s+/g, ''))) {
       errs.phone = 'Số điện thoại không hợp lệ (gồm 10 chữ số)'
     }
 
@@ -123,6 +123,10 @@ export default function Register() {
       errs.password = 'Vui lòng nhập mật khẩu'
     } else if (form.password.length < 6) {
       errs.password = 'Mật khẩu phải có tối thiểu 6 ký tự'
+    }
+
+    if (!acceptedTerms) {
+      errs.acceptedTerms = 'Bạn cần đồng ý với Điều khoản & Chính sách của QuickStay để tạo tài khoản'
     }
 
     return errs
@@ -142,7 +146,7 @@ export default function Register() {
     setErrors({})
     setBusy(true)
     try {
-      await register(form)
+      await register({ ...form, acceptedTerms })
       setRegisteredSuccess(true)
     } catch (err) {
       if (err?.errors) {
@@ -261,7 +265,7 @@ export default function Register() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-white">{activeSlide.title}</span>
                   <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-200">
-                    ★ {activeSlide.rating}
+                    {activeSlide.rating}
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-sky-200/75">
@@ -333,7 +337,7 @@ export default function Register() {
                   <p className="text-sm font-bold">{activeSlide.title}</p>
                 </div>
                 <span className="rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-bold backdrop-blur-md">
-                  ★ {activeSlide.rating}
+                  {activeSlide.rating}
                 </span>
               </div>
             </div>
@@ -476,6 +480,37 @@ export default function Register() {
                   </button>
                 </div>
                 <FieldError id="password-error" message={errors.password} />
+              </div>
+
+              {/* Đồng ý chính sách (bắt buộc, backend kiểm tra lại và lưu thời điểm + phiên bản) */}
+              <div>
+                <label htmlFor="acceptedTerms" className="flex cursor-pointer items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                  <input
+                    id="acceptedTerms"
+                    name="acceptedTerms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => {
+                      setAcceptedTerms(e.target.checked)
+                      if (e.target.checked) setErrors((prev) => ({ ...prev, acceptedTerms: undefined }))
+                    }}
+                    aria-invalid={!!errors.acceptedTerms}
+                    aria-describedby={errors.acceptedTerms ? 'terms-error' : undefined}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>
+                    Tôi đồng ý với{' '}
+                    <Link to="/policies" target="_blank" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                      Điều khoản & Chính sách
+                    </Link>{' '}
+                    của QuickStay, gồm chính sách hủy phòng, thanh toán và{' '}
+                    <Link to="/policies#bao-mat" target="_blank" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                      bảo mật dữ liệu cá nhân
+                    </Link>
+                    .
+                  </span>
+                </label>
+                <FieldError id="terms-error" message={errors.acceptedTerms} />
               </div>
 
               {/* Nút Submit với hiệu ứng ánh sáng lướt */}

@@ -7,7 +7,6 @@ import { ConfirmModal } from './ui'
 import EmailInboxModal from './EmailInboxModal'
 import ChatWidget from './ChatWidget'
 import ScrollToTop from './ScrollToTop'
-import AdCornerPopup from './AdCornerPopup'
 import CookieConsentBanner from './CookieConsentBanner'
 import { api } from '../lib/api'
 
@@ -21,17 +20,7 @@ export default function Layout() {
   const [showInbox, setShowInbox] = useState(false)
   const [resending, setResending] = useState(false)
   const [resendNotice, setResendNotice] = useState('')
-  const [newsletterEmail, setNewsletterEmail] = useState('')
-  const [newsletterSuccess, setNewsletterSuccess] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
-
-  function handleSubscribeNewsletter(e) {
-    e.preventDefault()
-    if (!newsletterEmail.trim()) return
-    setNewsletterSuccess(true)
-    setNewsletterEmail('')
-    setTimeout(() => setNewsletterSuccess(false), 5000)
-  }
 
   useEffect(() => {
     if (user) {
@@ -412,207 +401,64 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Enterprise Professional Footer */}
-      <footer className="mt-auto bg-slate-950 text-slate-300 border-t border-slate-800/80">
-        {/* Newsletter subscription strip */}
-        <div className="border-b border-slate-800/80 bg-gradient-to-r from-blue-950/40 via-slate-950 to-blue-900/30">
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="max-w-xl text-center md:text-left">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300 ring-1 ring-blue-500/30 mb-2">
-                  ✨ Ưu đãi đặc quyền thành viên
-                </span>
-                <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                  Tiết kiệm đến 20% cho chuyến đi tiếp theo
-                </h3>
-                <p className="mt-1 text-xs sm:text-sm text-slate-400">
-                  Đăng ký email để nhận mã giảm giá độc quyền, thông báo phòng trống giờ chót và gợi ý du lịch từ QuickStay.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubscribeNewsletter} className="w-full md:w-auto flex flex-col sm:flex-row gap-2 max-w-md">
-                <div className="relative flex-1">
-                  <input
-                    type="email"
-                    required
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    placeholder="Nhập email của bạn..."
-                    className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn-liquid-glass rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-md whitespace-nowrap cursor-pointer"
-                >
-                  Đăng ký ngay
-                </button>
-              </form>
-            </div>
-            {newsletterSuccess && (
-              <div className="mt-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 p-2.5 text-center text-xs font-medium text-emerald-300 animate-popup-in">
-                🎉 Cảm ơn bạn! Mã voucher <span className="font-bold text-white">QUICKSTAY20</span> giảm 20% đã được ghi nhận cho email của bạn.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main 4-column directory */}
+      {/* Footer: chỉ thông tin có thật về sản phẩm */}
+      <footer className="mt-auto border-t border-slate-800/80 bg-slate-950 text-slate-300">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
-            {/* Col 1: Về QuickStay & Liên hệ */}
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
             <div>
               <Link to="/" className="flex items-center gap-2 text-xl font-extrabold text-white">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white text-sm shadow-md">
-                  Q
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-sm text-white shadow-md">Q</span>
+                <span className="inline-flex items-center tracking-tighter">
+                  Quick<span className="-ml-0.5 font-black text-blue-400">Stay</span>
                 </span>
-                <span className="tracking-tighter inline-flex items-center">Quick<span className="text-blue-400 font-black -ml-0.5">Stay</span></span>
               </Link>
               <p className="mt-3 text-xs leading-relaxed text-slate-400">
-                Hệ thống đặt phòng khách sạn và khu nghỉ dưỡng hàng đầu Việt Nam. Mang đến kỳ nghỉ trọn vẹn với giá tốt nhất, xác nhận tức thì và dịch vụ chăm sóc 24/7.
+                Nền tảng đặt phòng khách sạn, homestay, bàn nhà hàng và tour du lịch. Đối tác tự quản lý phòng, giá và lịch phòng trống.
               </p>
-              <div className="mt-4 space-y-2 text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 font-bold">Hotline 24/7:</span>
-                  <a href="tel:19006868" className="font-semibold text-white hover:text-blue-400 transition-colors">1900 6868</a>
-                  <span className="text-slate-500">·</span>
-                  <a href="tel:02873006868" className="hover:text-blue-400 transition-colors">(028) 7300 6868</a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 font-bold">Email hỗ trợ:</span>
-                  <a href="mailto:support@quickstay.io.vn" className="text-slate-300 hover:text-blue-400 transition-colors">support@quickstay.io.vn</a>
-                </div>
-                <div className="text-slate-400 text-[11px] leading-relaxed pt-1">
-                  📍 <strong className="text-slate-300">Trụ sở:</strong> Tòa nhà QuickStay Tower, 182 Lê Duẩn, Hải Châu, Đà Nẵng
-                </div>
-              </div>
+              <p className="mt-4 text-xs">
+                <span className="font-bold text-blue-400">Email hỗ trợ: </span>
+                <a href="mailto:support@quickstay.io.vn" className="text-slate-300 transition-colors hover:text-blue-400">
+                  support@quickstay.io.vn
+                </a>
+              </p>
             </div>
 
-            {/* Col 2: Điểm đến nổi tiếng */}
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Điểm Đến Hàng Đầu</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-white">Khám phá</h4>
               <ul className="mt-3 space-y-2 text-xs">
-                <li>
-                  <Link to="/?city=Đà Nẵng" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn Đà Nẵng</span>
-                    <span className="text-[10px] text-slate-500">Bãi biển Mỹ Khê</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/?city=Hà Nội" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn Hà Nội</span>
-                    <span className="text-[10px] text-slate-500">Phố cổ & Hồ Gươm</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/?city=Hồ Chí Minh" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn TP. Hồ Chí Minh</span>
-                    <span className="text-[10px] text-slate-500">Trung tâm Quận 1</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/?city=Phú Quốc" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn Phú Quốc</span>
-                    <span className="text-[10px] text-blue-400">Khu nghỉ dưỡng biển</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/?city=Nha Trang" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn Nha Trang</span>
-                    <span className="text-[10px] text-slate-500">Mặt biển Trần Phú</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/?city=Đà Lạt" className="text-slate-400 hover:text-blue-400 transition-colors flex items-center justify-between">
-                    <span>Khách sạn & Villa Đà Lạt</span>
-                    <span className="text-[10px] text-slate-500">Rừng thông</span>
-                  </Link>
-                </li>
+                <li><Link to="/" className="text-slate-400 transition-colors hover:text-blue-400">Khách sạn & Homestay</Link></li>
+                <li><Link to="/restaurants" className="text-slate-400 transition-colors hover:text-blue-400">Nhà hàng & Đặt bàn</Link></li>
+                <li><Link to="/tours" className="text-slate-400 transition-colors hover:text-blue-400">Tour & Điểm đến</Link></li>
+                <li><Link to="/news" className="text-slate-400 transition-colors hover:text-blue-400">Tin tức du lịch</Link></li>
               </ul>
             </div>
 
-            {/* Col 3: Dịch vụ & Chính sách */}
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Dịch Vụ & Hỗ Trợ</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-white">Hỗ trợ khách hàng</h4>
               <ul className="mt-3 space-y-2 text-xs">
-                <li>
-                  <Link to="/policies" className="text-slate-400 hover:text-blue-400 transition-colors">
-                    Chính sách lưu trú & Câu hỏi Q&A
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/policies" className="text-slate-400 hover:text-blue-400 transition-colors">
-                    Chính sách hủy phòng & Hoàn tiền tự động
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/policies" className="text-slate-400 hover:text-blue-400 transition-colors">
-                    Điều khoản sử dụng dịch vụ & Bảo mật
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/my-bookings" className="text-slate-400 hover:text-blue-400 transition-colors">
-                    Tra cứu & Quản lý đơn đặt phòng
-                  </Link>
-                </li>
-                <li className="pt-2 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-                  Dịch vụ Concierge
-                </li>
-                <li>
-                  <span className="text-slate-400">Đưa đón sân bay 4 - 7 chỗ & VIP Limousine</span>
-                </li>
-                <li>
-                  <span className="text-slate-400">Buffet ẩm thực & Phục vụ phòng 24/7</span>
-                </li>
+                <li><Link to="/policies" className="text-slate-400 transition-colors hover:text-blue-400">Điều khoản & Chính sách</Link></li>
+                <li><Link to="/policies#huy-phong" className="text-slate-400 transition-colors hover:text-blue-400">Hủy phòng & Hoàn tiền</Link></li>
+                <li><Link to="/policies#bao-mat" className="text-slate-400 transition-colors hover:text-blue-400">Bảo mật dữ liệu cá nhân</Link></li>
+                <li><Link to="/my-bookings" className="text-slate-400 transition-colors hover:text-blue-400">Quản lý đơn đặt phòng</Link></li>
               </ul>
             </div>
 
-            {/* Col 4: Thanh toán & Chứng nhận tin cậy */}
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Thanh Toán & Chứng Nhận</h4>
-              <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-                Thanh toán linh hoạt, tức thì qua cổng thanh toán bảo mật tiêu chuẩn quốc tế:
+              <h4 className="text-sm font-bold uppercase tracking-wider text-white">Thanh toán</h4>
+              <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                Thanh toán tại cơ sở khi nhận phòng, hoặc trực tuyến bằng thẻ, chuyển khoản, ví điện tử.
               </p>
-
-              {/* Payment badges */}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {['VietQR', 'Visa', 'Mastercard', 'JCB', 'MoMo', 'VNPay', 'ZaloPay', 'Tiền mặt'].map((p) => (
-                  <span
-                    key={p}
-                    className="inline-flex items-center rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-[11px] font-semibold text-slate-300 shadow-xs"
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-
-              {/* Security badges */}
-              <div className="mt-4 space-y-1.5">
-                <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-2.5 py-1.5 text-[11px] text-emerald-400">
-                  <span>🔒</span>
-                  <span className="font-semibold text-slate-200">Bảo mật SSL 256-bit DigiCert CA</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-2.5 py-1.5 text-[11px] text-blue-400">
-                  <span>🛡️</span>
-                  <span className="font-semibold text-slate-200">Chứng nhận PCI-DSS Compliant</span>
-                </div>
-              </div>
+              <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+                Cổng thanh toán trực tuyến đang chạy ở chế độ thử nghiệm: không trừ tiền thật.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar: Legal & Copyright */}
-        <div className="border-t border-slate-900 bg-slate-950 px-4 py-6 text-center text-xs text-slate-500">
-          <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-3">
-            <div className="text-left text-[11px] text-slate-500 max-w-2xl">
-              <p>
-                <strong>CÔNG TY CỔ PHẦN CÔNG NGHỆ VÀ DỊCH VỤ DU LỊCH QUICKSTAY</strong> · GPĐKKD số: <strong>0104850587</strong> do Sở Kế hoạch và Đầu tư TP. Hà Nội cấp ngày 02/11/2026.
-              </p>
-            </div>
-            <div className="text-right text-[11px] text-slate-500">
-              <p>© {new Date().getFullYear()} QuickStay Corporation. All rights reserved.</p>
-              <p className="mt-0.5 text-blue-400 font-medium">QuickStay — Your stay, your way.</p>
-            </div>
+        <div className="border-t border-slate-900 px-4 py-6 text-xs text-slate-500">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 md:flex-row">
+            <p>© {new Date().getFullYear()} QuickStay · Dự án đào tạo thực tế (OJT).</p>
+            <p className="font-medium text-blue-400">QuickStay — Your stay, your way.</p>
           </div>
         </div>
       </footer>
@@ -620,7 +466,6 @@ export default function Layout() {
       {/* Auxiliary Modals & Overlays */}
       <EmailInboxModal isOpen={showInbox} onClose={() => setShowInbox(false)} />
       <ChatWidget />
-      <AdCornerPopup />
       <CookieConsentBanner />
 
       {/* Modal xác nhận Đăng xuất */}

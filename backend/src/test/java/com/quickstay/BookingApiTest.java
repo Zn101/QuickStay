@@ -314,13 +314,17 @@ class BookingApiTest extends ApiTestBase {
     }
 
     @Test
-    void TC_BOOK_11b_only_pending_booking_can_be_cancelled() throws Exception {
-        for (BookingStatus status : new BookingStatus[]{BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN,
+    void TC_BOOK_11b_only_pending_or_confirmed_booking_can_be_cancelled() throws Exception {
+        long confirmed = pendingBooking();
+        setStatus(confirmed, BookingStatus.CONFIRMED);
+        cancel(confirmed, customer).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        for (BookingStatus status : new BookingStatus[]{BookingStatus.CHECKED_IN,
                 BookingStatus.COMPLETED, BookingStatus.CANCELLED}) {
             long id = pendingBooking();
             setStatus(id, status);
             cancel(id, customer).andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.message").value("Chi huy duoc dat phong dang cho xac nhan (PENDING)"));
+                    .andExpect(jsonPath("$.message").value("Chi huy duoc don dang cho xac nhan hoac da xac nhan"));
             assertEquals(status, bookings.findById(id).orElseThrow().getStatus(), "don khong doi");
             setStatus(id, BookingStatus.CANCELLED);   // tra lai phong cho vong lap sau
         }

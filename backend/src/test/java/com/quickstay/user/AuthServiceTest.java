@@ -34,7 +34,7 @@ class AuthServiceTest {
         when(encoder.encode("secret123")).thenReturn("HASH");
         when(jwt.generate(any())).thenReturn("TOKEN");
 
-        var res = auth.register(new RegisterRequest("  An@Test.COM ", "secret123", "  Nguyen An ", " "));
+        var res = auth.register(new RegisterRequest("  An@Test.COM ", "secret123", "  Nguyen An ", " ", true));
 
         ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
         verify(users).save(saved.capture());
@@ -53,7 +53,7 @@ class AuthServiceTest {
         when(users.existsByEmail("an@test.com")).thenReturn(true);
 
         ApiException e = assertThrows(ApiException.class,
-                () -> auth.register(new RegisterRequest("AN@test.com", "secret123", "An", null)));
+                () -> auth.register(new RegisterRequest("AN@test.com", "secret123", "An", null, true)));
 
         assertEquals(HttpStatus.CONFLICT, e.getStatus());
         verify(users, never()).save(any());

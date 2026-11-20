@@ -41,7 +41,7 @@ public abstract class ApiTestBase {
 
     protected String registerCustomer(String email) throws Exception {
         MvcResult r = mvc.perform(withBody(post("/api/auth/register"), null,
-                Map.of("email", email, "password", "secret123", "fullName", "Khach Test", "phone", "0900000000")))
+                Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "Khach Test", "phone", "0900000000")))
                 .andReturn();
         return read(r).get("token").asText();
     }

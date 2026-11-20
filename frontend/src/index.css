@@ -10,11 +10,11 @@
    ========================================================================== */
 
 :root {
-  /* Brand colors - Reverted to QuickStay Original Sky Blue */
-  --color-primary: #0284C7;
-  --color-primary-hover: #0369A1;
-  --color-primary-active: #075985;
-  --color-primary-subtle: #E0F2FE;
+  /* Màu thương hiệu: blue-600 (trùng brand-600 trong tailwind.config.js, dùng chung sáng / tối) */
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-active: #1E40AF;
+  --color-primary-subtle: #DBEAFE;
 
   /* Surfaces & Backgrounds - Keep the subtle blue-tinted white background */
   --color-bg-page: #F8FAFC;

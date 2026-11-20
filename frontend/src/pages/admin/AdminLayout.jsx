@@ -87,8 +87,8 @@ export default function AdminLayout() {
                 </svg>
               </div>
               <div>
-                <h2 className="text-sm font-black tracking-tight text-slate-900">Hotel<span className="text-sky-600">Admin</span></h2>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Workspace</p>
+                <h2 className="text-sm font-black tracking-tight text-slate-900">Quick<span className="text-sky-600">Stay</span></h2>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quản trị hệ thống</p>
               </div>
             </div>
 
@@ -302,7 +302,7 @@ export default function AdminLayout() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-xs">
               QS
             </div>
-            <span className="font-bold text-sm text-slate-800">Hotel Admin</span>
+            <span className="font-bold text-sm text-slate-800">QuickStay Admin</span>
           </div>
 
           <button

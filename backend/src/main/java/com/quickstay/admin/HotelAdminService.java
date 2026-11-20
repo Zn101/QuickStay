@@ -5,6 +5,7 @@ import com.quickstay.admin.HotelAdminDtos.HotelResponse;
 import com.quickstay.booking.BookingRepository;
 import com.quickstay.booking.BookingStatus;
 import com.quickstay.config.ApiException;
+import com.quickstay.hotel.ContentLines;
 import com.quickstay.hotel.Hotel;
 import com.quickstay.hotel.HotelRepository;
 import com.quickstay.hotel.RoomRepository;
@@ -143,5 +144,26 @@ public class HotelAdminService {
         hotel.setDescription(req.description());
         hotel.setImageUrl(req.imageUrl());
         hotel.setAmenities(req.amenities());
+
+        // Noi dung trang chi tiet: null = giu nguyen, chuoi rong = xoa
+        ContentLines.requireTime(req.checkInTime(), "Gio nhan phong");
+        ContentLines.requireTime(req.checkOutTime(), "Gio tra phong");
+        ContentLines.requireImageLines(req.gallery(), "Thu vien anh");
+        ContentLines.requireRows(req.houseRules(), 2, -1, "Quy dinh");
+        ContentLines.requireRows(req.transfers(), 5, 4, "Dua don san bay");
+        ContentLines.requireRows(req.dining(), 5, -1, "Am thuc");
+        ContentLines.requireRows(req.attractions(), 5, 4, "Diem tham quan");
+        if (req.gallery() != null) hotel.setGallery(emptyToNull(ContentLines.normalize(req.gallery())));
+        if (req.checkInTime() != null) hotel.setCheckInTime(emptyToNull(req.checkInTime()));
+        if (req.checkOutTime() != null) hotel.setCheckOutTime(emptyToNull(req.checkOutTime()));
+        if (req.houseRules() != null) hotel.setHouseRules(emptyToNull(ContentLines.normalize(req.houseRules())));
+        if (req.airportName() != null) hotel.setAirportName(emptyToNull(req.airportName()));
+        if (req.transfers() != null) hotel.setTransfers(emptyToNull(ContentLines.normalize(req.transfers())));
+        if (req.dining() != null) hotel.setDining(emptyToNull(ContentLines.normalize(req.dining())));
+        if (req.attractions() != null) hotel.setAttractions(emptyToNull(ContentLines.normalize(req.attractions())));
+    }
+
+    private static String emptyToNull(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 }

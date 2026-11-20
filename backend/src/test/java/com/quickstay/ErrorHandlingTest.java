@@ -170,7 +170,7 @@ class ErrorHandlingTest extends ApiTestBase {
     @Test
     void TC_EH005_400_register_invalid_email() throws Exception {
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", "khong-phai-email",
+                        Map.of("acceptedTerms", true, "email", "khong-phai-email",
                                "password", "secret123",
                                "fullName", "Test User")))
                 .andExpect(status().isBadRequest())
@@ -181,7 +181,7 @@ class ErrorHandlingTest extends ApiTestBase {
     @Test
     void TC_EH006_400_register_short_password() throws Exception {
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", newCustomerEmail(),
+                        Map.of("acceptedTerms", true, "email", newCustomerEmail(),
                                "password", "123",
                                "fullName", "Test User")))
                 .andExpect(status().isBadRequest())
@@ -315,7 +315,7 @@ class ErrorHandlingTest extends ApiTestBase {
         registerCustomer(email);
 
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", email,
+                        Map.of("acceptedTerms", true, "email", email,
                                "password", "secret123",
                                "fullName", "Duplicate")))
                 .andExpect(status().isConflict())

@@ -19,7 +19,7 @@ class AuthApiTest extends ApiTestBase {
     void TC_AUTH_01_register_returns_token_and_customer_role() throws Exception {
         String email = newCustomerEmail();
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", email, "password", "secret123", "fullName", "An", "phone", "0900")))
+                        Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "An", "phone", "0900")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.user.email").value(email))
@@ -41,7 +41,7 @@ class AuthApiTest extends ApiTestBase {
         String email = newCustomerEmail();
         registerCustomer(email);
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", "  " + email.toUpperCase() + " ", "password", "secret123", "fullName", "An")))
+                        Map.of("acceptedTerms", true, "email", "  " + email.toUpperCase() + " ", "password", "secret123", "fullName", "An")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Email da duoc su dung"));
     }
@@ -49,13 +49,13 @@ class AuthApiTest extends ApiTestBase {
     @Test
     void TC_AUTH_04_register_validates_input() throws Exception {
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", "not-an-email", "password", "123", "fullName", "")))
+                        Map.of("acceptedTerms", true, "email", "not-an-email", "password", "123", "fullName", "")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").isNotEmpty());
-        mvc.perform(withBody(post("/api/auth/register"), null, Map.of("email", newCustomerEmail())))
+        mvc.perform(withBody(post("/api/auth/register"), null, Map.of("acceptedTerms", true, "email", newCustomerEmail())))
                 .andExpect(status().isBadRequest());
         mvc.perform(withBody(post("/api/auth/register"), null,
-                        Map.of("email", newCustomerEmail(), "password", "a".repeat(73), "fullName", "An")))
+                        Map.of("acceptedTerms", true, "email", newCustomerEmail(), "password", "a".repeat(73), "fullName", "An")))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/auth/register").contentType("application/json").content("{khong-phai-json"))
                 .andExpect(status().isBadRequest())

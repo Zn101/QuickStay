@@ -6,42 +6,6 @@ import { Spinner, ErrorBox, HotelImage } from '../components/ui'
 import { useTranslation } from '../lib/i18n'
 import { useAuth } from '../store/authStore'
 
-// Multi-photo galleries tailored by room category
-const ROOM_GALLERIES = {
-  villa: [
-    { url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=85', caption: 'Bể bơi vô cực & Sân hiên riêng biệt' },
-    { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80', caption: 'Không gian phòng ngủ Master King' },
-    { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng tắm cẩm thạch bồn tắm lộ thiên' },
-    { url: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng khách mở đón gió biển' },
-  ],
-  suite: [
-    { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1400&q=85', caption: 'Phòng ngủ gia đình cao cấp' },
-    { url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80', caption: 'Khu vực tiếp khách & Bàn làm việc' },
-    { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng tắm vách kính vòi sen tăng áp' },
-    { url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80', caption: 'Ban công ngắm cảnh thành phố' },
-  ],
-  deluxe: [
-    { url: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1400&q=85', caption: 'Phòng Deluxe Hướng biển thoáng đãng' },
-    { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80', caption: 'Giường đệm lò xo cao cấp King Size' },
-    { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng tắm tiện nghi đồ dùng cao cấp' },
-    { url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80', caption: 'Góc thư giãn trà & cà phê' },
-  ],
-  standard: [
-    { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=85', caption: 'Phòng Standard tiêu chuẩn ấm cúng' },
-    { url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80', caption: 'Không gian nghỉ ngơi yên tĩnh' },
-    { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80', caption: 'Vòi sen sảng khoái' },
-    { url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80', caption: 'Bàn làm việc và Smart TV' },
-  ],
-}
-
-function getGalleryForRoom(roomType) {
-  const t = (roomType || '').toLowerCase()
-  if (t.includes('villa') || t.includes('bungalow') || t.includes('beachfront')) return ROOM_GALLERIES.villa
-  if (t.includes('suite') || t.includes('family') || t.includes('executive')) return ROOM_GALLERIES.suite
-  if (t.includes('deluxe') || t.includes('ocean') || t.includes('premier')) return ROOM_GALLERIES.deluxe
-  return ROOM_GALLERIES.standard
-}
-
 export default function RoomDetail() {
   const { hotelId, roomId } = useParams()
   const [searchParams] = useSearchParams()
@@ -104,7 +68,16 @@ export default function RoomDetail() {
     )
   }
 
-  const gallery = getGalleryForRoom(room.roomType)
+  // Ảnh loại phòng do đối tác tải lên; chưa có thì dùng ảnh đại diện cơ sở
+  const gallery = (room.images?.length ? room.images : [hotel?.imageUrl])
+    .filter(Boolean)
+    .map((url, idx) => ({ url, caption: `${room.roomType} · ảnh ${idx + 1}` }))
+  const specs = [
+    { icon: '👥', label: 'Sức chứa', value: `${room.capacity} khách` },
+    room.areaSqm ? { icon: '📐', label: 'Diện tích', value: `${room.areaSqm} m²` } : null,
+    room.bedInfo ? { icon: '🛏️', label: 'Giường ngủ', value: room.bedInfo } : null,
+    { icon: '🏨', label: 'Số phòng loại này', value: `${room.quantity} phòng` },
+  ].filter(Boolean)
   const nights = nightsBetween(checkIn, checkOut)
   const totalPrice = nights > 0 ? room.pricePerNight * nights : room.pricePerNight
   const isAvailable = typeof room.available === 'number' ? room.available > 0 : true
@@ -136,11 +109,8 @@ export default function RoomDetail() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-6">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="rounded-full bg-blue-100 dark:bg-blue-950 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
-                ⭐ Hạng phòng nổi bật
-              </span>
               <span className="rounded-full bg-emerald-50 dark:bg-emerald-950 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
-                {isAvailable ? `Còn ${room.available ?? 3} phòng trống` : 'Hết phòng'}
+                {!isAvailable ? 'Hết phòng' : typeof room.available === 'number' ? `Còn ${room.available} phòng trống` : `${room.quantity} phòng loại này`}
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -210,33 +180,19 @@ export default function RoomDetail() {
                 {t('room_specs')}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 p-4 border border-blue-100/60 dark:border-slate-700/60">
-                  <span className="text-xl">👥</span>
-                  <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Sức chứa</p>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">{room.capacity} Khách</p>
-                </div>
-                <div className="rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 p-4 border border-blue-100/60 dark:border-slate-700/60">
-                  <span className="text-xl">📐</span>
-                  <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Diện tích</p>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">45 - 65 m²</p>
-                </div>
-                <div className="rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 p-4 border border-blue-100/60 dark:border-slate-700/60">
-                  <span className="text-xl">🛏️</span>
-                  <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Giường ngủ</p>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">King Size</p>
-                </div>
-                <div className="rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 p-4 border border-blue-100/60 dark:border-slate-700/60">
-                  <span className="text-xl">🌅</span>
-                  <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Tầm nhìn</p>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">View thoáng đãng</p>
-                </div>
+                {specs.map((sp) => (
+                  <div key={sp.label} className="rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 p-4 border border-blue-100/60 dark:border-slate-700/60">
+                    <span className="text-xl">{sp.icon}</span>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">{sp.label}</p>
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">{sp.value}</p>
+                  </div>
+                ))}
               </div>
 
               <div>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">Mô tả phòng</h3>
                 <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  {room.description ||
-                    'Phòng nghỉ được thiết kế tinh tế với sàn gỗ cao cấp, cửa kính lớn kịch trần đón ánh sáng tự nhiên, bàn làm việc doanh nhân và phòng tắm đá cẩm thạch sang trọng.'}
+                  {room.description || 'Cơ sở chưa cập nhật mô tả cho loại phòng này.'}
                 </p>
               </div>
             </div>
@@ -246,23 +202,26 @@ export default function RoomDetail() {
               <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
                 {t('room_features_title')}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { title: 'Miễn phí hủy phòng', desc: 'Linh hoạt hủy phòng miễn phí trước 24 giờ nhận phòng.', icon: '🛡️' },
-                  { title: 'Buffet sáng hảo hạng', desc: 'Lựa chọn bao gồm bữa sáng Á - Âu đa dạng mỗi ngày.', icon: '🍳' },
-                  { title: 'Nước suối, trà & cà phê máy', desc: 'Máy pha cà phê viên nén phục vụ tại phòng 24/7.', icon: '☕' },
-                  { title: 'Phòng tắm bồn & vòi sen', desc: 'Bồn tắm ngâm thư giãn cùng bộ đồ dùng hữu cơ cao cấp.', icon: '🛁' },
-                  { title: 'Wifi tốc độ cao không giới hạn', desc: 'Đường truyền cáp quang riêng biệt đáp ứng làm việc trực tuyến.', icon: '📶' },
-                  { title: 'Hỗ trợ đưa đón sân bay', desc: 'Dịch vụ đón tiễn chuẩn giờ với xe du lịch cao cấp.', icon: '🚗' },
-                ].map((perk) => (
-                  <div key={perk.title} className="flex items-start gap-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4 border border-slate-100 dark:border-slate-700">
-                    <span className="text-2xl shrink-0">{perk.icon}</span>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{perk.title}</h4>
-                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{perk.desc}</p>
-                    </div>
-                  </div>
-                ))}
+              {room.amenities?.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {room.amenities.map((a) => (
+                    <span key={a} className="rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      ✓ {a}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Cơ sở chưa cập nhật tiện nghi cho loại phòng này.</p>
+              )}
+              <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 p-4 border border-emerald-100 dark:border-emerald-900/60">
+                <span className="text-2xl shrink-0">🛡️</span>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Hủy miễn phí trước ngày nhận phòng</h4>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Hủy trên QuickStay đến hết ngày trước ngày nhận phòng; đơn đã thanh toán trực tuyến được hoàn 100%.{' '}
+                    <Link to="/policies" className="font-bold text-blue-600 hover:underline dark:text-blue-400">Xem chính sách</Link>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -309,8 +268,8 @@ export default function RoomDetail() {
                   <span className="font-bold text-slate-900 dark:text-white">{formatVnd(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Phí dịch vụ & Thuế VAT (8%)</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Đã bao gồm</span>
+                  <span>Phí đặt phòng QuickStay</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Miễn phí</span>
                 </div>
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-baseline">
                   <span className="text-sm font-extrabold text-slate-900 dark:text-white">{t('booking_total')}</span>

@@ -226,13 +226,13 @@ class BookingConcurrencyTest {
     }
 
     @Test
-    void customer_cancel_and_admin_confirm_at_same_time_only_one_wins() throws Exception {
+    void customer_cancel_and_admin_cancel_at_same_time_only_one_wins() throws Exception {
         Room r = room(20);
         for (int i = 0; i < 10; i++) {
             long id = service.create(email, new BookingRequest(r.getId(), day(50), day(51), 1, "Khach", "0900", null)).id();
             List<Callable<BookingStatus>> tasks = List.of(
                     () -> service.cancel(email, id).status(),
-                    () -> service.changeStatus(id, BookingStatus.CONFIRMED).status());
+                    () -> service.changeStatus(id, BookingStatus.CANCELLED).status());
 
             List<Object> results = race(tasks);
 

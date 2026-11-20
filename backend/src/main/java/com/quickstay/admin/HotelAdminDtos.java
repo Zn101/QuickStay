@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Request/Response DTO cho cac API quan ly khach san cua Admin (T082).
+ * Request/Response DTO cho cac API quan ly khach san cua Admin (T082) va doi tac (/api/partner/hotel).
  * Su dung record nhat quan voi AuthDtos.java.
  */
 public final class HotelAdminDtos {
@@ -13,8 +13,10 @@ public final class HotelAdminDtos {
     private HotelAdminDtos() {}
 
     /**
-     * Body cho POST /api/admin/hotels va PUT /api/admin/hotels/{id}.
+     * Body cho POST /api/admin/hotels, PUT /api/admin/hotels/{id} va PUT /api/partner/hotel.
      * name va city bat buoc; cac truong con lai tuy chon.
+     * Cac truong noi dung trang chi tiet (gallery ... attractions): null = giu nguyen, chuoi rong = xoa,
+     * de form cu chi gui thong tin co ban khong vo tinh xoa noi dung doi tac da nhap.
      */
     public record HotelRequest(
             @NotBlank(message = "Ten khach san khong duoc de trong")
@@ -35,7 +37,27 @@ public final class HotelAdminDtos {
             String imageUrl,
 
             @Size(max = 1000, message = "Tien nghi khong qua 1000 ky tu")
-            String amenities
+            String amenities,
+
+            @Size(max = 4000, message = "Thu vien anh khong qua 4000 ky tu")
+            String gallery,
+
+            @Size(max = 5) String checkInTime,
+            @Size(max = 5) String checkOutTime,
+
+            @Size(max = 4000, message = "Quy dinh khong qua 4000 ky tu")
+            String houseRules,
+
+            @Size(max = 255) String airportName,
+
+            @Size(max = 2000, message = "Dua don san bay khong qua 2000 ky tu")
+            String transfers,
+
+            @Size(max = 2000, message = "Am thuc khong qua 2000 ky tu")
+            String dining,
+
+            @Size(max = 2000, message = "Diem tham quan khong qua 2000 ky tu")
+            String attractions
     ) {
         /** Trim cac truong String de tranh luu khoang trang thua. */
         public HotelRequest {
@@ -45,6 +67,14 @@ public final class HotelAdminDtos {
             description = description == null || description.isBlank() ? null : description.trim();
             imageUrl    = imageUrl    == null || imageUrl.isBlank()    ? null : imageUrl.trim();
             amenities   = amenities   == null || amenities.isBlank()   ? null : amenities.trim();
+            checkInTime  = checkInTime  == null ? null : checkInTime.trim();
+            checkOutTime = checkOutTime == null ? null : checkOutTime.trim();
+            airportName  = airportName  == null ? null : airportName.trim();
+        }
+
+        /** Chi thong tin co ban (giu nguyen noi dung trang chi tiet). */
+        public HotelRequest(String name, String city, String address, String description, String imageUrl, String amenities) {
+            this(name, city, address, description, imageUrl, amenities, null, null, null, null, null, null, null, null);
         }
     }
 
@@ -59,7 +89,15 @@ public final class HotelAdminDtos {
             String address,
             String description,
             String imageUrl,
-            String amenities
+            String amenities,
+            String gallery,
+            String checkInTime,
+            String checkOutTime,
+            String houseRules,
+            String airportName,
+            String transfers,
+            String dining,
+            String attractions
     ) {
         public static HotelResponse of(Hotel h) {
             return new HotelResponse(
@@ -69,7 +107,15 @@ public final class HotelAdminDtos {
                     h.getAddress(),
                     h.getDescription(),
                     h.getImageUrl(),
-                    h.getAmenities()
+                    h.getAmenities(),
+                    h.getGallery(),
+                    h.getCheckInTime(),
+                    h.getCheckOutTime(),
+                    h.getHouseRules(),
+                    h.getAirportName(),
+                    h.getTransfers(),
+                    h.getDining(),
+                    h.getAttractions()
             );
         }
     }

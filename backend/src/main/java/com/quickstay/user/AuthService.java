@@ -22,6 +22,9 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
+    /** Phien ban Dieu khoan & Chinh sach hien hanh (trang /policies); doi noi dung chinh sach thi tang phien ban. */
+    public static final String TERMS_VERSION = "2026-11-20";
+
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
@@ -53,6 +56,12 @@ public class AuthService {
         u.setPhone(req.phone());
         u.setRole(Role.CUSTOMER);
         u.setEmailVerified(false);
+        // Ghi nhan dong y chinh sach (validate @AssertTrue o DTO; kiem tra lai phong khi goi truc tiep)
+        if (!Boolean.TRUE.equals(req.acceptedTerms())) {
+            throw ApiException.badRequest("Ban can dong y Dieu khoan & Chinh sach cua QuickStay");
+        }
+        u.setTermsAcceptedAt(Instant.now());
+        u.setTermsVersion(TERMS_VERSION);
         String token = UUID.randomUUID().toString();
         u.setVerificationToken(TokenHasher.sha256(token));
         u.setVerificationTokenExpiresAt(Instant.now().plus(24, ChronoUnit.HOURS));

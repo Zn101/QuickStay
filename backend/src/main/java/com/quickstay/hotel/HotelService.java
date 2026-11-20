@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +27,26 @@ public class HotelService {
         this.hotels = hotels;
         this.rooms = rooms;
         this.bookings = bookings;
+    }
+
+    /** Lich dong phong do doi tac khai bao; tuy chon de cac unit test cu khong can mock them. */
+    private RoomClosureRepository closures;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setClosures(RoomClosureRepository closures) {
+        this.closures = closures;
+    }
+
+    /** So phong khong ban duoc theo tung loai phong = don chong lan + phong doi tac dong. */
+    private Map<Long, Long> unavailableByRoom(Collection<Long> hotelIds, LocalDate checkIn, LocalDate checkOut) {
+        Map<Long, Long> map = new java.util.HashMap<>();
+        bookings.countOverlappingByHotels(hotelIds, checkIn, checkOut)
+                .forEach(c -> map.merge(c.roomId(), c.booked(), Long::sum));
+        if (closures != null) {
+            closures.sumOverlappingByHotels(hotelIds, checkIn, checkOut)
+                    .forEach(c -> map.merge(c.roomId(), c.booked(), Long::sum));
+        }
+        return map;
     }
 
     /** GET /api/hotels: danh sach, tim kiem (T049), loc theo phong (T050) va loc theo ngay nhan/tra. */
@@ -74,8 +95,7 @@ public class HotelService {
         }
 
         // 1 truy van duy nhat dem so don chong lan cua toan bo cac khach san tren (tranh N+1)
-        Map<Long, Long> bookedMap = bookings.countOverlappingByHotels(hotelIds, s.checkIn(), s.checkOut()).stream()
-                .collect(Collectors.toMap(RoomBookedCount::roomId, RoomBookedCount::booked));
+        Map<Long, Long> bookedMap = unavailableByRoom(hotelIds, s.checkIn(), s.checkOut());
 
         // Nhom phong theo hotel_id trong bo nho (O(1) lookup)
         Map<Long, List<Room>> roomsByHotel = allRooms.stream()
@@ -144,8 +164,7 @@ public class HotelService {
         if (checkIn == null) {
             return list.stream().map(r -> RoomView.of(r, null)).toList();
         }
-        Map<Long, Long> booked = bookings.countOverlappingByHotel(hotelId, checkIn, checkOut).stream()
-                .collect(Collectors.toMap(RoomBookedCount::roomId, RoomBookedCount::booked));
+        Map<Long, Long> booked = unavailableByRoom(List.of(hotelId), checkIn, checkOut);
         return list.stream()
                 .map(r -> RoomView.of(r, r.remaining(booked.getOrDefault(r.getId(), 0L))))
                 .toList();

@@ -20,7 +20,9 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
      */
     String SEARCH_QUERY = """
             select new com.quickstay.hotel.HotelSummary(
-                h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities, min(r.pricePerNight))
+                h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities, min(r.pricePerNight),
+                (select avg(rv.rating) from HotelReview rv where rv.hotel = h),
+                (select count(rv2) from HotelReview rv2 where rv2.hotel = h))
             from Hotel h
             left join Room r on r.hotel = h
                 and (:roomType is null or lower(r.roomType) = :roomType)
@@ -68,7 +70,9 @@ public interface HotelRepository extends JpaRepository<Hotel, Long> {
     /** Mot khach san kem gia thap nhat tren moi loai phong; rong neu khong ton tai. */
     @Query("""
             select new com.quickstay.hotel.HotelSummary(
-                h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities, min(r.pricePerNight))
+                h.id, h.name, h.city, h.address, h.description, h.imageUrl, h.amenities, min(r.pricePerNight),
+                (select avg(rv.rating) from HotelReview rv where rv.hotel = h),
+                (select count(rv2) from HotelReview rv2 where rv2.hotel = h))
             from Hotel h
             left join Room r on r.hotel = h
             where h.id = :id

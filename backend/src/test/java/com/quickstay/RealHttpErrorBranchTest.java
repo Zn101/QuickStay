@@ -78,7 +78,7 @@ class RealHttpErrorBranchTest {
 
     private String register(String email) throws Exception {
         ResponseEntity<String> r = call(HttpMethod.POST, "/api/auth/register", null,
-                Map.of("email", email, "password", "secret123", "fullName", "Khach Test"));
+                Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "Khach Test"));
         return parse(r).get("token").asText();
     }
 
@@ -159,7 +159,7 @@ class RealHttpErrorBranchTest {
                 futures.add(pool.submit(() -> {
                     go.await();
                     return call(HttpMethod.POST, "/api/auth/register", null,
-                            Map.of("email", email, "password", "secret123", "fullName", "Race"));
+                            Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "Race"));
                 }));
             }
             go.countDown();

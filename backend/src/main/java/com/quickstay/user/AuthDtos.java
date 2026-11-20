@@ -15,7 +15,11 @@ public final class AuthDtos {
             @NotBlank @Size(min = 6, message = "mat khau toi thieu 6 ky tu")
             @MaxUtf8Bytes(value = 72, message = "mat khau toi da 72 byte") String password,
             @NotBlank @Size(max = 255) String fullName,
-            @Size(max = 30) String phone) {
+            @Size(max = 30) String phone,
+            /** Bat buoc dong y Dieu khoan su dung & Chinh sach (trang /policies) truoc khi tao tai khoan. */
+            @jakarta.validation.constraints.NotNull(message = "Ban can dong y Dieu khoan & Chinh sach cua QuickStay")
+            @jakarta.validation.constraints.AssertTrue(message = "Ban can dong y Dieu khoan & Chinh sach cua QuickStay")
+            Boolean acceptedTerms) {
 
         public RegisterRequest {
             email = normalizeEmail(email);

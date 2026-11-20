@@ -33,6 +33,7 @@ class AuthProfileEdgeCaseTest extends ApiTestBase {
         m.put("email", newCustomerEmail());
         m.put("password", "secret123");
         m.put("fullName", "Khach Test");
+        m.put("acceptedTerms", true);
         return m;
     }
 

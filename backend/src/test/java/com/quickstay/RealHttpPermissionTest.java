@@ -90,7 +90,7 @@ class RealHttpPermissionTest {
     @BeforeEach
     void setUp() throws Exception {
         http.getRestTemplate().setRequestFactory(new JdkClientHttpRequestFactory());
-        customer = parse(call(HttpMethod.POST, "/api/auth/register", null, Map.of(
+        customer = parse(call(HttpMethod.POST, "/api/auth/register", null, Map.of("acceptedTerms", true, 
                 "email", "perm-" + UUID.randomUUID() + "@test.com", "password", "secret123", "fullName", "Khach"))).get("token").asText();
         admin = parse(call(HttpMethod.POST, "/api/auth/login", null,
                 Map.of("email", ADMIN_EMAIL, "password", ADMIN_PASSWORD))).get("token").asText();

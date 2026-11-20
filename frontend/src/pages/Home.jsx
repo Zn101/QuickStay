@@ -7,44 +7,8 @@ import { useAuth } from '../store/authStore'
 import { useTranslation } from '../lib/i18n'
 import { HotelImage, Spinner, ErrorBox } from '../components/ui'
 
-const HERO_SLIDES = [
-  {
-    url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1800&q=85',
-    thumb: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=600&q=80',
-    title: 'Amanoi Ocean Pool Villa',
-    subtitle: 'Vịnh Vĩnh Hy, Ninh Thuận • Biệt thự hướng biển',
-    city: 'Ninh Thuận',
-    rating: '4.98',
-    price: '12.500.000 ₫',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85',
-    thumb: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=600&q=80',
-    title: 'JW Marriott Emerald Bay',
-    subtitle: 'Bãi Khem, Phú Quốc • Kiến trúc Pháp cổ điển',
-    city: 'Phú Quốc',
-    rating: '4.96',
-    price: '7.800.000 ₫',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1800&q=85',
-    thumb: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80',
-    title: 'Six Senses Ninh Vân Bay',
-    subtitle: 'Nha Trang, Khánh Hòa • Khu nghỉ dưỡng biệt lập',
-    city: 'Nha Trang',
-    rating: '4.97',
-    price: '10.200.000 ₫',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1800&q=85',
-    thumb: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=600&q=80',
-    title: 'InterContinental Sun Peninsula',
-    subtitle: 'Bán đảo Sơn Trà, Đà Nẵng • Tuyệt tác nhiệt đới',
-    city: 'Đà Nẵng',
-    rating: '4.95',
-    price: '8.900.000 ₫',
-  },
-]
+// Ảnh nền trang trí của khu vực tìm kiếm (không gắn với cơ sở nào)
+const HERO_BACKDROP = 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1800&q=85'
 
 const POPULAR_CITIES = [
   {
@@ -225,7 +189,27 @@ export default function Home() {
     return baseList
   }, [cityStats, availableCities, hotels])
 
-  const currentSlide = HERO_SLIDES[activeSlide]
+  // Cơ sở nổi bật lấy từ dữ liệu thật: có ảnh, ưu tiên điểm đánh giá cao rồi giá thấp
+  const heroSlides = useMemo(
+    () =>
+      hotels
+        .filter((h) => h.imageUrl)
+        .slice()
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (Number(a.minPrice) || 0) - (Number(b.minPrice) || 0))
+        .slice(0, 4)
+        .map((h) => ({
+          id: h.id,
+          url: h.imageUrl,
+          title: h.name,
+          subtitle: [h.address, h.city].filter(Boolean).join(', '),
+          city: h.city,
+          rating: h.rating ? Number(h.rating).toFixed(1) : null,
+          reviewCount: h.reviewCount || 0,
+          price: h.minPrice ? formatMoney(h.minPrice, currencyDisplay) : null,
+        })),
+    [hotels, currencyDisplay],
+  )
+  const currentSlide = heroSlides.length ? heroSlides[activeSlide % heroSlides.length] : null
 
   // Danh sách lặp vô tận cho thanh cuộn Điểm đến (Seamless infinite loop ticker)
   const loopedDestinations = useMemo(() => {
@@ -276,7 +260,7 @@ export default function Home() {
   // Tự động chuyển slide ảnh nền Hero mỗi 5.5 giây
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length)
+      setActiveSlide((prev) => prev + 1)
     }, 5500)
     return () => clearInterval(timer)
   }, [])
@@ -372,7 +356,7 @@ export default function Home() {
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-amber-300">👑 Quyền Quản trị viên (Admin Mode)</span>
             <span className="text-slate-300 hidden md:inline">
-              — Mọi thao tác CRUD khách sạn & phòng tại Admin sẽ đồng bộ hiển thị tức thì trên giao diện này
+              — Thay đổi khách sạn & phòng tại trang Quản trị hiển thị ngay trên giao diện này
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -395,25 +379,9 @@ export default function Home() {
       {/* HERO SECTION VỚI SLIDESHOW CHUYỂN ĐỘNG & FLOATING CARDS */}
       <section className="relative overflow-hidden bg-slate-950 px-4 pt-16 pb-28 text-white sm:px-6 lg:pt-20 lg:pb-36">
         {/* Background Slideshow với hiệu ứng Ken Burns Zoom */}
-        {HERO_SLIDES.map((slide, index) => {
-          const isActive = index === activeSlide
-          return (
-            <div
-              key={slide.url}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                isActive ? 'z-0 opacity-100' : '-z-10 opacity-0'
-              }`}
-            >
-              <img
-                src={slide.url}
-                alt={slide.title}
-                className={`h-full w-full object-cover transition-transform duration-[9000ms] ease-out ${
-                  isActive ? 'scale-110' : 'scale-100'
-                }`}
-              />
-            </div>
-          )
-        })}
+        <div className="absolute inset-0 z-0">
+          <img src={HERO_BACKDROP} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+        </div>
 
         {/* Lớp phủ Gradient xanh biển sâu */}
         <div className="absolute inset-0 z-0 bg-gradient-to-r from-slate-950/95 via-blue-950/85 to-slate-950/75" />
@@ -423,16 +391,16 @@ export default function Home() {
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)]/60 to-transparent z-10" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="grid items-stretch gap-8 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-[1.05fr_0.95fr] lg:gap-10">
             {/* Cột trái: Tiêu đề + Thanh tìm kiếm nâng cao */}
-            <div className="flex flex-col justify-between">
+            <div className="flex min-w-0 flex-col justify-between">
               <div>
                 <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
                   {t('hero_badge')}
                 </div>
 
-                <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[54px]">
+                <h1 className="text-4xl font-extrabold leading-[1.12] tracking-tight sm:text-5xl lg:text-[44px] xl:text-[52px]">
                   Mỗi chuyến đi,
                   <br />
                   <span className="bg-gradient-to-r from-blue-200 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
@@ -447,7 +415,7 @@ export default function Home() {
               </div>
 
               {/* Chế độ Tìm kiếm: Tiêu chuẩn vs AI Tự nhiên (Natural Language Search) */}
-              <div className="mt-7 flex items-center gap-2">
+              <div className="mt-7 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSearchMode('STANDARD')}
@@ -802,17 +770,14 @@ export default function Home() {
           </div>
 
             {/* Cột phải: KHUNG ẢNH NỔI BẬT (Bigger, matching height with the left block, and wider) */}
+            {currentSlide && (
             <div className="relative hidden lg:flex flex-col justify-stretch w-full h-full">
               <div className="relative w-full h-full flex flex-col justify-stretch">
                 <div className="animate-presentation-float relative flex-1 flex flex-col overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
                   <div
-                    onClick={() => {
-                      if (currentSlide.city) {
-                        selectQuickCity(currentSlide.city)
-                      }
-                    }}
+                    onClick={() => navigate(`/hotels/${currentSlide.id}`)}
                     className="group relative flex-1 min-h-[460px] xl:min-h-[500px] overflow-hidden rounded-2xl cursor-pointer"
-                    title="Bấm để xem điểm đến này"
+                    title="Xem chi tiết cơ sở"
                   >
                     <img
                       key={currentSlide.url}
@@ -824,15 +789,21 @@ export default function Home() {
 
                     {/* Badge Đánh giá */}
                     <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-cyan-300 backdrop-blur-md shadow-md border border-white/15">
-                      <span className="text-amber-400">★ {currentSlide.rating}</span>
-                      <span>·</span>
-                      <span className="text-slate-200">Tuyệt hảo</span>
+                      {currentSlide.rating ? (
+                        <>
+                          <span className="text-amber-400">★ {currentSlide.rating}</span>
+                          <span>·</span>
+                          <span className="text-slate-200">{currentSlide.reviewCount} đánh giá</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-200">Chưa có đánh giá</span>
+                      )}
                     </div>
 
                     {/* Badge Độc quyền */}
                     <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-blue-600/90 px-3 py-1 text-xs font-bold text-white backdrop-blur-md shadow-md">
                       <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                      <span>Được đặt nhiều nhất</span>
+                      <span>Cơ sở nổi bật</span>
                     </div>
 
                     {/* Khối thông tin góc dưới ảnh */}
@@ -846,17 +817,20 @@ export default function Home() {
                         </p>
                         <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{currentSlide.subtitle}</p>
                       </div>
+                      {currentSlide.price && (
                       <div className="shrink-0 text-right">
                         <span className="block text-[11px] text-slate-400">Giá phòng từ</span>
                         <span className="inline-block rounded-xl bg-white px-3 py-1 text-sm font-extrabold text-slate-900 shadow-lg group-hover:bg-cyan-300 group-hover:text-slate-950 transition-colors">
                           {currentSlide.price}
                         </span>
                       </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </section>
@@ -1081,11 +1055,9 @@ export default function Home() {
   )
 }
 
+/** Điểm đánh giá thật (trung bình sao của khách); null khi cơ sở chưa có đánh giá. */
 export function getHotelRating(hotel) {
-  if (hotel?.rating) return Number(hotel.rating).toFixed(1)
-  const idNum = Number(hotel?.id) || 1
-  const ratings = ['4.9', '4.8', '4.7', '4.9', '4.8', '4.6', '4.9', '4.7']
-  return ratings[(idNum - 1) % ratings.length]
+  return hotel?.rating ? Number(hotel.rating).toFixed(1) : null
 }
 
 function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin, index = 0 }) {
@@ -1142,10 +1114,13 @@ function HotelCard({ hotel, checkIn, checkOut, currency, isAdmin, index = 0 }) {
         </div>
 
         {/* Huy hiệu Đánh giá góc trên */}
-        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-950/60 px-2.5 py-1 text-[11px] font-bold text-amber-300 backdrop-blur-md">
-          <span>★</span>
-          <span>{getHotelRating(hotel)}</span>
-        </div>
+        {getHotelRating(hotel) && (
+          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/20 bg-slate-950/60 px-2.5 py-1 text-[11px] font-bold text-amber-300 backdrop-blur-md">
+            <span>★</span>
+            <span>{getHotelRating(hotel)}</span>
+            <span className="font-medium text-slate-300">({hotel.reviewCount})</span>
+          </div>
+        )}
       </div>
 
       {/* Nội dung thông tin khách sạn */}

@@ -23,8 +23,8 @@ export const TRANSLATIONS = {
     
     // Hero & Search
     hero_title: 'Tìm & Đặt Nơi Lưu Trú Hoàn Hảo',
-    hero_subtitle: 'Hơn 500+ khách sạn, resort và homestay cao cấp trên khắp Việt Nam với giá tốt nhất và xác nhận tức thì.',
-    hero_badge: 'Hệ thống đặt phòng hàng đầu Việt Nam',
+    hero_subtitle: 'Khách sạn, resort và homestay trên khắp Việt Nam: xem phòng trống theo ngày, giá minh bạch theo số đêm và đặt trực tuyến.',
+    hero_badge: 'Đặt phòng trực tuyến khắp Việt Nam',
     search_city_label: 'Điểm đến / Thành phố',
     search_city_placeholder: 'Thành phố / Điểm đến...',
     search_checkin_label: 'Ngày nhận',
@@ -79,7 +79,7 @@ export const TRANSLATIONS = {
     room_pricing: 'Bảng giá phòng',
     room_back_hotel: '← Quay lại thông tin khách sạn',
     room_select_dates: 'Chọn ngày lưu trú để đặt phòng này',
-    room_features_title: 'Tại sao khách hàng yêu thích phòng này?',
+    room_features_title: 'Tiện nghi phòng',
     
     // Booking Form
     booking_title: 'Thông tin đặt phòng',
@@ -134,8 +134,8 @@ export const TRANSLATIONS = {
     
     // Hero & Search
     hero_title: 'Find & Book Your Perfect Stay',
-    hero_subtitle: 'Over 500+ luxury hotels, resorts, and homestays across Vietnam with best rate guarantees and instant confirmation.',
-    hero_badge: "Vietnam's Premier Hospitality Network",
+    hero_subtitle: 'Hotels, resorts and homestays across Vietnam: live availability by date, transparent nightly prices and online booking.',
+    hero_badge: 'Online stays across Vietnam',
     search_city_label: 'Destination / City',
     search_city_placeholder: 'City / Destination...',
     search_checkin_label: 'Check-in',
@@ -190,7 +190,7 @@ export const TRANSLATIONS = {
     room_pricing: 'Room Rates',
     room_back_hotel: '← Back to Hotel Details',
     room_select_dates: 'Select stay dates to book this room',
-    room_features_title: 'Why guests love this room',
+    room_features_title: 'Room amenities',
     
     // Booking Form
     booking_title: 'Booking Information',

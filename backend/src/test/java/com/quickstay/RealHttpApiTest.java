@@ -94,7 +94,7 @@ class RealHttpApiTest {
 
     private String customer(String email) throws Exception {
         ResponseEntity<String> r = call(HttpMethod.POST, "/api/auth/register", null,
-                Map.of("email", email, "password", "secret123", "fullName", "Khach Test", "phone", "0900000000"));
+                Map.of("acceptedTerms", true, "email", email, "password", "secret123", "fullName", "Khach Test", "phone", "0900000000"));
         assertEquals(HttpStatus.CREATED, r.getStatusCode(), r.getBody());
         return parse(r).get("token").asText();
     }

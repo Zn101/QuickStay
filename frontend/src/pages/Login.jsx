@@ -7,31 +7,31 @@ import { ErrorBox, FieldError, SuccessModal } from '../components/ui'
 const SLIDES = [
   {
     url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1600&q=85',
-    title: 'Amanoi Ocean Pool Villa',
-    location: 'Vịnh Vĩnh Hy, Ninh Thuận',
-    rating: '4.98',
-    tag: 'Biệt thự hướng biển',
+    title: 'Biển Vĩnh Hy',
+    location: 'Ninh Thuận',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Nghỉ dưỡng ven biển',
   },
   {
     url: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1600&q=85',
-    title: 'Six Senses Ninh Van Bay',
-    location: 'Ninh Hòa, Khánh Hòa',
-    rating: '4.95',
-    tag: 'Khu nghỉ dưỡng sinh thái',
+    title: 'Vịnh Nha Trang',
+    location: 'Khánh Hòa',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Biển & đảo',
   },
   {
     url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=85',
-    title: 'Regent Phu Quoc Resort',
-    location: 'Bãi Trường, Phú Quốc',
-    rating: '4.99',
-    tag: 'Sang trọng bậc nhất',
+    title: 'Đảo ngọc Phú Quốc',
+    location: 'Kiên Giang',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Resort biển',
   },
   {
     url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1600&q=85',
-    title: 'InterContinental Danang',
-    location: 'Bán đảo Sơn Trà, Đà Nẵng',
-    rating: '4.97',
-    tag: 'Tuyệt tác kiến trúc',
+    title: 'Bán đảo Sơn Trà',
+    location: 'Đà Nẵng',
+    rating: 'Ảnh minh hoạ',
+    tag: 'Thành phố biển',
   },
 ]
 
@@ -242,7 +242,7 @@ export default function Login() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-white">{activeSlide.title}</span>
                   <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-200">
-                    ★ {activeSlide.rating}
+                    {activeSlide.rating}
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-sky-200/75">
@@ -313,7 +313,7 @@ export default function Login() {
                   <p className="text-sm font-bold">{activeSlide.title}</p>
                 </div>
                 <span className="rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-bold backdrop-blur-md">
-                  ★ {activeSlide.rating}
+                  {activeSlide.rating}
                 </span>
               </div>
             </div>

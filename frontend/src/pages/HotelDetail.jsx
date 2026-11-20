@@ -168,7 +168,7 @@ export default function HotelDetail() {
   // Slideshow auto-advance every 4 seconds
   useEffect(() => {
     if (isSlideshowPaused) return
-    const totalPhotos = extras?.photos && extras.photos.length > 1 ? extras.photos.length : 5
+    const totalPhotos = extras?.photos?.length || 1
     if (totalPhotos <= 1) return
     const timer = setInterval(() => {
       setActiveSlideIdx((prev) => (prev + 1) % totalPhotos)
@@ -324,40 +324,10 @@ export default function HotelDetail() {
   const amenityList = hotel.amenities ? hotel.amenities.split(',').map((a) => a.trim()).filter(Boolean) : []
   const nights = nightsBetween(checkIn, checkOut)
 
-  // Danh sách chữ ký ảnh chính của các khách sạn khác để cô lập không dùng chéo
-  const otherHotelSignatures = [
-    'photo-1566073771259', // Đà Nẵng
-    'photo-1551882547',    // Hà Nội
-    'photo-1564501049',    // Sài Gòn
-    'photo-1520250497',    // Hội An
-    'photo-1540555700',    // Phú Quốc
-    'photo-1571003123',    // Nha Trang
-    'photo-1587061949',    // Đà Lạt
-    'photo-1590490360',    // Huế
-  ]
-
-  const rawPhotos = extras?.photos && extras.photos.length > 1 ? extras.photos : [
-    { url: hotel.imageUrl, caption: `${hotel.name} - Toàn cảnh khuôn viên sang trọng` },
-    { url: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng ngủ Master King Bed cao cấp ngập tràn ánh sáng' },
-    { url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80', caption: 'Không gian phòng khách Suite rộng rãi & Ban công ngắm cảnh' },
-    { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80', caption: 'Phòng tắm đá cẩm thạch sang trọng với bồn tắm ngâm thảo mộc' },
-    { url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80', caption: 'Hồ bơi ngoài trời với ghế tắm nắng & view toàn cảnh' },
-    { url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80', caption: 'Nhà hàng buffet Á - Âu & Không gian ẩm thực thượng lưu' },
-    { url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80', caption: 'Khuôn viên vườn nhiệt đới & Lối dạo bộ thư thái' },
-    { url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80', caption: 'Khu trị liệu Spa chăm sóc sức khỏe & Phòng xông hơi khô' },
-    { url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80', caption: 'Đại sảnh đón tiếp sang trọng & Quầy lễ tân phục vụ 24/7' },
-  ]
-
-  // Lọc loại bỏ ảnh thuộc sở hữu của khách sạn khác để mỗi khách sạn có bộ ảnh độc lập
-  const galleryPhotos = rawPhotos.filter((p) => {
-    if (!p.url) return false
-    for (const sig of otherHotelSignatures) {
-      if (p.url.includes(sig) && (!hotel.imageUrl || !hotel.imageUrl.includes(sig))) {
-        return false
-      }
-    }
-    return true
-  })
+  // Ảnh do đối tác tải lên (ảnh đại diện + thư viện ảnh); không trộn ảnh minh hoạ
+  const galleryPhotos = (extras?.photos?.length ? extras.photos : [{ url: hotel.imageUrl, caption: hotel.name }]).filter(
+    (p) => p.url,
+  )
 
   const mapQuery = encodeURIComponent([hotel.name, hotel.address, hotel.city, 'Vietnam'].filter(Boolean).join(', '))
   // Chỉ hiển thị đánh giá thật từ API (không trộn đánh giá mẫu, không ẩn đánh giá có id nhỏ)
@@ -508,23 +478,6 @@ export default function HotelDetail() {
               </div>
             )}
 
-            {extras?.categorizedAmenities && (
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {extras.categorizedAmenities.map((cat) => (
-                  <div key={cat.category} className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-200">{cat.category}</h3>
-                    <ul className="mt-2.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                      {cat.items.map((item) => (
-                        <li key={item} className="flex items-center gap-2">
-                          <span className="text-emerald-500 font-bold">✓</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Rooms */}
@@ -589,6 +542,7 @@ export default function HotelDetail() {
                 <RoomCard
                   key={room.id}
                   hotelId={id}
+                  hotelImage={hotel.imageUrl}
                   checkIn={checkIn}
                   checkOut={checkOut}
                   room={room}
@@ -633,7 +587,12 @@ export default function HotelDetail() {
                 ))}
               </div>
 
-              {serviceTab === 'transfer' && (
+              {serviceTab === 'transfer' && extras.airportTransfers.length === 0 && (
+                <p className="mt-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                  Cơ sở chưa đăng dịch vụ đưa đón sân bay. Bạn có thể đặt câu hỏi cho cơ sở ở mục Hỏi đáp bên dưới.
+                </p>
+              )}
+              {serviceTab === 'transfer' && extras.airportTransfers.length > 0 && (
                 <div className="mt-4 space-y-3">
                   <p className="text-xs font-semibold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 rounded-xl px-3.5 py-2 border border-sky-100 dark:border-sky-900/50">
                     Điểm đón/trả: <strong>{extras.airportName}</strong> ⇄ {hotel.name} (Đón bảng tên & hỗ trợ hành lý)
@@ -700,8 +659,10 @@ export default function HotelDetail() {
                       </div>
                     )}
                   </div>
-                  <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Ẩm thực tại khách sạn</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
+                  {extras.diningOptions.length > 0 && (
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Ẩm thực tại khách sạn</h3>
+                  )}
+                <div className={extras.diningOptions.length > 0 ? 'grid gap-3 sm:grid-cols-2' : 'hidden'}>
                   {extras.diningOptions.map((d) => (
                     <div key={d.name} className="flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 p-4">
                       <div>
@@ -763,7 +724,9 @@ export default function HotelDetail() {
                       ))}
                     </div>
                   )}
-                  <h3 className="pt-2 text-sm font-extrabold text-slate-900 dark:text-white">Xe đưa đón đi điểm tham quan</h3>
+                  {extras.attractionTransports.length > 0 && (
+                    <h3 className="pt-2 text-sm font-extrabold text-slate-900 dark:text-white">Xe đưa đón đi điểm tham quan</h3>
+                  )}
                   {extras.attractionTransports.map((a) => (
                     <div
                       key={a.name}
@@ -859,30 +822,26 @@ export default function HotelDetail() {
               </div>
             </div>
 
-            {/* Score Breakdown Bars (Thang điểm chi tiết chuẩn OTA) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/60 p-4 sm:p-5 border border-slate-100 dark:border-slate-800">
-              {[
-                { label: 'Vị trí & Thuận tiện đi lại', score: '9.8 / 10', pct: '98%' },
-                { label: 'Vệ sinh & Sạch sẽ buồng phòng', score: '9.7 / 10', pct: '97%' },
-                { label: 'Thái độ phục vụ của nhân viên', score: '9.6 / 10', pct: '96%' },
-                { label: 'Chất lượng giường & Tiện nghi phòng', score: '9.4 / 10', pct: '94%' },
-                { label: 'Độ tương xứng với giá tiền', score: '9.5 / 10', pct: '95%' },
-                { label: 'Đồ ăn sáng & Dịch vụ ẩm thực', score: '9.3 / 10', pct: '93%' },
-              ].map((item) => (
-                <div key={item.label} className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <span>{item.label}</span>
-                    <span className="text-sky-700 dark:text-sky-400 font-bold">{item.score}</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-500"
-                      style={{ width: item.pct }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Phân bố số sao từ đánh giá thật của khách */}
+            {displayReviews.length > 0 && (
+              <div className="grid grid-cols-1 gap-y-2 rounded-2xl bg-slate-50/70 dark:bg-slate-800/60 p-4 sm:p-5 border border-slate-100 dark:border-slate-800">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = displayReviews.filter((r) => r.rating === star).length
+                  const pct = Math.round((count / displayReviews.length) * 100)
+                  return (
+                    <div key={star} className="flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      <span className="w-10 shrink-0">{star} ★</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div className="h-full rounded-full bg-amber-500" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-16 shrink-0 text-right text-slate-500 dark:text-slate-400">
+                        {count} ({pct}%)
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Tóm tắt Đánh giá bằng AI (AI Review Summary) */}
             <div className="rounded-2xl border border-purple-200/80 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white dark:from-purple-950/40 dark:to-slate-900 p-4.5 shadow-2xs space-y-2.5">
@@ -1028,7 +987,7 @@ export default function HotelDetail() {
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                Xác nhận tức thì
+                Cơ sở xác nhận đơn
               </span>
             </div>
 
@@ -1056,7 +1015,7 @@ export default function HotelDetail() {
                 <svg className="h-3 w-3 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                Mức giá tốt nhất hôm nay
+                Giá phòng thấp nhất
               </span>
               <div className="mt-1 flex items-baseline gap-1.5">
                 <span className="text-xl sm:text-2xl font-black text-sky-700 dark:text-sky-400">
@@ -1079,19 +1038,19 @@ export default function HotelDetail() {
                   <svg className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Miễn phí hủy phòng trước 24 giờ
+                  Hủy miễn phí đến trước ngày nhận phòng
                 </p>
                 <p className="flex items-center gap-1">
                   <svg className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Đã bao gồm thuế GTGT & phí dịch vụ
+                  Không thu phí đặt phòng
                 </p>
                 <p className="flex items-center gap-1">
                   <svg className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  Tặng voucher hoàn tiền 5% cho lần sau
+                  Thanh toán tại cơ sở hoặc trực tuyến
                 </p>
               </div>
             </div>
@@ -1182,13 +1141,7 @@ export default function HotelDetail() {
             </div>
 
             <div className="space-y-2">
-              {(extras?.policies || [
-                { title: 'Nhận & Trả phòng', detail: 'Từ 14:00 · Trả phòng trước 12:00. Hỗ trợ giữ hành lý 24/7.' },
-                { title: 'Hủy phòng', detail: 'Miễn phí hủy phòng trước 24 giờ. Tự động hoàn tiền.' },
-                { title: 'Trẻ em', detail: 'Miễn phí tối đa 1 trẻ em dưới 6 tuổi ngủ chung với bố mẹ.' },
-                { title: 'Thanh toán', detail: 'Chấp nhận VietQR, thẻ Visa/Mastercard, ví MoMo.' },
-                { title: 'Quy định', detail: 'Xuất trình CCCD/Hộ chiếu hợp lệ. Không hút thuốc trong phòng kín.' },
-              ]).map((p) => (
+              {(extras?.policies || []).map((p) => (
                 <div key={p.title} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 p-2.5 text-[11px]">
                   <p className="font-bold text-slate-900 dark:text-white text-[11px] mb-0.5">{p.title}</p>
                   <p className="text-slate-600 dark:text-slate-300 text-[10px] leading-relaxed">{p.detail}</p>
@@ -1369,53 +1322,21 @@ export default function HotelDetail() {
   )
 }
 
-function getRoomDetails(roomType) {
-  const t = (roomType || '').toLowerCase()
-  if (t.includes('villa') || t.includes('bungalow') || t.includes('penthouse') || t.includes('beachfront')) {
-    return {
-      imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=700&q=80',
-      tier: 'Villa Nghỉ Dưỡng Riêng Tư',
-      tierColor: 'bg-emerald-600 text-white',
-      size: '120 m²',
-      bed: '2 Giường King · Bể bơi riêng & Sân hiên tắm nắng',
-      amenities: ['Bể bơi vô cực riêng', 'View toàn cảnh biển', 'Bồn tắm lộ thiên', 'Phục vụ ẩm thực tại villa'],
-    }
-  }
-  if (t.includes('suite') || t.includes('family') || t.includes('executive') || t.includes('royal') || t.includes('imperial')) {
-    return {
-      imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=700&q=80',
-      tier: 'Suite Thượng Hạng Gia Đình',
-      tierColor: 'bg-purple-600 text-white',
-      size: '65 m²',
-      bed: '1 Giường King + 2 Giường đơn · Phòng khách riêng',
-      amenities: ['Phòng khách riêng biệt', 'Ban công ngắm cảnh rộng', 'Bồn tắm đá cẩm thạch', 'Sofa bed cao cấp'],
-    }
-  }
-  if (t.includes('deluxe') || t.includes('ocean') || t.includes('premier') || t.includes('sea view') || t.includes('studio')) {
-    return {
-      imageUrl: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=700&q=80',
-      tier: 'Deluxe Cao Cấp Hướng Biển',
-      tierColor: 'bg-sky-600 text-white',
-      size: '38 m²',
-      bed: '1 Giường King lớn hoặc 2 Giường đơn',
-      amenities: ['Cửa kính lớn kịch trần', 'Ban công view thoáng', 'Bàn làm việc doanh nhân', 'Trà & cà phê máy'],
-    }
-  }
-  // Standard / Cozy / Superior / Classic
+/** Thông tin hiển thị của loại phòng: chỉ dùng dữ liệu đối tác đã nhập (ảnh, diện tích, giường, tiện nghi). */
+function getRoomDetails(room, fallbackImage) {
+  const images = Array.isArray(room.images) ? room.images : []
   return {
-    imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=700&q=80',
-    tier: 'Phòng Tiêu Chuẩn Standard',
-    tierColor: 'bg-slate-700 text-white',
-    size: '25 m²',
-    bed: '1 Giường Queen hoặc 2 Giường đơn',
-    amenities: ['Điều hòa 2 chiều êm ái', 'Smart TV kết nối', 'Wifi tốc độ cao miễn phí', 'Vòi sen tăng áp'],
+    imageUrl: images[0] || fallbackImage || null,
+    size: room.areaSqm ? `${room.areaSqm} m²` : null,
+    bed: room.bedInfo || null,
+    amenities: Array.isArray(room.amenities) ? room.amenities : [],
   }
 }
 
-function RoomCard({ hotelId, checkIn, checkOut, room, nights, disabled, searching, onBook }) {
+function RoomCard({ hotelId, hotelImage, checkIn, checkOut, room, nights, disabled, searching, onBook }) {
   const hasAvailable = typeof room.available === 'number'
   const isAvailable = !disabled && !searching && hasAvailable && room.available > 0
-  const meta = getRoomDetails(room.roomType)
+  const meta = getRoomDetails(room, hotelImage)
   const roomUrl = `/hotels/${hotelId}/rooms/${room.id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`
 
   return (
@@ -1429,19 +1350,20 @@ function RoomCard({ hotelId, checkIn, checkOut, room, nights, disabled, searchin
       <div className="flex flex-col sm:flex-row">
         {/* Ảnh loại phòng clickable to dedicated room page */}
         <Link to={roomUrl} className="group relative h-48 sm:h-auto sm:w-56 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 block">
-          <img
-            src={meta.imageUrl}
-            alt={room.roomType}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <span
-            className={`absolute left-2.5 top-2.5 rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-sm backdrop-blur-md ${meta.tierColor}`}
-          >
-            {meta.tier}
-          </span>
-          <span className="absolute bottom-2.5 right-2.5 rounded-md bg-slate-950/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
-            {meta.size}
-          </span>
+          {meta.imageUrl ? (
+            <img
+              src={meta.imageUrl}
+              alt={room.roomType}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-400">Chưa có ảnh</div>
+          )}
+          {meta.size && (
+            <span className="absolute bottom-2.5 right-2.5 rounded-md bg-slate-950/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
+              {meta.size}
+            </span>
+          )}
           <div className="absolute inset-0 bg-blue-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <span className="rounded-lg bg-slate-950/80 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
               Xem chi tiết phòng ↗
@@ -1483,9 +1405,22 @@ function RoomCard({ hotelId, checkIn, checkOut, room, nights, disabled, searchin
                 </svg>
                 {room.capacity} khách
               </span>
-              <span>·</span>
-              <span className="text-slate-500 dark:text-slate-400 font-medium">🛏️ {meta.bed}</span>
+              {meta.bed && (
+                <>
+                  <span>·</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">🛏️ {meta.bed}</span>
+                </>
+              )}
             </div>
+            {meta.amenities.length > 0 && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {meta.amenities.map((a) => (
+                  <span key={a} className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Giá phòng & Nút Đặt ngay */}

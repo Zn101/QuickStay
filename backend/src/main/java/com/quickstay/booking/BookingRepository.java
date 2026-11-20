@@ -155,6 +155,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<Booking> findActiveUpcomingByRoom(@Param("roomId") Long roomId, @Param("today") LocalDate today);
 
+    /** Don chua huy cua mot khach san chong lan [from, to): du lieu cho lich phong cua doi tac. */
+    @EntityGraph(attributePaths = {"room"})
+    @Query("""
+            select b from Booking b
+            where b.room.hotel.id = :hotelId
+              and b.checkIn < :to
+              and b.checkOut > :from
+              and b.status <> com.quickstay.booking.BookingStatus.CANCELLED
+            """)
+    List<Booking> findOccupyingByHotel(@Param("hotelId") Long hotelId,
+                                       @Param("from") LocalDate from,
+                                       @Param("to") LocalDate to);
+
     /**
      * Kiem tra xem khach san co don dat phong o cac trang thai cho truoc khong.
      * Dung de bao ve khach san khoi bi xoa khi con Booking tham chieu Room (FK NOT NULL).

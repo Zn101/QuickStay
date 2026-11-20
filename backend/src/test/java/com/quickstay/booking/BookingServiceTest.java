@@ -157,6 +157,8 @@ class BookingServiceTest {
         b.setUser(owner);
         b.setRoom(room);
         b.setStatus(status);
+        b.setCheckIn(java.time.LocalDate.of(2026, 11, 20));  // sau "hom nay" cua clock co dinh (04/11)
+        b.setCheckOut(java.time.LocalDate.of(2026, 11, 21));
         when(bookings.findByIdForUpdate(5L)).thenReturn(Optional.of(b));
         return b;
     }
@@ -180,11 +182,11 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancel_non_pending_is_409_and_unknown_is_404() {
-        Booking b = existing("an@test.com", BookingStatus.CONFIRMED);
+    void cancel_checked_in_is_409_and_unknown_is_404() {
+        Booking b = existing("an@test.com", BookingStatus.CHECKED_IN);
         assertEquals(HttpStatus.CONFLICT,
                 assertThrows(ApiException.class, () -> service.cancel("an@test.com", 5L)).getStatus());
-        assertEquals(BookingStatus.CONFIRMED, b.getStatus());
+        assertEquals(BookingStatus.CHECKED_IN, b.getStatus());
         assertEquals(HttpStatus.NOT_FOUND,
                 assertThrows(ApiException.class, () -> service.cancel("an@test.com", 99L)).getStatus());
     }
