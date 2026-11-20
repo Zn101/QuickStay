@@ -1,12 +1,30 @@
 # QuickStay
 
-Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng bằng **React + Vite** (Frontend) và **Spring Boot** (Backend).
+Hệ thống đặt phòng khách sạn, đặt bàn nhà hàng và đặt tour du lịch trực tuyến, xây dựng bằng **React + Vite** (Frontend) và **Spring Boot** (Backend).
+
+---
+
+## Vai trò người dùng
+
+| Vai trò | Ai | Làm được gì | Trang chính |
+|---------|----|-------------|-------------|
+| `CUSTOMER` | Khách tự đăng ký | Đặt phòng, đặt bàn, đặt tour, thanh toán (giả lập), đánh giá sau khi đã lưu trú, hỏi đáp, đặt dịch vụ concierge | `/my-bookings`, `/profile` |
+| `HOTEL_MANAGER` | Đối tác khách sạn / homestay (admin cấp) | Sửa thông tin cơ sở lưu trú, xử lý đơn đặt phòng, trả lời câu hỏi của khách | `/partner` |
+| `RESTAURANT_OWNER` | Chủ nhà hàng (admin cấp) | Sửa thông tin nhà hàng của mình, xác nhận / hoàn tất / huỷ đơn đặt bàn | `/owner` |
+| `TOUR_OPERATOR` | Đơn vị tour / khu du lịch (admin cấp) | Sửa thông tin tour của mình, xác nhận / hoàn tất / huỷ đơn đặt tour | `/owner` |
+| `ADMIN` | Quản trị viên | Toàn quyền: khách sạn, phòng, nhà hàng, tour, tin tức, đơn, tài khoản đối tác, AI | `/admin` |
+
+Tài khoản đối tác chỉ được tạo bởi admin tại **Admin → Tài khoản Đối tác**: chọn loại đối tác, rồi chọn khách sạn (với `HOTEL_MANAGER`) hoặc một hay nhiều nhà hàng / tour (với chủ nhà hàng / đơn vị tour). Mỗi nhà hàng / tour chỉ có một chủ.
+
+Đặt phòng, đặt bàn, đặt tour, đánh giá và đặt dịch vụ yêu cầu **email đã xác thực** (tắt bằng `REQUIRE_VERIFIED_EMAIL=false`). Khi chưa cấu hình SMTP, email xác thực nằm trong **Hộp thư** trên web (hiện sau khi đăng nhập).
 
 ---
 
 ## 🚀 Triển khai trên VPS Ubuntu (Production)
 
-> 📄 Xem hướng dẫn cài đặt Docker chi tiết tại: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)
+> 📄 Hướng dẫn cài Docker chi tiết: [docs/deployment/T145-docker-server-setup.md](docs/deployment/T145-docker-server-setup.md)
+>
+> ⚠️ **Đang chạy bản cũ?** Đọc mục [Nâng cấp lên bản này](#nâng-cấp-lên-bản-này) trước khi pull image mới.
 
 ### Yêu cầu hệ thống
 
@@ -24,10 +42,10 @@ Hệ thống đặt phòng khách sạn trực tuyến, được xây dựng b�
 | Port | Dịch vụ | Ghi chú |
 |------|---------|---------|
 | 22 | SSH | Quản trị server |
-| 8081 | Frontend (Nginx) | Truy cập ứng dụng |
+| 8081 | Frontend (Nginx) | Truy cập ứng dụng; API đi qua `/api` |
 | 80/443 | Nếu có reverse proxy | Tùy cấu hình |
 
-> MySQL (:3306) và Backend (:8080) **KHÔNG** expose ra ngoài trong `docker-compose.prod.yml` — chúng giao tiếp nội bộ qua Docker network.
+> MySQL (:3306) và Backend (:8080) **KHÔNG** mở ra ngoài trong `docker-compose.prod.yml`; chúng giao tiếp nội bộ qua Docker network. Nginx của frontend chuyển `/api/*` vào backend.
 
 ---
 
@@ -82,28 +100,33 @@ cp .env.example .env
 nano .env   # Hoặc: vi .env
 ```
 
-**Các giá trị BẮT BUỘC phải đổi trước khi chạy production:**
+`docker-compose.prod.yml` **từ chối khởi động** nếu thiếu `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `JWT_SECRET` hoặc `ADMIN_PASSWORD`.
 
 ```bash
 # Tạo JWT_SECRET mạnh (≥ 48 ký tự ngẫu nhiên)
 openssl rand -base64 48
 
-# Tạo mật khẩu DB mạnh
+# Tạo mật khẩu DB / admin mạnh
 openssl rand -hex 20
 ```
 
-Ví dụ nội dung `.env` cho production (thay giá trị thật):
+Ví dụ `.env` cho production (thay giá trị thật):
 
 ```env
 DB_PASSWORD=<mat-khau-mysql-manh>
 DB_ROOT_PASSWORD=<mat-khau-root-manh>
 JWT_SECRET=<chuoi-ngau-nhien-48-ky-tu>
-CORS_ORIGINS=http://<IP-hoac-domain-VPS>:8081
 ADMIN_EMAIL=admin@yourdomain.com
 ADMIN_PASSWORD=<mat-khau-admin-manh>
+CORS_ORIGINS=https://yourdomain.com
+FRONTEND_URL=https://yourdomain.com
+SEED_SAMPLE_DATA=false
+REQUIRE_VERIFIED_EMAIL=true
 ANTHROPIC_API_KEY=          # Để trống nếu không dùng AI
 FRONTEND_PORT=8081
 ```
+
+Danh sách đầy đủ: xem [Biến môi trường](#biến-môi-trường).
 
 > **Lưu ý:** Không commit file `.env` lên Git. File này đã được `.gitignore` bảo vệ.
 
@@ -122,37 +145,33 @@ echo <GITHUB_TOKEN> | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin
 ### Bước 5 – Pull image và khởi chạy
 
 ```bash
-# Pull image mới nhất từ GHCR
-docker pull ghcr.io/zn101/quickstay-backend:latest
-docker pull ghcr.io/zn101/quickstay-frontend:latest
-
-# Khởi chạy toàn hệ thống (chạy nền)
+docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+Lần chạy đầu, backend tự tạo bảng bằng Flyway (`backend/src/main/resources/db/migration`) và tạo tài khoản admin từ `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ---
 
 ### Bước 6 – Kiểm tra trạng thái
 
 ```bash
-# Xem trạng thái các container
+# Trạng thái và health của các container
 docker compose -f docker-compose.prod.yml ps
 
-# Kiểm tra health của từng service
-docker inspect quickstay-backend-1 --format='{{.State.Health.Status}}'
-docker inspect quickstay-mysql-1   --format='{{.State.Health.Status}}'
-
-# Kiểm tra Backend health endpoint
-curl http://localhost:8080/actuator/health
+# Health của backend (backend không mở cổng ra host, nên kiểm tra từ trong container)
+docker compose -f docker-compose.prod.yml exec backend wget -qO- http://localhost:8080/actuator/health
 # Expected: {"status":"UP"}
 
-# Kiểm tra Frontend
+# Frontend
 curl -I http://localhost:8081
 # Expected: HTTP/1.1 200 OK
 
-# Kiểm tra API qua Nginx proxy
+# API qua Nginx proxy
 curl http://localhost:8081/api/hotels
-# Expected: JSON array danh sách khách sạn
+curl http://localhost:8081/api/restaurants
+curl http://localhost:8081/api/tours
+# Expected: JSON array
 ```
 
 ---
@@ -167,25 +186,63 @@ docker compose -f docker-compose.prod.yml logs -f
 docker compose -f docker-compose.prod.yml logs backend  --tail=100
 docker compose -f docker-compose.prod.yml logs frontend --tail=50
 docker compose -f docker-compose.prod.yml logs mysql    --tail=50
-
-# Lỗi thường gặp:
-# - Backend không kết nối được MySQL: kiểm tra DB_PASSWORD khớp nhau
-# - Backend lỗi 401/403:             kiểm tra JWT_SECRET
-# - CORS error trên browser:         kiểm tra CORS_ORIGINS đúng domain/IP
 ```
+
+| Triệu chứng | Kiểm tra |
+|-------------|----------|
+| `docker compose` báo `required variable ... is missing` | Thiếu `DB_PASSWORD` / `DB_ROOT_PASSWORD` / `JWT_SECRET` / `ADMIN_PASSWORD` trong `.env` |
+| Backend không kết nối được MySQL | `DB_PASSWORD` khớp giữa MySQL và backend (MySQL chỉ đọc mật khẩu lúc tạo volume lần đầu) |
+| Backend không khởi động, log có `JWT_SECRET phai co it nhat 32 ky tu` | `JWT_SECRET` quá ngắn |
+| Backend dừng với lỗi `Flyway` / `Migration` | Xem log backend; khôi phục bản sao lưu nếu migration lỗi giữa chừng |
+| Lỗi CORS trên trình duyệt | `CORS_ORIGINS` đúng domain / IP và cổng của frontend |
+| Khách báo "Vui long xac thuc email" khi đặt | Khách chưa xác thực email; gửi lại từ trang Hồ sơ, hoặc đặt `REQUIRE_VERIFIED_EMAIL=false` |
+| Link trong email trỏ sai địa chỉ | `FRONTEND_URL` |
 
 ---
 
 ### Cập nhật phiên bản mới
 
 ```bash
-# Pull image mới
-docker pull ghcr.io/zn101/quickstay-backend:latest
-docker pull ghcr.io/zn101/quickstay-frontend:latest
+# 1. Sao lưu DB trước (migration mới có thể thay đổi bảng)
+docker compose -f docker-compose.prod.yml exec mysql \
+  sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" quickstay' > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Restart service với image mới (không mất dữ liệu)
-docker compose -f docker-compose.prod.yml up -d --no-build
+# 2. Lấy file compose / .env.example mới nhất (có thể có biến mới)
+git pull
+
+# 3. Pull image mới và khởi động lại (không mất dữ liệu)
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
+
+---
+
+### Nâng cấp lên bản này
+
+> ⚠️ Bản cập nhật bảo mật + đối tác nhà hàng / tour.
+
+Áp dụng khi server đang chạy bản trước commit `aa69637`. Làm theo thứ tự:
+
+1. **Sao lưu DB** (lệnh ở mục trên). Bản này chạy 3 migration mới khi khởi động:
+   - `V7`: thêm cột `users.tokens_valid_after`, `bookings.payment_account_label` và bảng `site_contents` (tin tức).
+   - `V8`: thêm bảng `restaurants`, `tours`, `restaurant_reservations`, `tour_bookings`, và nạp sẵn 8 nhà hàng + 9 tour (trước đây viết cứng trong frontend).
+   - `V9`: thêm thực đơn, số điện thoại cho nhà hàng; lịch trình, giá bao gồm / chưa bao gồm, điểm đón, số khách tối đa / ngày cho tour (mặc định 30); bảng `venue_reviews` (đánh giá nhà hàng / tour) và bổ sung chi tiết cho dữ liệu mẫu.
+2. **Bổ sung `.env`**: `JWT_SECRET` và `ADMIN_PASSWORD` giờ bắt buộc (thiếu là compose không chạy). `ADMIN_PASSWORD` chỉ dùng khi tạo admin lần đầu, không đổi mật khẩu admin đã có.
+3. **Kiểm tra `SEED_SAMPLE_DATA`**: bản prod giờ mặc định `false` (trước đây ngầm là `true`). DB đã có dữ liệu thì không ảnh hưởng; chỉ đặt `true` nếu muốn DB mới có khách sạn mẫu và tài khoản đối tác mẫu.
+4. **Quyết định `REQUIRE_VERIFIED_EMAIL`** (mặc định `true`): khách **chưa xác thực email sẽ không đặt được phòng, bàn hay tour**. Nếu nhiều khách cũ chưa xác thực, cân nhắc đặt `false` tạm thời và thông báo cho họ xác thực.
+5. **Pull image mới và khởi động** (`pull` rồi `up -d`), kiểm tra như Bước 6, gồm `curl http://localhost:8081/api/restaurants`.
+6. **Đổi mật khẩu các tài khoản mẫu đã có trong DB** (mật khẩu mặc định công khai trong mã nguồn):
+   - Admin `admin@quickstay.local` / `Admin@123` (nếu chưa đổi): đổi tại trang **Hồ sơ**.
+   - `homestay@quickstay.local` / `Host@123` và `partner@quickstay.local` / `Partner@123`: **Admin → Tài khoản Đối tác → Sửa** → đặt mật khẩu mới, hoặc xoá nếu không dùng.
+7. **Gán chủ cho nhà hàng / tour**: tạo tài khoản Chủ nhà hàng / Đơn vị tour ở **Admin → Tài khoản Đối tác**. Nhà hàng / tour chưa gán chủ vẫn nhận đơn; admin xử lý tại `/owner`.
+
+Thay đổi hành vi người dùng sẽ thấy:
+- Đổi mật khẩu hoặc email cần nhập **mật khẩu hiện tại**. Đổi / đặt lại mật khẩu sẽ **đăng xuất các thiết bị khác**.
+- Link xác thực email và link đặt lại mật khẩu gửi **trước khi nâng cấp** không còn dùng được (DB chỉ lưu bản băm); khách cần yêu cầu gửi lại.
+- Chỉ khách đã nhận phòng / hoàn tất kỳ nghỉ tại cơ sở mới được đánh giá, mỗi người một lần. Khách sạn chưa có đánh giá hiển thị "Chưa có đánh giá" thay vì điểm mặc định.
+- Đặt phòng tối đa 30 đêm, trước tối đa 365 ngày. Phí dịch vụ concierge tính theo bảng giá của hệ thống.
+- Nhà hàng và tour có trang chi tiết riêng (`/restaurants/:id`, `/tours/:id`) với thực đơn / lịch trình, bản đồ, đánh giá thật và form đặt chỗ; đặt bàn / đặt tour tạo đơn thật. Tour giới hạn số khách mỗi ngày khởi hành. Trang khách sạn gợi ý nhà hàng và tour cùng thành phố.
+- Trợ lý AI giới hạn theo người dùng / IP (`AI_RATE_PER_MINUTE`, `AI_PER_CLIENT_DAILY_CAP`) và trả lỗi 429 khi vượt.
 
 ---
 
@@ -201,9 +258,9 @@ docker compose -f docker-compose.prod.yml down
 
 ---
 
-## 🐳 Chạy bằng Docker Compose (Khuyến nghị)
+## 🐳 Chạy bằng Docker Compose (Development)
 
-Đây là cách nhanh nhất để chạy toàn bộ hệ thống (MySQL + Backend + Frontend) chỉ với vài lệnh.
+Cách nhanh nhất để chạy toàn bộ hệ thống (MySQL + Backend + Frontend) trên máy cá nhân.
 
 ### Yêu cầu
 
@@ -216,45 +273,34 @@ docker compose -f docker-compose.prod.yml down
 git clone https://github.com/Zn101/QuickStay.git
 cd QuickStay
 
-# 2. Tạo file .env từ template
+# 2. Tạo file .env từ template (các giá trị mặc định đủ để chạy dev)
 cp .env.example .env
 
-# 3. (Bắt buộc cho production) Đổi JWT_SECRET thành chuỗi ngẫu nhiên ≥ 32 ký tự
-# Ví dụ: openssl rand -hex 32
-
-# 4. Build và khởi động toàn bộ hệ thống
+# 3. Build và khởi động toàn bộ hệ thống
 docker compose up --build
 ```
 
-Sau khi khởi động thành công:
+`docker-compose.yml` (dev) mặc định `SEED_SAMPLE_DATA=true`: tạo khách sạn mẫu và các tài khoản đối tác mẫu bên dưới.
 
 | Dịch vụ | URL |
 |---------|-----|
-| **Frontend** (React + Nginx) | http://localhost:8081 |
-| **Backend** (Spring Boot API) | http://localhost:8080 |
-| **Health Check** | http://localhost:8080/actuator/health |
-| **API Hotels** | http://localhost:8081/api/hotels |
+| **Ứng dụng** (React + Nginx) | http://localhost:8081 |
+| **API** (qua Nginx) | http://localhost:8081/api/hotels |
+| **Health Check** | `docker compose exec backend wget -qO- http://localhost:8080/actuator/health` |
 
-### Tài khoản mặc định
+### Tài khoản mẫu (chỉ dùng cho phát triển)
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@quickstay.local | Admin@123 |
+| Vai trò | Email | Mật khẩu | Khi nào có |
+|---------|-------|----------|-----------|
+| Admin | `admin@quickstay.local` | `Admin@123` | Luôn tạo (lấy từ `ADMIN_EMAIL` / `ADMIN_PASSWORD`) |
+| Đối tác Homestay | `homestay@quickstay.local` | `Host@123` | `SEED_SAMPLE_DATA=true` |
+| Đối tác Khách sạn | `partner@quickstay.local` | `Partner@123` | `SEED_SAMPLE_DATA=true` |
+| Chủ nhà hàng (Sunrise Bistro) | `restaurant@quickstay.local` | `Restaurant@123` | `SEED_SAMPLE_DATA=true` |
+| Đơn vị tour (các tour Đà Nẵng) | `tour@quickstay.local` | `Tour@123` | `SEED_SAMPLE_DATA=true` |
 
-> **Lưu ý:** Đây là tài khoản mặc định dành cho môi trường phát triển.
-> Không sử dụng thông tin đăng nhập này trong môi trường production.
-> Hãy thay đổi email và mật khẩu bằng biến môi trường tương ứng.
+> **Không dùng các mật khẩu này trên production.** Chúng công khai trong mã nguồn. Production đặt `SEED_SAMPLE_DATA=false` và `ADMIN_PASSWORD` riêng.
 
-### Biến môi trường quan trọng (`.env`)
-
-| Biến | Mô tả | Bắt buộc đổi? |
-|------|-------|---------------|
-| `JWT_SECRET` | Khóa ký JWT (≥ 32 ký tự) | ✅ Production |
-| `DB_PASSWORD` | Mật khẩu MySQL user | Khuyến nghị |
-| `DB_ROOT_PASSWORD` | Mật khẩu MySQL root | Khuyến nghị |
-| `ADMIN_EMAIL` | Email tài khoản admin | Tùy chọn |
-| `ADMIN_PASSWORD` | Mật khẩu tài khoản admin | Tùy chọn |
-| `ANTHROPIC_API_KEY` | API key Anthropic (AI) | Không bắt buộc |
+Khách hàng tự đăng ký tại `/register`. Khi chưa cấu hình SMTP, đăng nhập rồi mở **Hộp thư** (biểu tượng phong bì trên thanh menu) để lấy link xác thực email.
 
 ### Lệnh quản lý container thường dùng
 
@@ -264,28 +310,22 @@ docker compose ps
 
 # Xem log real-time
 docker compose logs -f
-
-# Xem log từng service
 docker compose logs backend --tail=50
-docker compose logs frontend --tail=20
-docker compose logs mysql --tail=20
 
 # Dừng hệ thống (giữ nguyên dữ liệu)
 docker compose down
 
 # Rebuild sau khi thay đổi code
 docker compose up --build
-
-# Chỉ rebuild một service
-docker compose up --build backend
+docker compose up --build backend   # chỉ rebuild một service
 ```
 
-> **Lưu ý:** Dữ liệu MySQL được lưu trong Docker volume `quickstay_mysql-data-recovery`.
-> Lệnh `docker compose down` **không xóa** dữ liệu. Chỉ `docker compose down -v` mới xóa (dùng cẩn thận!).
+> Dữ liệu MySQL nằm trong Docker volume `mysql-data` (tên đầy đủ có tiền tố tên thư mục, ví dụ `quickstay_mysql-data`).
+> `docker compose down` **không xoá** dữ liệu; chỉ `docker compose down -v` mới xoá (dùng cẩn thận!).
 
-### Sao lưu & Phục hồi cơ sở dữ liệu MySQL (T147)
+### Sao lưu & Phục hồi cơ sở dữ liệu MySQL (Windows)
 
-> 📄 Xem tài liệu chi tiết tại: [docs/deployment/T147-mysql-backup-restore.md](docs/deployment/T147-mysql-backup-restore.md)
+> 📄 Tài liệu chi tiết: [docs/deployment/T147-mysql-backup-restore.md](docs/deployment/T147-mysql-backup-restore.md). Trên VPS Linux dùng lệnh `mysqldump` ở mục [Cập nhật phiên bản mới](#cập-nhật-phiên-bản-mới).
 
 ```powershell
 # 1. Sao lưu database quickstay (tự động lưu vào thư mục backups/)
@@ -300,17 +340,44 @@ docker compose up --build backend
 
 ---
 
+## Biến môi trường
+
+Đặt trong file `.env` ở thư mục gốc; cả hai file compose đều chuyển các biến này vào backend. Mẫu đầy đủ: [.env.example](.env.example).
+
+| Biến | Production | Mặc định | Mô tả |
+|------|-----------|----------|-------|
+| `DB_PASSWORD` | ✅ Bắt buộc | dev: `quickstay_pw` | Mật khẩu MySQL user `quickstay` |
+| `DB_ROOT_PASSWORD` | ✅ Bắt buộc | dev: `root_pw` | Mật khẩu MySQL root |
+| `JWT_SECRET` | ✅ Bắt buộc | chỉ có giá trị dev | Khoá ký JWT, ≥ 32 ký tự. Đổi khoá thì mọi người dùng bị đăng xuất |
+| `ADMIN_PASSWORD` | ✅ Bắt buộc | dev: `Admin@123` | Mật khẩu admin khi tạo lần đầu (không đổi admin đã có) |
+| `ADMIN_EMAIL` | Khuyến nghị | `admin@quickstay.local` | Email admin khi tạo lần đầu |
+| `CORS_ORIGINS` | Khuyến nghị | `http://localhost:8081` | Domain frontend, cách nhau bằng dấu phẩy |
+| `FRONTEND_URL` | Khuyến nghị | prod: `https://quickstay.io.vn` | Gốc của link trong email |
+| `SEED_SAMPLE_DATA` | | prod `false`, dev `true` | Tạo khách sạn mẫu và tài khoản đối tác mẫu |
+| `REQUIRE_VERIFIED_EMAIL` | | `true` | Bắt buộc email đã xác thực khi đặt / đánh giá |
+| `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Múi giờ nghiệp vụ ("hôm nay" khi kiểm tra ngày) |
+| `ANTHROPIC_API_KEY` | | trống | Bật AI thật; trống thì dùng bộ trả lời dự phòng |
+| `AI_RATE_PER_MINUTE` | | `25` | Số lần gọi AI / phút cho mỗi người dùng hoặc IP |
+| `AI_PER_CLIENT_DAILY_CAP` | | `200` | Số lần gọi AI / ngày cho mỗi người dùng hoặc IP |
+| `AI_DAILY_REQUEST_CAP` | | `5000` | Trần gọi AI / ngày toàn hệ thống |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS`, `MAIL_FROM` | | trống | SMTP thật; để trống `MAIL_HOST` thì email chỉ lưu trong Hộp thư trên web |
+| `FRONTEND_PORT` | | `8081` | Cổng ra ngoài của frontend |
+
+---
+
 ## Cấu trúc dự án
 
 ```
 QuickStay/
 ├── frontend/          # React + Vite + Tailwind CSS
 ├── backend/           # Spring Boot + Java 17
+│   └── src/main/resources/db/migration/   # Migration Flyway (V1 … V9)
 ├── scripts/           # Script tự động hóa (Backup/Restore MySQL)
 ├── docs/              # Tài liệu dự án
 ├── qa/                # Kiểm thử chất lượng
 ├── .github/workflows/ # GitHub Actions CI/CD
-└── docker-compose.yml # Docker compose cho môi trường dev
+├── docker-compose.yml       # Development (build từ mã nguồn)
+└── docker-compose.prod.yml  # Production (image từ GHCR)
 ```
 
 ---
@@ -319,53 +386,21 @@ QuickStay/
 
 ### Yêu cầu
 
-- **Node.js** ≥ 18 (khuyến nghị 20 LTS)
-- **npm** ≥ 9 (được bao gồm với Node 18+)
+- **Node.js** ≥ 20 (CI dùng Node 22)
+- **npm** ≥ 9
 
-### Cài đặt dependencies
-
-```bash
-cd frontend
-npm ci
-```
-
-### Chạy môi trường Development
+### Lệnh thường dùng
 
 ```bash
 cd frontend
-npm run dev
-# Ứng dụng chạy tại: http://localhost:5173
+npm ci            # cài dependencies
+npm run dev       # dev server: http://localhost:5173 (proxy /api tới http://localhost:8080)
+npm test          # Vitest + @testing-library/react (jsdom)
+npm run build     # output: frontend/dist/
+npm run preview   # xem bản build: http://localhost:4173
 ```
 
-### Build Production
-
-```bash
-cd frontend
-npm run build
-# Output tại: frontend/dist/
-```
-
-### Chạy Test
-
-```bash
-cd frontend
-npm test
-```
-
-Test framework: **Vitest** + **@testing-library/react**, chạy trong môi trường **jsdom**.
-
-Các test hiện có:
-- `src/lib/format.test.js` — Unit test cho các hàm format tiền tệ và ngày tháng
-- `src/App.test.jsx` — Integration test cho routing và UI components
-
-### Preview Build
-
-```bash
-cd frontend
-npm run build
-npm run preview
-# Preview tại: http://localhost:4173
-```
+Frontend gọi API qua đường dẫn tương đối `/api` (Vite proxy khi dev, Nginx khi chạy Docker). Không có biến môi trường riêng cho frontend.
 
 ---
 
@@ -374,168 +409,50 @@ npm run preview
 ### Yêu cầu
 
 - **Java** 17 (Temurin/OpenJDK)
-- **MySQL** 8+ (hoặc H2 cho test)
+- **MySQL** 8+ cho production; mặc định chạy **H2 in-memory** khi không đặt `DB_URL`
 
-### Chạy Backend (Development)
-
-```bash
-cd backend
-.\gradlew.bat bootRun
-# API chạy tại: http://localhost:8080
-```
-
-### Chạy Test Backend
+### Lệnh thường dùng
 
 ```bash
 cd backend
-.\gradlew.bat test
+.\gradlew.bat bootRun   # API: http://localhost:8080 (H2 in-memory, dữ liệu mất khi tắt)
+.\gradlew.bat test      # toàn bộ test (H2)
 ```
+
+Cấu hình đầy đủ: [backend/src/main/resources/application.properties](backend/src/main/resources/application.properties).
 
 ---
 
-## 📦 Sử dụng Docker Image từ GHCR (T121)
+## 📦 Docker Image trên GHCR
 
-Sau khi merge vào `main`, GitHub Actions tự động build và push image lên GitHub Container Registry.
-
-### Địa chỉ image
+Mỗi lần **push lên `main`**, workflow `cd-docker.yml` chạy test backend + frontend rồi build và đẩy image lên GitHub Container Registry. `docker-compose.prod.yml` dùng tag `latest`, nên **push lên `main` là bản production kế tiếp**.
 
 | Service | Image |
 |---------|-------|
 | Backend | `ghcr.io/zn101/quickstay-backend` |
 | Frontend | `ghcr.io/zn101/quickstay-frontend` |
 
-### Quy tắc tag
-
 | Tag | Ý nghĩa |
 |-----|---------|
 | `latest` | Bản build mới nhất từ nhánh `main` |
-| `sha-<7 ký tự>` | Bản build tương ứng commit SHA cụ thể |
-
-### Đăng nhập GHCR
+| `sha-<7 ký tự>` | Bản build của một commit cụ thể (dùng để quay lại bản cũ) |
 
 ```bash
-# Dung Personal Access Token (classic) voi quyen read:packages
-echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-```
-
-### Pull image
-
-```bash
-# Pull ban moi nhat
-docker pull ghcr.io/zn101/quickstay-backend:latest
-docker pull ghcr.io/zn101/quickstay-frontend:latest
-
-# Pull theo commit SHA cu the
-docker pull ghcr.io/zn101/quickstay-backend:sha-a1b2c3d
-docker pull ghcr.io/zn101/quickstay-frontend:sha-a1b2c3d
-```
-
-### Chạy Docker Compose với image đã publish (không cần build lại)
-
-Tạo file `docker-compose.prod.yml`:
-
-```yaml
-services:
-  mysql:
-    image: mysql:8.4
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    environment:
-      MYSQL_DATABASE: quickstay
-      MYSQL_USER: quickstay
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
-  backend:
-    image: ghcr.io/zn101/quickstay-backend:latest
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      DB_URL: jdbc:mysql://mysql:3306/quickstay?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DB_USER: quickstay
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
-
-  frontend:
-    image: ghcr.io/zn101/quickstay-frontend:latest
-    depends_on:
-      - backend
-    ports:
-      - "${FRONTEND_PORT:-8081}:80"
-
-volumes:
-  mysql-data:
-```
-
-```bash
-# Chay voi image tu GHCR (can dang nhap truoc)
+# Chạy một bản cụ thể thay vì latest (vd. để quay lại khi bản mới lỗi):
+# sửa image trong docker-compose.prod.yml thành :sha-a1b2c3d rồi
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### Biến môi trường bắt buộc khi dùng image GHCR
-
-| Biến | Bắt buộc | Mô tả |
-|------|---------|-------|
-| `JWT_SECRET` | ✅ | Khóa ký JWT, tối thiểu 32 ký tự ngẫu nhiên |
-| `DB_PASSWORD` | ✅ | Mật khẩu MySQL user `quickstay` |
-| `DB_ROOT_PASSWORD` | ✅ | Mật khẩu MySQL root |
-| `CORS_ORIGINS` | ✅ | Domain frontend, ví dụ `https://yourdomain.com` |
-| `ADMIN_EMAIL` | Khuyến nghị | Email tài khoản admin mặc định |
-| `ADMIN_PASSWORD` | Khuyến nghị | Mật khẩu admin (đổi khỏi `Admin@123`) |
-| `ANTHROPIC_API_KEY` | Không bắt buộc | AI features, để trống nếu không dùng |
-
-> **Lưu ý bảo mật:** Không commit file `.env` chứa giá trị thật lên Git.
-> Tạo JWT_SECRET mạnh: `openssl rand -base64 48`
+> Quay lại bản cũ **không hoàn tác migration DB**. Khôi phục bản sao lưu nếu cần quay lại trước một migration.
 
 ---
 
 ## GitHub Actions CI/CD
 
-### CI Frontend (`ci-frontend.yml`)
-
-Tự động chạy khi:
-- Push lên nhánh: `main`, `develop`, `dev`, `dev-minh`
-- Tạo hoặc cập nhật Pull Request vào: `main`, `develop`, `dev`, `dev-minh`
-- Chỉ khi có thay đổi trong `frontend/` hoặc file workflow
-
-Các bước thực hiện:
-1. Checkout source code
-2. Cài đặt Node.js 20 LTS (với npm cache)
-3. Cài dependencies (`npm ci` — dùng lock file để đảm bảo reproducible)
-4. Chạy tests (`npm test`)
-5. Build production bundle (`npm run build`)
-6. Upload `dist/` artifact (lưu 3 ngày)
-
-### CI Backend (`ci-backend.yml`)
-
-Tự động chạy khi push/PR vào `main`, `develop` với thay đổi trong `backend/`.
-
-### CD Docker (`cd-docker.yml`)
-
-Build và push Docker images lên GitHub Container Registry khi merge vào `main`.
-
----
-
-## Môi trường
-
-| Biến | Mô tả |
-|------|-------|
-| `VITE_API_URL` | URL của Backend API (mặc định: `/api`) |
-
-Frontend hỗ trợ **Mock Data mode** — tự động bật khi backend không khả dụng, phù hợp cho phát triển Frontend độc lập.
+| Workflow | Chạy khi | Làm gì |
+|----------|----------|--------|
+| `ci.yml` | Push / Pull Request vào `main`, `dev` | Test backend (Gradle) và frontend (Vitest + build) |
+| `cd-docker.yml` | Push lên `main` | Test, rồi build và đẩy image backend + frontend lên GHCR |
 
 ---
 
@@ -543,9 +460,10 @@ Frontend hỗ trợ **Mock Data mode** — tự động bật khi backend không
 
 | Phần | Công nghệ |
 |------|-----------|
-| Frontend | React 18, Vite 5, Tailwind CSS 3, Zustand |
-| Testing | Vitest, @testing-library/react, jsdom |
-| Backend | Spring Boot 3, Java 17, Gradle |
-| Database | MySQL 8 |
+| Frontend | React 18, Vite 8, Tailwind CSS 3, Zustand |
+| Testing | Vitest, @testing-library/react, jsdom; JUnit 5 + Spring Boot Test |
+| Backend | Spring Boot 3.5, Java 17, Gradle, Spring Security (JWT), Flyway |
+| Database | MySQL 8.4 (H2 cho dev / test) |
+| AI | Anthropic API (tuỳ chọn) với bộ trả lời dự phòng |
 | CI/CD | GitHub Actions |
 | Container | Docker, GitHub Container Registry |
