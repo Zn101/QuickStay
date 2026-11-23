@@ -4,23 +4,24 @@
 
 -- Khach san: thu vien anh (moi dong "URL|Chu thich"), gio nhan / tra phong,
 -- quy dinh rieng cua co so (moi dong "Tieu de|Noi dung"), dua don san bay, am thuc, diem tham quan
-ALTER TABLE hotels ADD COLUMN gallery VARCHAR(4000);
+-- Dung TEXT de tranh loi Row size too large (> 65535 bytes) tren InnoDB utf8mb4
+ALTER TABLE hotels ADD COLUMN gallery TEXT;
 ALTER TABLE hotels ADD COLUMN check_in_time VARCHAR(5);
 ALTER TABLE hotels ADD COLUMN check_out_time VARCHAR(5);
-ALTER TABLE hotels ADD COLUMN house_rules VARCHAR(4000);
+ALTER TABLE hotels ADD COLUMN house_rules TEXT;
 ALTER TABLE hotels ADD COLUMN airport_name VARCHAR(255);
 -- moi dong "Ten dich vu|Mau xe|So khach toi da|Thoi gian|Gia VND"
-ALTER TABLE hotels ADD COLUMN transfers VARCHAR(2000);
+ALTER TABLE hotels ADD COLUMN transfers TEXT;
 -- moi dong "Ten|Loai am thuc|Gio mo cua|Diem nhan|Ghi chu gia"
-ALTER TABLE hotels ADD COLUMN dining VARCHAR(2000);
+ALTER TABLE hotels ADD COLUMN dining TEXT;
 -- moi dong "Dia diem|Khoang cach|Phuong tien|Thoi gian|Gia VND"
-ALTER TABLE hotels ADD COLUMN attractions VARCHAR(2000);
+ALTER TABLE hotels ADD COLUMN attractions TEXT;
 
 -- Loai phong: dien tich, giuong, tien nghi (cach nhau dau phay), anh (moi dong mot URL)
 ALTER TABLE rooms ADD COLUMN area_sqm INT;
 ALTER TABLE rooms ADD COLUMN bed_info VARCHAR(255);
 ALTER TABLE rooms ADD COLUMN amenities VARCHAR(1000);
-ALTER TABLE rooms ADD COLUMN image_urls VARCHAR(4000);
+ALTER TABLE rooms ADD COLUMN image_urls TEXT;
 
 -- Lich dong phong: dong "units" phong cua loai phong trong [start_date, end_date)
 CREATE TABLE room_closures (
