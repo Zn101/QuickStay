@@ -500,29 +500,6 @@ export default function Home() {
                     </button>
                   </form>
 
-                  {/* Gợi ý câu lệnh mẫu */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/10 text-xs">
-                    <span className="text-[11px] font-semibold text-slate-300">Gợi ý mẫu:</span>
-                    {[
-                      '2 người, dưới 800k, cuối tuần này ở Đà Nẵng',
-                      'Resort Phú Quốc có hồ bơi cho 2 khách',
-                      'Khách sạn ở Hà Nội giá dưới 600k',
-                      'Villa Đà Lạt cho 4 người',
-                    ].map((sample) => (
-                      <button
-                        key={sample}
-                        type="button"
-                        onClick={() => {
-                          setAiQuery(sample)
-                          handleAiSearch(null, sample)
-                        }}
-                        className="rounded-full bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1 text-[11px] text-purple-200 hover:text-white transition-colors cursor-pointer"
-                      >
-                        {sample}
-                      </button>
-                    ))}
-                  </div>
-
                   {/* Kết quả phân tích AI */}
                   {aiSearchResult && (
                     <div className="rounded-2xl border border-purple-500/30 bg-purple-950/40 p-3.5 text-xs text-purple-100 space-y-1.5 animate-fadeIn">

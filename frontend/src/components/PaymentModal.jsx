@@ -43,11 +43,11 @@ export default function PaymentModal({ booking, initialMethod = 'BANK_TRANSFER',
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
   const ss = String(secondsLeft % 60).padStart(2, '0')
 
-  // Real VietQR NAPAS247 Configuration
-  const bankAccount = '0868888666'
+  // Real VietQR NAPAS247 Configuration (NGUYEN THAC HUNG - MBBank)
+  const bankAccount = '0966969106'
   const bankCode = 'MB'
   const bankName = 'MBBank (Ngân hàng TMCP Quân Đội)'
-  const accountHolder = 'CONG TY CONG NGHE QUICKSTAY VIET NAM'
+  const accountHolder = 'NGUYEN THAC HUNG'
   const transferContent = `QS${booking.id}`
   const totalAmount = Math.round(Number(booking.totalPrice) || 0)
   const qrImgUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountHolder)}`
