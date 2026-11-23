@@ -69,6 +69,7 @@ export default function Home() {
   const { currencyDisplay } = useSettings()
   const { t } = useTranslation()
   const [hotels, setHotels] = useState([])
+  const [allHotels, setAllHotels] = useState([])
   const [roomTypes, setRoomTypes] = useState(['Standard', 'Deluxe', 'Family Suite'])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -125,10 +126,13 @@ export default function Home() {
   const sliderRef = useRef(null)
   const [isSliderPaused, setIsSliderPaused] = useState(false)
 
+  // Danh sách toàn bộ khách sạn phục vụ thông tin thành phố & slide Hero (không bị co cụm khi lọc tìm kiếm)
+  const globalHotels = allHotels.length > 0 ? allHotels : hotels
+
   // 1. Đồng bộ các thành phố thực tế từ danh sách khách sạn CSDL (Admin CRUD)
   const availableCities = useMemo(() => {
-    return Array.from(new Set(hotels.map((h) => h.city?.trim()).filter(Boolean)))
-  }, [hotels])
+    return Array.from(new Set(globalHotels.map((h) => h.city?.trim()).filter(Boolean)))
+  }, [globalHotels])
 
   const quickCitiesList = useMemo(() => {
     return availableCities.length > 0 ? availableCities : QUICK_CITIES
@@ -139,7 +143,7 @@ export default function Home() {
     const counts = {}
     const minPrices = {}
 
-    hotels.forEach((h) => {
+    globalHotels.forEach((h) => {
       if (h.city) {
         const c = h.city.trim()
         counts[c] = (counts[c] || 0) + 1
@@ -151,7 +155,7 @@ export default function Home() {
     })
 
     return { counts, minPrices }
-  }, [hotels])
+  }, [globalHotels])
 
   // 3. Đồng bộ danh mục Điểm đến: Luôn hiển thị khách sạn thực tế có trong hệ thống
   const dynamicDestinations = useMemo(() => {
@@ -159,7 +163,7 @@ export default function Home() {
 
     const baseList = POPULAR_CITIES.map((c) => {
       const realCount = cityStats.counts[c.name] || 0
-      const realHotel = hotels.find((h) => h.city?.toLowerCase() === c.name.toLowerCase())
+      const realHotel = globalHotels.find((h) => h.city?.toLowerCase() === c.name.toLowerCase())
       return {
         ...c,
         realHotelName: realHotel?.name || `${c.name} Luxury Hotel`,
@@ -173,7 +177,7 @@ export default function Home() {
     availableCities.forEach((cityItem) => {
       if (!knownNames.has(cityItem.toLowerCase())) {
         const count = cityStats.counts[cityItem] || 1
-        const realHotel = hotels.find((h) => h.city?.toLowerCase() === cityItem.toLowerCase())
+        const realHotel = globalHotels.find((h) => h.city?.toLowerCase() === cityItem.toLowerCase())
         baseList.push({
           name: cityItem,
           realHotelName: realHotel?.name || `${cityItem} Central Hotel`,
@@ -187,12 +191,12 @@ export default function Home() {
     })
 
     return baseList
-  }, [cityStats, availableCities, hotels])
+  }, [cityStats, availableCities, globalHotels])
 
   // Cơ sở nổi bật lấy từ dữ liệu thật: có ảnh, ưu tiên điểm đánh giá cao rồi giá thấp
   const heroSlides = useMemo(
     () =>
-      hotels
+      globalHotels
         .filter((h) => h.imageUrl)
         .slice()
         .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (Number(a.minPrice) || 0) - (Number(b.minPrice) || 0))
@@ -207,7 +211,7 @@ export default function Home() {
           reviewCount: h.reviewCount || 0,
           price: h.minPrice ? formatMoney(h.minPrice, currencyDisplay) : null,
         })),
-    [hotels, currencyDisplay],
+    [globalHotels, currencyDisplay],
   )
   const currentSlide = heroSlides.length ? heroSlides[activeSlide % heroSlides.length] : null
 
@@ -257,6 +261,17 @@ export default function Home() {
       .catch(() => {})
   }, [])
 
+  // Tải danh sách toàn bộ khách sạn 1 lần để duy trì các điểm đến và ảnh trình diễn không bị mất khi lọc
+  useEffect(() => {
+    api('/hotels')
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          setAllHotels(res)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   // Tự động chuyển slide ảnh nền Hero mỗi 5.5 giây
   useEffect(() => {
     const timer = setInterval(() => {
@@ -290,7 +305,13 @@ export default function Home() {
     }
 
     api('/hotels', { params })
-      .then((res) => setHotels(Array.isArray(res) ? res : []))
+      .then((res) => {
+        const list = Array.isArray(res) ? res : []
+        setHotels(list)
+        if (Object.keys(params).length === 0 && list.length > 0) {
+          setAllHotels(list)
+        }
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [searchParams])
@@ -391,9 +412,9 @@ export default function Home() {
         <div className="pointer-events-none absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[var(--color-bg-page)] via-[var(--color-bg-page)]/60 to-transparent z-10" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-[1.08fr_0.92fr] xl:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          <div className="flex flex-col lg:flex-row items-stretch gap-8 lg:gap-10">
             {/* Cột trái: Tiêu đề + Thanh tìm kiếm nâng cao */}
-            <div className="flex min-w-0 flex-col justify-between">
+            <div className="flex-1 min-w-0 flex flex-col justify-between">
               <div>
                 <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-slate-900/60 px-4 py-2 text-xs font-semibold tracking-wide text-cyan-200 backdrop-blur-md shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
@@ -525,7 +546,7 @@ export default function Home() {
                 >
                 {/* Hàng 1: Từ khóa tìm kiếm & Tên thành phố */}
                 <div className="flex flex-col gap-2.5 sm:flex-row">
-                  <div className="relative flex-1">
+                  <div className="relative flex-1 min-w-0">
                     <svg
                       className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
                       viewBox="0 0 24 24"
@@ -545,7 +566,7 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="relative sm:w-56">
+                  <div className="relative sm:w-56 shrink-0">
                     <svg
                       className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
                       viewBox="0 0 24 24"
@@ -567,7 +588,7 @@ export default function Home() {
 
                   <button
                     type="submit"
-                    className="btn-liquid-glass group flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/40 transition-all active:scale-[0.99] cursor-pointer"
+                    className="btn-liquid-glass group shrink-0 flex items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/40 transition-all active:scale-[0.99] cursor-pointer"
                   >
                     <span>{t('search_btn')}</span>
                     <svg
@@ -585,7 +606,7 @@ export default function Home() {
                 {/* Hàng 2: Bộ chọn Ngày & Hạng phòng */}
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-12 sm:items-stretch">
                   {/* Custom Date Pickers */}
-                  <div className="sm:col-span-8 flex flex-col sm:flex-row items-center gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 text-slate-900 dark:text-white shadow-sm border border-slate-100 dark:border-slate-700">
+                  <div className="sm:col-span-7 flex flex-col sm:flex-row items-center gap-2 rounded-2xl bg-white dark:bg-slate-800 p-2 text-slate-900 dark:text-white shadow-sm border border-slate-100 dark:border-slate-700">
                     {/* Thẻ Chọn Ngày Nhận */}
                     <div
                       onClick={() => {
@@ -662,7 +683,7 @@ export default function Home() {
                   </div>
 
                   {/* Custom Room Type Selector */}
-                  <div className="relative sm:col-span-4 flex">
+                  <div className="relative sm:col-span-5 flex">
                     <button
                       type="button"
                       onClick={() => setRoomDropdownOpen((v) => !v)}
@@ -771,7 +792,7 @@ export default function Home() {
 
             {/* Cột phải: KHUNG ẢNH NỔI BẬT (Bigger, matching height with the left block, and wider) */}
             {currentSlide && (
-            <div className="relative hidden lg:flex flex-col justify-stretch w-full h-full">
+            <div className="w-full lg:w-[350px] xl:w-[390px] shrink-0 hidden lg:flex flex-col justify-stretch">
               <div className="relative w-full h-full flex flex-col justify-stretch">
                 <div className="animate-presentation-float relative flex-1 flex flex-col overflow-hidden rounded-[28px] border border-white/25 bg-slate-900/60 p-3 shadow-2xl backdrop-blur-md">
                   <div
