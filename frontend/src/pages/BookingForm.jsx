@@ -454,9 +454,7 @@ export default function BookingForm() {
               <div className="grid sm:grid-cols-2 gap-2.5">
                 {[
                   { id: 'PAY_AT_HOTEL', title: 'Thanh toán tại khách sạn', desc: 'Trả tiền khi nhận phòng' },
-                  { id: 'BANK_TRANSFER', title: 'Chuyển khoản VietQR', desc: 'Quét mã QR ngân hàng' },
-                  { id: 'CREDIT_CARD', title: 'Thẻ Visa / Mastercard', desc: 'Thanh toán thẻ quốc tế' },
-                  { id: 'E_WALLET', title: 'Ví MoMo / VNPay', desc: 'Thanh toán nhanh qua OTP' },
+                  { id: 'BANK_TRANSFER', title: 'Chuyển khoản VietQR', desc: 'Quét mã QR ngân hàng Napas247' },
                 ].map((opt) => (
                   <label
                     key={opt.id}
